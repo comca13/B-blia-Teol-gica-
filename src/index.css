@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body, #root {
+    max-width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  .font-serif {
+    font-family: 'Lora', Georgia, Cambria, serif;
+  }
+
+  .font-cinzel {
+    font-family: 'Cinzel', serif;
+  }
+}
+
+.sepia-theme {
+  background-color: #F9F5EC !important;
+  color: #332A21 !important;
+}
+
+.sepia-theme header {
+  background-color: rgba(249, 245, 236, 0.95) !important;
+  border-color: #EADDC9 !important;
+}
+

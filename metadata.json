@@ -1,0 +1,6 @@
+{
+  "name": "Cronos & Cânon - Leitura Bíblica em 365 Dias",
+  "description": "Plano de leitura bíblica diária em 365 dias com ordens Canônica e Histórico-Cronológica, contexto teológico diário, leitor integrado com áudio e painel de constância.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
