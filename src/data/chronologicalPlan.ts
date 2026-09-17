@@ -70,6 +70,7 @@ interface ChronoSeed {
   keyVerse: { reference: string; text: string };
   reflectionQuestions: string[];
   historicalNotes?: string;
+  historicalContext?: string;
   worldHistory?: WorldHistoryContext;
 }
 
@@ -90,7 +91,8 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
       'De que maneira o fato de você ter sido criado à imagem de Deus molda a sua identidade e valor hoje?',
       'Como a promessa redentora de Gênesis 3:15 já antecipa a vitória final de Cristo na cruz?'
     ],
-    historicalNotes: 'Fundamento cósmico da fé judaico-cristã em contraposição aos mitos pagãos politeístas babilônicos (como o Enuma Elish).'
+    historicalNotes: 'Fundamento cósmico da fé judaico-cristã em contraposição aos mitos pagãos politeístas babilônicos (como o Enuma Elish).',
+    historicalContext: 'Enquanto a Bíblia apresenta a criação como um ato de ordem divina e propósito, culturas vizinhas como a Mesopotâmia viam o mundo surgindo de conflitos violentos entre deuses. O contexto aqui é a soberania de Deus sobre toda a realidade física.'
   },
   {
     day: 2,
@@ -262,7 +264,8 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
     reflectionQuestions: [
       'Deus já pediu para você dar passos de obediência mesmo sem enxergar todo o mapa adiante?',
       'O que significa saber que nossa salvação repousa na fidelidade incondicional de Deus e não nas nossas forças?'
-    ]
+    ],
+    historicalContext: 'Ur dos Caldeus era um centro urbano avançado da civilização suméria. A saída de Abrão representa a ruptura com uma cultura politeísta sofisticada em direção ao monoteísmo revelado, marcando o início da história da aliança.'
   },
   {
     day: 12,
@@ -279,7 +282,8 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
     reflectionQuestions: [
       'Como está a sua vida de intercessão pelas cidades e por pessoas que você ama?',
       'Como você equilibra em seu coração a santidade justa de Deus e a Sua graça perdoadora?'
-    ]
+    ],
+    historicalContext: 'A destruição de Sodoma e Gomorra, localizada na região do Vale do Sidim (ao sul do Mar Morto), é corroborada por evidências geológicas de cataclismos na região durante o Bronze Antigo/Médio, refletindo a desolação divina sobre sociedades que ignoraram os princípios morais básicos.'
   },
   {
     day: 13,
@@ -296,7 +300,8 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
     reflectionQuestions: [
       'Existe algo que você tem segurado com tanta força que se tornou mais importante do que Deus em seu coração?',
       'Como a revelação de Deus como Yahweh Jireh (O Senhor Proverá) acalma sua ansiedade quanto ao futuro?'
-    ]
+    ],
+    historicalContext: 'O Monte Moriá tornar-se-ia o local do Templo de Jerusalém. A cultura cananeia envolvia sacrifícios humanos, o que torna o comando divino e a posterior providência do cordeiro (substituição) uma rejeição teológica direta à prática pagã da época.'
   },
   {
     day: 14,
@@ -313,7 +318,8 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
     reflectionQuestions: [
       'Você já se sentiu tentado a negociar princípios eternos por gratificações imediatas?',
       'Como você tem buscado a direção de Deus nos relacionamentos e nas decisões familiares?'
-    ]
+    ],
+    historicalContext: 'A primogenitura era um direito legal crucial no mundo antigo, garantindo maior porção da herança e liderança do clã. A facilidade com que Esaú abdicou dela revela seu desdém pelos valores espirituais da aliança patriarcal.'
   },
   {
     day: 15,
@@ -330,7 +336,8 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
     reflectionQuestions: [
       'Deus já precisou "tocar na sua articulação" para que você parasse de confiar nas suas próprias artimanhas e dependesse Dele?',
       'Qual é o seu maior anseio de bênção espiritual hoje?'
-    ]
+    ],
+    historicalContext: 'A fuga de Jacó para Harã (Padã-Arã) reflete as rotas comerciais antigas entre Canaã e a Alta Mesopotâmia. As práticas de Labão, envolvendo terafins (ídolos domésticos), ilustram o sincretismo religioso contra o qual a aliança abraâmica precisava se defender.'
   },
   {
     day: 16,
@@ -347,7 +354,8 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
     reflectionQuestions: [
       'Como a convicção da presença de Deus ajuda você a resistir às tentações diárias de integridade?',
       'Você consegue confiar que Deus continua presente mesmo em celas de incompreensão ou injustiça?'
-    ]
+    ],
+    historicalContext: 'A venda de José ocorreu num Egito influenciado pelos governantes semíticos (Hicsos) durante o Segundo Período Intermediário, facilitando a ascensão de um hebreu a cargos administrativos de alto nível.'
   },
   {
     day: 17,
@@ -364,7 +372,8 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
     reflectionQuestions: [
       'Como Deus tem usado as suas "terras de aflição" para fazer você amadurecer e frutificar?',
       'Você tem demonstrado um coração reconciliador para com aqueles que já o magoaram no passado?'
-    ]
+    ],
+    historicalContext: 'O cargo de vizir (governador supremo) no Egito era a mais alta posição abaixo do Faraó. A gestão de José durante os sete anos de fome reflete a centralização econômica egípcia característica do Reino Novo e sua administração de recursos hidráulicos e agrícolas.'
   },
   {
     day: 18,
@@ -382,7 +391,44 @@ export const CHRONOLOGICAL_SEEDS: ChronoSeed[] = [
       'Que feridas ou injustiças da sua trajetória Deus pode ressignificar para a glória Dele e socorro de outros?',
       'Como a esperança messiânica de Siló sustenta a sua caminhada de fé?'
     ],
+    historicalContext: 'A morte de Jacó e José marca o fim do período em que Israel viveu com relativo favor no Egito. A menção ao "cetro de Judá" aponta para a futura esperança messiânica em contraste com a temporária estabilidade no Egito que logo se tornaria em escravidão.',
     historicalNotes: 'Término da era patriarcal de Gênesis. O povo de Israel agora habita na fértil terra de Gósen, no Egito.'
+  },
+  {
+    day: 19,
+    title: 'O Retorno a Betel e o Nascimento de Benjamim',
+    periodId: 'creation-patriarchs',
+    periodName: 'Criação e Era Patriarcal',
+    periodApproxDate: 'c. 1870 a.C.',
+    passages: [{ book: 'Gênesis', reference: '33:1 - 35:29', testament: 'AT' }],
+    theologicalContext: 'Jacó retorna a Betel, o lugar onde Deus se revelou a ele anos antes. É um chamado à renovação da aliança e à purificação da idolatria doméstica. O nascimento de Benjamim e a morte de Raquel marcam a conclusão do ciclo dos patriarcas em Canaã.',
+    historicalContext: 'A ênfase de Jacó em purificar sua família de deuses estrangeiros antes de subir a Betel destaca o desafio contínuo que a aliança monoteísta enfrentava diante da cultura politeísta cananeia.',
+    keyVerse: {
+      reference: 'Gênesis 35:1',
+      text: 'Levanta-te, sobe a Betel, e habita ali; faze ali um altar ao Deus que te apareceu, quando fugiste de diante da face de Esaú, teu irmão.'
+    },
+    reflectionQuestions: [
+      'Existe algum lugar de renovação espiritual que você precisa retornar hoje?',
+      'O que você precisa purificar em sua casa ou coração para adorar a Deus com foco total?'
+    ]
+  },
+  {
+    day: 20,
+    title: 'A Linhagem de Esaú e a Quebra de Judá',
+    periodId: 'creation-patriarchs',
+    periodName: 'Criação e Era Patriarcal',
+    periodApproxDate: 'c. 1860 a.C.',
+    passages: [{ book: 'Gênesis', reference: '36:1 - 38:30', testament: 'AT' }],
+    theologicalContext: 'O texto alterna entre a genealogia de Esaú (Edom) e a história de Judá e Tamar. A narrativa de Judá é surpreendente: em meio a uma crise moral familiar, ele é confrontado por Tamar. O fato de a linhagem messiânica passar por essa história complexa sublinha que a graça de Deus não depende da perfeição humana, mas de Sua soberana escolha.',
+    historicalContext: 'A genealogia de Esaú (Edom) é registrada extensivamente para mostrar que, embora ele não carregasse a promessa da aliança, ele também foi abençoado e formou uma nação vizinha importante para Israel.',
+    keyVerse: {
+      reference: 'Gênesis 38:26',
+      text: 'E reconheceu-os Judá, e disse: Mais justa é ela do que eu.'
+    },
+    reflectionQuestions: [
+      'Como a honestidade de Judá ao reconhecer seu erro nos ensina sobre o arrependimento?',
+      'Como a história complexa de Tamar e Judá mostra a soberania de Deus acima dos erros humanos?'
+    ]
   },
   {
     day: 27,

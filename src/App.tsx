@@ -15,6 +15,7 @@ import {
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { Reader } from './components/Reader';
+import { BibleReader } from './components/BibleReader';
 import { ChronologicalTimelineModal } from './components/ChronologicalTimelineModal';
 import { PlanComparisonModal } from './components/PlanComparisonModal';
 import { RemindersModal } from './components/RemindersModal';
@@ -25,7 +26,7 @@ export default function App() {
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(loadReminderSettings());
   const [userName, setUserName] = useState<string>(loadUserName());
 
-  const [currentView, setCurrentView] = useState<'dashboard' | 'reader'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'reader' | 'bible'>('dashboard');
   const [selectedDayNumber, setSelectedDayNumber] = useState<number>(1);
 
   // Modals
@@ -178,10 +179,11 @@ export default function App() {
             onOpenDay={handleOpenDay}
             onOpenTimeline={() => setIsTimelineOpen(true)}
             onOpenPlanInfo={() => setIsPlanInfoOpen(true)}
+            onOpenBibleReader={() => setCurrentView('bible')}
             userName={userName}
             onUpdateUserName={handleUpdateUserName}
           />
-        ) : (
+        ) : currentView === 'reader' ? (
           <Reader
             dayReading={currentReading}
             isCompleted={progress.completedDays.includes(selectedDayNumber)}
@@ -196,6 +198,16 @@ export default function App() {
             personalNote={progress.notes[selectedDayNumber] || ''}
             onSaveNote={handleSaveNote}
           />
+        ) : (
+          <div className="pt-4 pb-20">
+            <button 
+              onClick={() => setCurrentView('dashboard')}
+              className="ml-4 mb-4 px-4 py-2 bg-zinc-800 text-zinc-100 rounded-lg hover:bg-zinc-700"
+            >
+              Voltar ao Painel
+            </button>
+            <BibleReader />
+          </div>
         )}
       </div>
 

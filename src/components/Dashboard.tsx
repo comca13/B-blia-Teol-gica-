@@ -32,6 +32,7 @@ interface DashboardProps {
   onOpenDay: (day: number) => void;
   onOpenTimeline: () => void;
   onOpenPlanInfo: () => void;
+  onOpenBibleReader: () => void;
   userName: string;
   onUpdateUserName: (name: string) => void;
 }
@@ -45,6 +46,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenDay,
   onOpenTimeline,
   onOpenPlanInfo,
+  onOpenBibleReader,
   userName,
   onUpdateUserName
 }) => {
@@ -161,8 +163,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        {/* Quick switch button */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Quick switch buttons */}
+        <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onOpenBibleReader}
+            className="w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white border border-amber-500 text-xs font-semibold backdrop-blur-xs transition-colors flex items-center gap-2"
+          >
+            <BookOpen className="w-4 h-4 shrink-0" />
+            <span>Ler a Bíblia Completa</span>
+          </button>
           <button
             type="button"
             onClick={onOpenPlanInfo}

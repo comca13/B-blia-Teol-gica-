@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DayReading, ReaderSettings, ReadingTheme, ScriptureChapter } from '../types';
 import { getScriptureForDay } from '../data/biblicalTexts';
+import { getReadingContent, ReadingContent } from '../lib/dataService';
 import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, 
@@ -23,8 +24,8 @@ import {
   Check
 } from 'lucide-react';
 
-import { JournalEntry } from './JournalEntry';
 import { WorldHistoryCard } from './WorldHistoryCard';
+import { HistoricalContextCard } from './HistoricalContextCard';
 
 interface ReaderProps {
   dayReading: DayReading;
@@ -37,6 +38,8 @@ interface ReaderProps {
   onBackToDashboard: () => void;
   settings: ReaderSettings;
   onUpdateSettings: (settings: ReaderSettings) => void;
+  personalNote: string;
+  onSaveNote: (day: number, note: string) => void;
 }
 
 export const Reader: React.FC<ReaderProps> = ({
@@ -49,18 +52,33 @@ export const Reader: React.FC<ReaderProps> = ({
   onNextDay,
   onBackToDashboard,
   settings,
-  onUpdateSettings
+  onUpdateSettings,
+  personalNote,
+  onSaveNote
 }) => {
   const [chapters, setChapters] = useState<ScriptureChapter[]>([]);
+  const [enrichedContent, setEnrichedContent] = useState<ReadingContent | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState<number>(settings.audioSpeed || 1.0);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  const [noteText, setNoteText] = useState(personalNote);
+  const [isNoteSaved, setIsNoteSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<'text' | 'context' | 'notes'>('text');
 
-  // Load Scripture Text for this day
+  // Load Scripture Text and Firestore content for this day
   useEffect(() => {
-    const textData = getScriptureForDay(dayReading.day, dayReading.title, dayReading.passages);
-    setChapters(textData);
+    const loadData = async () => {
+      const textData = await getScriptureForDay(dayReading.day, dayReading.title, dayReading.passages);
+      setChapters(textData);
+      
+      // Determine plan type from dayReading.periodId
+      const planType = dayReading.periodId === 'canonical-flow' ? 'canonical' : 'chronological';
+      const content = await getReadingContent(planType, dayReading.day);
+      setEnrichedContent(content);
+    };
+
+    loadData();
+    setNoteText(personalNote);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     stopAudio();
   }, [dayReading.day]);
@@ -138,6 +156,13 @@ export const Reader: React.FC<ReaderProps> = ({
       stopAudio();
       setTimeout(toggleAudio, 100);
     }
+  };
+
+  const handleSaveNoteChange = (val: string) => {
+    setNoteText(val);
+    onSaveNote(dayReading.day, val);
+    setIsNoteSaved(true);
+    setTimeout(() => setIsNoteSaved(false), 2000);
   };
 
   // Font class resolver
@@ -402,7 +427,7 @@ export const Reader: React.FC<ReaderProps> = ({
           </div>
 
           <p className="text-xs sm:text-base leading-relaxed text-stone-800 dark:text-stone-200 font-serif mb-4 sm:mb-5">
-            {dayReading.theologicalContext}
+            {enrichedContent?.theologicalContext || dayReading.theologicalContext}
           </p>
 
           {/* Key verse highlight quote */}
@@ -410,10 +435,10 @@ export const Reader: React.FC<ReaderProps> = ({
             <Quote className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <p className="font-serif italic text-xs sm:text-base text-stone-900 dark:text-stone-100 leading-snug mb-1 break-words">
-                "{dayReading.keyVerse.text}"
+                "{enrichedContent?.keyVerse.text || dayReading.keyVerse.text}"
               </p>
               <p className="text-[11px] sm:text-xs font-semibold text-amber-800 dark:text-amber-400">
-                — {dayReading.keyVerse.reference} (João Ferreira de Almeida)
+                — {enrichedContent?.keyVerse.reference || dayReading.keyVerse.reference} (João Ferreira de Almeida)
               </p>
             </div>
           </div>
@@ -432,6 +457,13 @@ export const Reader: React.FC<ReaderProps> = ({
             </div>
           )}
 
+          {/* Historical Context Card */}
+          {dayReading.historicalContext && (
+            <div className="mt-4">
+              <HistoricalContextCard context={dayReading.historicalContext} />
+            </div>
+          )}
+
           {/* Reflection Prompts */}
           <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-amber-200/50 dark:border-amber-900/30">
             <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 mb-2 flex items-center gap-1.5">
@@ -439,7 +471,7 @@ export const Reader: React.FC<ReaderProps> = ({
               <span>Para Meditar e Praticar Hoje:</span>
             </h4>
             <ul className="space-y-1.5 text-xs sm:text-sm text-stone-700 dark:text-stone-300">
-              {dayReading.reflectionQuestions.map((q, idx) => (
+              {(enrichedContent?.reflectionQuestions || dayReading.reflectionQuestions).map((q, idx) => (
                 <li key={idx} className="flex items-start gap-2">
                   <span className="text-amber-600 font-bold shrink-0">•</span>
                   <span className="break-words">{q}</span>
@@ -530,7 +562,28 @@ export const Reader: React.FC<ReaderProps> = ({
         </section>
 
         {/* Personal Notes / Devotional Diary for the Day */}
-        <JournalEntry day={dayReading.day} />
+        <section className="pt-6 border-t border-inherit space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-stone-600 dark:text-stone-300">
+              <FileText className="w-4 h-4 text-amber-600" />
+              <span>Anotações Pessoais & Oração do Dia {dayReading.day}</span>
+            </div>
+            {isNoteSaved && (
+              <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                Salvo no seu dispositivo
+              </span>
+            )}
+          </div>
+
+          <textarea
+            value={noteText}
+            onChange={(e) => handleSaveNoteChange(e.target.value)}
+            placeholder="O que Deus falou ao seu coração hoje? Escreva aqui suas reflexões, pedidos de oração ou aplicações práticas..."
+            rows={4}
+            className="w-full p-4 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50/50 dark:bg-zinc-900/60 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-600 transition-all font-sans resize-y"
+          />
+        </section>
 
         {/* Bottom Navigation & Complete CTA */}
         <div className="py-6 border-t border-inherit flex flex-col sm:flex-row items-center justify-between gap-4">

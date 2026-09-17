@@ -214,12 +214,33 @@ export const CURATED_SCRIPTURES: Record<string, ScriptureChapter[]> = {
   ]
 };
 
+// Bible API Integration
+const fetchBibleText = async (book: string, chapter: number): Promise<ScriptureChapter | null> => {
+  try {
+    const response = await fetch(`https://bible-api.com/${book.replace(' ', '')}${chapter}?translation=almeida`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    
+    return {
+      book: book,
+      chapter: chapter,
+      verses: data.verses.map((v: any) => ({
+        verse: v.verse,
+        text: v.text
+      }))
+    };
+  } catch (error) {
+    console.error('Error fetching bible text:', error);
+    return null;
+  }
+};
+
 // Generates an authentic, continuous Scripture reading for any passage
-export const getScriptureForDay = (
+export const getScriptureForDay = async (
   dayNumber: number,
   title: string,
   passages: Array<{ book: string; reference: string; testament: 'AT' | 'NT' }>
-): ScriptureChapter[] => {
+): Promise<ScriptureChapter[]> => {
   // Check exact curated key matches
   if (dayNumber === 1 && CURATED_SCRIPTURES['Gênesis 1']) return CURATED_SCRIPTURES['Gênesis 1'];
   if (dayNumber === 4 && CURATED_SCRIPTURES['Jó 1']) return CURATED_SCRIPTURES['Jó 1'];
@@ -237,51 +258,16 @@ export const getScriptureForDay = (
     if (key) return CURATED_SCRIPTURES[key];
   }
 
-  // High-fidelity fallback generating complete verses for the reading
-  return passages.map((passage, pIdx) => {
+  // Fetch from API
+  const chapters: ScriptureChapter[] = [];
+  for (const passage of passages) {
     const matchCap = passage.reference.match(/(\d+)/);
-    const capNum = matchCap ? parseInt(matchCap[1], 10) : pIdx + 1;
-
-    // Rich biblical verse text structure
-    const sampleVerses = [
-      {
-        verse: 1,
-        text: `Palavra do Senhor que veio ao Seu povo para manifestar Sua aliança, Sua justiça e Sua misericórdia através das gerações.`
-      },
-      {
-        verse: 2,
-        text: `Ouve, povo Meu, a Minha instrução; inclina os teus ouvidos às palavras da Minha boca, pois nelas há vida eterna e direção segura.`
-      },
-      {
-        verse: 3,
-        text: `O Senhor é refúgio para os oprimidos, refúgio em tempos de angústia. Em Ti confiarão os que conhecem o Teu santo nome.`
-      },
-      {
-        verse: 4,
-        text: `Porque o Senhor não desampara os que O buscam de todo o coração; antes, renova as suas forças como as da águia.`
-      },
-      {
-        verse: 5,
-        text: `Lembrai-vos das maravilhas que Ele tem feito, dos Seus prodígios e dos juízos pronunciados pela Sua boca bendita.`
-      },
-      {
-        verse: 6,
-        text: `Ele é o Senhor nosso Deus; os Seus juízos estão em toda a terra. Lembrou-se da Sua aliança para sempre, da palavra que mandou a milhares de gerações.`
-      },
-      {
-        verse: 7,
-        text: `Toda a Escritura é divinamente inspirada e proveitosa para ensinar, para redarguir, para corrigir, para instruir em justiça.`
-      },
-      {
-        verse: 8,
-        text: `Para que o homem de Deus seja perfeito e perfeitamente instruído para toda a boa obra no Reino de Cristo.`
-      }
-    ];
-
-    return {
-      book: passage.book,
-      chapter: capNum,
-      verses: sampleVerses
-    };
-  });
+    const capNum = matchCap ? parseInt(matchCap[1], 10) : 1;
+    
+    const chapterData = await fetchBibleText(passage.book, capNum);
+    if (chapterData) {
+      chapters.push(chapterData);
+    }
+  }
+  return chapters;
 };

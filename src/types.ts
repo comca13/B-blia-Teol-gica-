@@ -45,6 +45,7 @@ export interface DayReading {
   };
   reflectionQuestions: string[];
   historicalNotes?: string;
+  historicalContext?: string; // NOVO CAMPO
   worldHistory?: WorldHistoryContext;
 }
 

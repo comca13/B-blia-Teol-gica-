@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "Reading": {
+      "title": "Reading",
+      "description": "Content for a daily reading",
+      "type": "object",
+      "properties": {
+        "theologicalContext": { "type": "string" },
+        "historicalContext": { "type": "string" },
+        "reflectionQuestions": { "type": "array" },
+        "keyVerse": { "type": "object", "properties": { "reference": { "type": "string" }, "text": { "type": "string" } } }
+      },
+      "required": ["theologicalContext", "historicalContext", "reflectionQuestions", "keyVerse"]
+    }
+  },
+  "firestore": {
+    "/readings/{readingId}": {
+      "schema": { "$ref": "#/entities/Reading" },
+      "description": "Daily reading content"
+    }
+  }
+}
