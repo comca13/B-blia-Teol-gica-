@@ -3,6 +3,7 @@ import { DayReading, ReaderSettings, ReadingTheme, ScriptureChapter } from '../t
 import { getScriptureForDay } from '../data/biblicalTexts';
 import { getReadingContent, ReadingContent } from '../lib/dataService';
 import confetti from 'canvas-confetti';
+import { ReaderSettings as ReaderSettingsComponent } from './ReaderSettings';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -60,6 +61,7 @@ export const Reader: React.FC<ReaderProps> = ({
   const [enrichedContent, setEnrichedContent] = useState<ReadingContent | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState<number>(settings.audioSpeed || 1.0);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [noteText, setNoteText] = useState(personalNote);
   const [isNoteSaved, setIsNoteSaved] = useState(false);
@@ -314,52 +316,27 @@ export const Reader: React.FC<ReaderProps> = ({
 
       {/* Typography & Appearance Drawer */}
       {showSettingsDrawer && (
-        <div className="border-b px-3 sm:px-4 py-2.5 sm:py-3 bg-stone-50/95 dark:bg-zinc-900/95 border-inherit text-xs flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 w-full">
-          {/* Font Family */}
-          <div className="flex items-center gap-2">
-            <span className="text-stone-500 dark:text-stone-400 font-medium">Fonte:</span>
-            <div className="flex rounded-lg border border-stone-200 dark:border-zinc-700 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ ...settings, fontFamily: 'lora' })}
-                className={`px-2.5 sm:px-3 py-1 font-serif ${settings.fontFamily === 'lora' ? 'bg-amber-800 text-white' : 'hover:bg-stone-200 dark:hover:bg-zinc-800'}`}
-              >
-                Serifada
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ ...settings, fontFamily: 'sans' })}
-                className={`px-2.5 sm:px-3 py-1 font-sans ${settings.fontFamily === 'sans' ? 'bg-amber-800 text-white' : 'hover:bg-stone-200 dark:hover:bg-zinc-800'}`}
-              >
-                Sem Serifa
-              </button>
-            </div>
-          </div>
-
-          {/* Font Size */}
-          <div className="flex items-center gap-2">
-            <span className="text-stone-500 dark:text-stone-400 font-medium">Tamanho:</span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ ...settings, fontSize: Math.max(14, settings.fontSize - 2) })}
-                className="w-7 h-7 rounded border border-stone-200 dark:border-zinc-700 font-bold hover:bg-stone-100 dark:hover:bg-zinc-800"
-              >
-                A-
-              </button>
-              <span className="w-8 text-center font-mono text-[11px]">{settings.fontSize}px</span>
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ ...settings, fontSize: Math.min(28, settings.fontSize + 2) })}
-                className="w-7 h-7 rounded border border-stone-200 dark:border-zinc-700 font-bold hover:bg-stone-100 dark:hover:bg-zinc-800"
-              >
-                A+
-              </button>
-            </div>
-          </div>
-
-          {/* Theme */}
-          <div className="flex items-center gap-2">
+        <div className="border-b px-3 sm:px-4 py-2.5 sm:py-3 bg-stone-50/95 dark:bg-zinc-900/95 border-inherit w-full">
+          <ReaderSettingsComponent
+            isFocusMode={isFocusMode}
+            setIsFocusMode={setIsFocusMode}
+            fontSize={
+              settings.fontSize <= 14 ? 'sm' :
+              settings.fontSize <= 18 ? 'base' :
+              settings.fontSize <= 22 ? 'lg' : 'xl'
+            }
+            setFontSize={(size) => {
+              const newSize = size === 'sm' ? 14 : size === 'base' ? 18 : size === 'lg' ? 22 : 26;
+              onUpdateSettings({ ...settings, fontSize: newSize });
+            }}
+            fontFamily={settings.fontFamily === 'sans' ? 'sans' : 'serif'}
+            setFontFamily={(font) => {
+              onUpdateSettings({ ...settings, fontFamily: font === 'sans' ? 'sans' : 'lora' });
+            }}
+          />
+          
+          {/* Theme Control still needed as ReaderSettings doesn't have it */}
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-stone-200 dark:border-zinc-800 text-xs">
             <span className="text-stone-500 dark:text-stone-400 font-medium">Fundo:</span>
             <div className="flex gap-1">
               <button

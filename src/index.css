@@ -25,6 +25,7 @@
 .sepia-theme {
   background-color: #F9F5EC !important;
   color: #332A21 !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .sepia-theme header {
