@@ -33,6 +33,29 @@ import {
 
 import { WorldHistoryCard } from './WorldHistoryCard';
 import { HistoricalContextCard } from './HistoricalContextCard';
+import { ArchaeologyCard } from './ArchaeologyCard';
+import { BiblicalMapCard } from './BiblicalMapCard';
+import { SecondTempleBridgeModal } from './SecondTempleBridgeModal';
+import { LiteraryGenreBadge } from './LiteraryGenreBadge';
+import { SitzImLebenCard } from './SitzImLebenCard';
+import { OriginalLexiconCard } from './OriginalLexiconCard';
+import { IntertextualEchoesCard } from './IntertextualEchoesCard';
+import { TextualVariantsCard } from './TextualVariantsCard';
+import { TextualVariantIndicator } from './TextualVariantIndicator';
+import { PersonalNotes } from './PersonalNotes';
+import { getArtifactsForDay } from '../data/archaeologicalData';
+import { getGeographyForDay } from '../data/geographyData';
+import { 
+  getGenreForReading, 
+  getSitzImLebenForReading, 
+  getLexiconForReading, 
+  getTypologyForReading 
+} from '../data/theologicalExegesisData';
+import { 
+  getTextualVariantsForDay, 
+  getTextualVariantsForPassage 
+} from '../data/textualVariantsData';
+import { Scroll } from 'lucide-react';
 
 interface ReaderProps {
   dayReading: DayReading;
@@ -79,11 +102,73 @@ export const Reader: React.FC<ReaderProps> = ({
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [noteText, setNoteText] = useState(personalNote);
   const [isNoteSaved, setIsNoteSaved] = useState(false);
+  const [isSecondTempleModalOpen, setIsSecondTempleModalOpen] = useState(false);
 
   // Targets assigned for this day
   const assignedTargets = useMemo(() => {
     return parseDayPassagesToTargets(dayReading.passages);
   }, [dayReading.passages]);
+
+  // Historiography & Archaeology contextual data resolvers
+  const effectiveArtifacts = useMemo(() => {
+    if (dayReading.artifacts && dayReading.artifacts.length > 0) {
+      return dayReading.artifacts;
+    }
+    if (enrichedContent?.artifacts && enrichedContent.artifacts.length > 0) {
+      return enrichedContent.artifacts;
+    }
+    return getArtifactsForDay(dayReading.day, dayReading.periodId, dayReading.passages);
+  }, [dayReading, enrichedContent]);
+
+  const effectiveGeography = useMemo(() => {
+    if (dayReading.geography) {
+      return dayReading.geography;
+    }
+    if (enrichedContent?.geography) {
+      return enrichedContent.geography;
+    }
+    return getGeographyForDay(dayReading.day, dayReading.periodId, dayReading.passages);
+  }, [dayReading, enrichedContent]);
+
+  // Hermeneutical, Exegetical and Typological Context Resolvers
+  const effectiveGenreGuide = useMemo(() => {
+    if (dayReading.genreGuide) return dayReading.genreGuide;
+    if (enrichedContent?.genreGuide) return enrichedContent.genreGuide;
+    return getGenreForReading(dayReading.day, dayReading.passages);
+  }, [dayReading, enrichedContent]);
+
+  const effectiveSitzImLeben = useMemo(() => {
+    if (dayReading.sitzImLeben) return dayReading.sitzImLeben;
+    if (enrichedContent?.sitzImLeben) return enrichedContent.sitzImLeben;
+    return getSitzImLebenForReading(dayReading.day, dayReading.passages);
+  }, [dayReading, enrichedContent]);
+
+  const effectiveLexicon = useMemo(() => {
+    if (dayReading.originalLexicon && dayReading.originalLexicon.length > 0) return dayReading.originalLexicon;
+    if (enrichedContent?.originalLexicon && enrichedContent.originalLexicon.length > 0) return enrichedContent.originalLexicon;
+    return getLexiconForReading(dayReading.day, dayReading.passages);
+  }, [dayReading, enrichedContent]);
+
+  const effectiveTypology = useMemo(() => {
+    if (dayReading.typology && dayReading.typology.length > 0) return dayReading.typology;
+    if (enrichedContent?.typology && enrichedContent.typology.length > 0) return enrichedContent.typology;
+    return getTypologyForReading(dayReading.day, dayReading.passages);
+  }, [dayReading, enrichedContent]);
+
+  const effectiveTextualVariants = useMemo(() => {
+    return getTextualVariantsForDay(dayReading.day, dayReading.passages);
+  }, [dayReading]);
+
+  const depthMode = settings.depthMode || 'EXEGÉTICO_ACADÉMICO';
+  const visiblePanels = settings.visiblePanels || {
+    archaeology: true,
+    lexicon: true,
+    worldHistory: true,
+    intertextuality: true,
+    textualVariants: true,
+  };
+
+  const isIntertestamentalNear = dayReading.day >= 294 && dayReading.day <= 297;
 
   // Load Scripture Text and Firestore content for this day
   const loadScriptureData = async () => {
@@ -426,6 +511,20 @@ export const Reader: React.FC<ReaderProps> = ({
             setFontFamily={(font) => {
               onUpdateSettings({ ...settings, fontFamily: font === 'sans' ? 'sans' : 'lora' });
             }}
+            depthMode={depthMode}
+            setDepthMode={(newMode) => {
+              onUpdateSettings({ ...settings, depthMode: newMode });
+            }}
+            visiblePanels={visiblePanels}
+            onTogglePanel={(panelKey) => {
+              onUpdateSettings({
+                ...settings,
+                visiblePanels: {
+                  ...visiblePanels,
+                  [panelKey]: !visiblePanels[panelKey]
+                }
+              });
+            }}
           />
         </div>
       )}
@@ -461,6 +560,13 @@ export const Reader: React.FC<ReaderProps> = ({
               </span>
             )}
           </div>
+
+          {/* Literary Genre & Hermeneutics Badge */}
+          {effectiveGenreGuide && (
+            <div className="pt-1 flex justify-center">
+              <LiteraryGenreBadge guide={effectiveGenreGuide} />
+            </div>
+          )}
         </div>
 
         {/* Contexto Teológico Diário - Pilar Principal */}
@@ -508,6 +614,90 @@ export const Reader: React.FC<ReaderProps> = ({
           {dayReading.historicalContext && (
             <div className="mt-4">
               <HistoricalContextCard context={dayReading.historicalContext} />
+            </div>
+          )}
+
+          {/* Intertestamental Transition Bridge Banner */}
+          {isIntertestamentalNear && (
+            <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-amber-950/70 via-stone-900 to-amber-950/40 border border-amber-500/40 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+                  <Scroll className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-amber-200 text-xs sm:text-sm">
+                    A Ponte do Segundo Templo: O que aconteceu entre o AT e o NT?
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-stone-300">
+                    400 anos de transformações: Macabeus, Septuaginta (LXX), Fariseus e Saduceus.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSecondTempleModalOpen(true)}
+                className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white flex items-center justify-center gap-1.5 shadow-xs transition-colors shrink-0"
+              >
+                <span>Explorar Guia Histórico</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Archaeology & Material Culture Card (conditional on depthMode and visiblePanels) */}
+          {depthMode === 'EXEGÉTICO_ACADÉMICO' && visiblePanels.archaeology && effectiveArtifacts && effectiveArtifacts.length > 0 && (
+            <div className="mt-4">
+              <ArchaeologyCard artifacts={effectiveArtifacts} />
+            </div>
+          )}
+
+          {/* Biblical Geography & Historical Cartography Card */}
+          {effectiveGeography && (
+            <div className="mt-4">
+              <BiblicalMapCard geography={effectiveGeography} />
+            </div>
+          )}
+
+          {/* Eixo Teológico, Hermenêutico & Exegético */}
+          {/* Sitz im Leben (A Situação Vital do Texto) */}
+          {effectiveSitzImLeben && (
+            <div className="mt-4">
+              <SitzImLebenCard sitzImLeben={effectiveSitzImLeben} />
+            </div>
+          )}
+
+          {/* Chaves Linguísticas & Léxico Original (conditional on depthMode and visiblePanels) */}
+          {depthMode === 'EXEGÉTICO_ACADÉMICO' && visiblePanels.lexicon && effectiveLexicon && effectiveLexicon.length > 0 && (
+            <div className="mt-4">
+              <OriginalLexiconCard words={effectiveLexicon} />
+            </div>
+          )}
+
+          {/* Tipologia Bíblica & Ecos Intertextuais (conditional on depthMode and visiblePanels) */}
+          {depthMode === 'EXEGÉTICO_ACADÉMICO' && visiblePanels.intertextuality && effectiveTypology && effectiveTypology.length > 0 && (
+            <div className="mt-4">
+              <IntertextualEchoesCard typologies={effectiveTypology} />
+            </div>
+          )}
+
+          {/* Aparelho de Crítica Textual & Variantes de Manuscritos (C2) */}
+          {depthMode === 'EXEGÉTICO_ACADÉMICO' && visiblePanels.textualVariants && effectiveTextualVariants && effectiveTextualVariants.length > 0 && (
+            <div className="mt-4">
+              <TextualVariantsCard variants={effectiveTextualVariants} />
+            </div>
+          )}
+
+          {/* Indicador suave quando em Modo Devocional */}
+          {depthMode === 'DEVOCIONAL' && (
+            <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/80 flex items-center justify-between gap-2 font-sans">
+              <span>🌿 <strong>Modo Devocional Ativo:</strong> foco em oração, edificação e meditação prática.</span>
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ ...settings, depthMode: 'EXEGÉTICO_ACADÉMICO' })}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-semibold transition-colors shrink-0"
+              >
+                Alternar para Exegético
+              </button>
             </div>
           )}
 
@@ -768,6 +958,8 @@ export const Reader: React.FC<ReaderProps> = ({
                     const isHighlighted = !!highlightedVerses[verseKey];
                     const isInTargetRange = !chap.startVerse || (verse.verse >= chap.startVerse && (!chap.endVerse || verse.verse <= chap.endVerse));
 
+                    const verseVariants = getTextualVariantsForPassage(chap.book, chap.chapter, verse.verse);
+
                     return (
                       <p 
                         key={verse.verse} 
@@ -779,9 +971,14 @@ export const Reader: React.FC<ReaderProps> = ({
                               : 'opacity-70 hover:opacity-100 hover:bg-zinc-800/40'
                         }`}
                       >
-                        <sup className="font-sans font-bold text-xs text-amber-400 select-none shrink-0 mt-1">
-                          {verse.verse}
-                        </sup>
+                        <div className="flex items-center gap-1 shrink-0 mt-1 select-none">
+                          <sup className="font-sans font-bold text-xs text-amber-400">
+                            {verse.verse}
+                          </sup>
+                          {verseVariants.length > 0 && (
+                            <TextualVariantIndicator variant={verseVariants[0]} compact={true} />
+                          )}
+                        </div>
 
                         <span className="flex-1 leading-relaxed">
                           {verse.text}
@@ -817,27 +1014,11 @@ export const Reader: React.FC<ReaderProps> = ({
           </section>
         )}
 
-        {/* Personal Notes / Devotional Diary for the Day */}
-        <section className="pt-6 border-t border-inherit space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-stone-600 dark:text-stone-300">
-              <FileText className="w-4 h-4 text-amber-600" />
-              <span>Anotações Pessoais & Oração do Dia {dayReading.day}</span>
-            </div>
-            {isNoteSaved && (
-              <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
-                <Check className="w-3 h-3" />
-                Salvo no seu dispositivo
-              </span>
-            )}
-          </div>
-
-          <textarea
-            value={noteText}
-            onChange={(e) => handleSaveNoteChange(e.target.value)}
-            placeholder="O que Deus falou ao seu coração hoje? Escreva aqui suas reflexões, pedidos de oração ou aplicações práticas..."
-            rows={4}
-            className="w-full p-4 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50/50 dark:bg-zinc-900/60 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-600 transition-all font-sans resize-y"
+        {/* Caderno de Teologia Sistemática Pessoal & Diário Devocional (C3) */}
+        <section className="pt-6 border-t border-inherit">
+          <PersonalNotes 
+            dayId={dayReading.day} 
+            passageRef={dayReading.passages.map(p => `${p.book} ${p.reference}`).join(', ')} 
           />
         </section>
 
@@ -880,6 +1061,12 @@ export const Reader: React.FC<ReaderProps> = ({
         </div>
 
       </main>
+
+      {/* Second Temple Bridge Transition Modal */}
+      <SecondTempleBridgeModal
+        isOpen={isSecondTempleModalOpen}
+        onClose={() => setIsSecondTempleModalOpen(false)}
+      />
     </div>
   );
 };

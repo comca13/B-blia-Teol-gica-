@@ -20,6 +20,7 @@ import { BibleReader } from './components/BibleReader';
 import { ChronologicalTimelineModal } from './components/ChronologicalTimelineModal';
 import { PlanComparisonModal } from './components/PlanComparisonModal';
 import { RemindersModal } from './components/RemindersModal';
+import { ChurchHistoryModal } from './components/ChurchHistoryModal';
 
 export default function App() {
   const [progress, setProgress] = useState<UserProgress>(loadUserProgress());
@@ -35,6 +36,13 @@ export default function App() {
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
   const [isPlanInfoOpen, setIsPlanInfoOpen] = useState(false);
   const [isRemindersOpen, setIsRemindersOpen] = useState(false);
+  const [isChurchHistoryOpen, setIsChurchHistoryOpen] = useState(false);
+  const [churchHistoryTab, setChurchHistoryTab] = useState<'timeline' | 'theological-systems' | 'creeds'>('timeline');
+
+  const handleOpenChurchHistory = (tab: 'timeline' | 'theological-systems' | 'creeds' = 'timeline') => {
+    setChurchHistoryTab(tab);
+    setIsChurchHistoryOpen(true);
+  };
 
   // Active plan dataset
   const currentPlanDays = progress.planType === 'chronological' ? CHRONOLOGICAL_PLAN : CANONICAL_PLAN;
@@ -155,6 +163,7 @@ export default function App() {
         onOpenReminders={() => setIsRemindersOpen(true)}
         onOpenPlanInfo={() => setIsPlanInfoOpen(true)}
         onOpenTimeline={() => setIsTimelineOpen(true)}
+        onOpenChurchHistory={handleOpenChurchHistory}
         currentView={currentView}
         onGoToDashboard={() => setCurrentView('dashboard')}
       />
@@ -172,6 +181,7 @@ export default function App() {
             onOpenTimeline={() => setIsTimelineOpen(true)}
             onOpenPlanInfo={() => setIsPlanInfoOpen(true)}
             onOpenBibleReader={() => setCurrentView('bible')}
+            onOpenChurchHistory={handleOpenChurchHistory}
             userName={userName}
             onUpdateUserName={handleUpdateUserName}
           />
@@ -244,6 +254,12 @@ export default function App() {
         todayReading={currentReading}
       />
 
+      <ChurchHistoryModal
+        isOpen={isChurchHistoryOpen}
+        onClose={() => setIsChurchHistoryOpen(false)}
+        initialTab={churchHistoryTab}
+      />
+
       {/* Subtle Footer */}
       <footer className="border-t border-stone-200 dark:border-zinc-800 py-6 px-4 text-center text-xs text-stone-500 dark:text-stone-400 bg-white/50 dark:bg-zinc-900/50">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -263,6 +279,13 @@ export default function App() {
               className="hover:underline text-amber-800 dark:text-amber-400 font-medium"
             >
               Linha do Tempo
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => handleOpenChurchHistory('timeline')}
+              className="hover:underline text-amber-800 dark:text-amber-400 font-medium font-semibold"
+            >
+              História da Igreja & Teologia
             </button>
             <span>•</span>
             <button

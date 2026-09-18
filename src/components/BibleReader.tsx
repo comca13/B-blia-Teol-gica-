@@ -13,8 +13,23 @@ import {
   Copy, 
   Check, 
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Scroll
 } from 'lucide-react';
+import { LiteraryGenreBadge } from './LiteraryGenreBadge';
+import { SitzImLebenCard } from './SitzImLebenCard';
+import { OriginalLexiconCard } from './OriginalLexiconCard';
+import { IntertextualEchoesCard } from './IntertextualEchoesCard';
+import { TextualVariantsCard } from './TextualVariantsCard';
+import { TextualVariantIndicator } from './TextualVariantIndicator';
+import { 
+  getGenreForReading, 
+  getSitzImLebenForReading, 
+  getLexiconForReading, 
+  getTypologyForReading 
+} from '../data/theologicalExegesisData';
+import { getTextualVariantsForPassage } from '../data/textualVariantsData';
+import { BiblePassage } from '../types';
 
 interface BibleReaderProps {
   initialBookNumber?: number;
@@ -60,6 +75,18 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const currentBook: BibleBookInfo = useMemo(() => {
     return ALL_BIBLE_BOOKS.find(b => b.number === bookNumber) || ALL_BIBLE_BOOKS[0];
   }, [bookNumber]);
+
+  // Context resolvers for the current book and chapter
+  const bookPassage = useMemo<BiblePassage[]>(() => [{
+    book: currentBook.namePt,
+    reference: `${chapter}`,
+    testament: currentBook.testament
+  }], [currentBook.namePt, currentBook.testament, chapter]);
+
+  const genreGuide = useMemo(() => getGenreForReading(1, bookPassage), [bookPassage]);
+  const sitzImLeben = useMemo(() => getSitzImLebenForReading(1, bookPassage), [bookPassage]);
+  const lexiconWords = useMemo(() => getLexiconForReading(1, bookPassage), [bookPassage]);
+  const typologies = useMemo(() => getTypologyForReading(1, bookPassage), [bookPassage]);
 
   // Filtered books list for easy finding
   const filteredBooks = useMemo(() => {
@@ -433,8 +460,15 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             <h2 className="text-2xl sm:text-3xl font-bold font-serif text-zinc-100 flex items-center gap-2">
               {language === 'pt' ? currentBook.namePt : currentBook.nameEn} {chapter}
             </h2>
-            <div className="text-xs text-zinc-400 mt-1">
-              Versão: <span className="text-zinc-300 font-semibold">{language === 'pt' ? 'Almeida Revista e Atualizada (ARA)' : 'World English Bible (WEB)'}</span>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              <div className="text-xs text-zinc-400">
+                Versão: <span className="text-zinc-300 font-semibold">{language === 'pt' ? 'Almeida Revista e Atualizada (ARA)' : 'World English Bible (WEB)'}</span>
+              </div>
+              {genreGuide && (
+                <div className="ml-1">
+                  <LiteraryGenreBadge guide={genreGuide} />
+                </div>
+              )}
             </div>
           </div>
 
@@ -493,14 +527,21 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
           >
             {verses.map((v) => {
               const isCopied = copiedVerse === v.number;
+              const verseVariants = getTextualVariantsForPassage(currentBook.namePt, chapter, v.number);
+
               return (
                 <div
                   key={v.number}
                   className="group relative rounded-xl p-2 sm:p-2.5 transition-colors hover:bg-zinc-800/60 flex items-start gap-2.5"
                 >
-                  <span className="shrink-0 text-amber-500 font-sans text-xs sm:text-sm font-bold pt-0.5 select-none w-6 text-right">
-                    {v.number}
-                  </span>
+                  <div className="shrink-0 flex items-center gap-1 pt-0.5 select-none">
+                    <span className="text-amber-500 font-sans text-xs sm:text-sm font-bold w-6 text-right">
+                      {v.number}
+                    </span>
+                    {verseVariants.length > 0 && (
+                      <TextualVariantIndicator variant={verseVariants[0]} compact={true} />
+                    )}
+                  </div>
                   
                   <p className="flex-1 text-zinc-200 text-justify break-words">
                     {v.text}
@@ -552,6 +593,37 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Eixo Teológico, Hermenêutico e Exegético da Bíblia de Estudo */}
+        {!loading && !error && (
+          <div className="pt-6 border-t border-zinc-800 space-y-4">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+              <Scroll className="w-4 h-4" />
+              <span>Apoio Exegético & Teológico de {currentBook.namePt}</span>
+            </div>
+
+            {sitzImLeben && (
+              <SitzImLebenCard sitzImLeben={sitzImLeben} defaultExpanded={false} />
+            )}
+
+            {lexiconWords && lexiconWords.length > 0 && (
+              <OriginalLexiconCard words={lexiconWords} defaultExpanded={false} />
+            )}
+
+            {typologies && typologies.length > 0 && (
+              <IntertextualEchoesCard typologies={typologies} defaultExpanded={false} />
+            )}
+
+            {/* Aparelho de Crítica Textual para o capítulo se houver */}
+            {(() => {
+              const chapterVariants = getTextualVariantsForPassage(currentBook.namePt, chapter);
+              if (chapterVariants.length > 0) {
+                return <TextualVariantsCard variants={chapterVariants} defaultExpanded={true} />;
+              }
+              return null;
+            })()}
           </div>
         )}
 

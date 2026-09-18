@@ -20,7 +20,10 @@ import {
   ChevronRight,
   TrendingUp,
   User,
-  Edit2
+  Edit2,
+  Landmark,
+  Scale,
+  Scroll
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -33,6 +36,7 @@ interface DashboardProps {
   onOpenTimeline: () => void;
   onOpenPlanInfo: () => void;
   onOpenBibleReader: () => void;
+  onOpenChurchHistory?: (tab?: 'timeline' | 'theological-systems' | 'creeds') => void;
   userName: string;
   onUpdateUserName: (name: string) => void;
 }
@@ -47,6 +51,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenTimeline,
   onOpenPlanInfo,
   onOpenBibleReader,
+  onOpenChurchHistory,
   userName,
   onUpdateUserName
 }) => {
@@ -328,6 +333,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
         </button>
       </div>
+
+      {/* Módulo de História da Igreja e Tradição Teológica Spotlight Banner */}
+      {onOpenChurchHistory && (
+        <div className="rounded-2xl border border-amber-900/40 dark:border-amber-700/40 bg-gradient-to-br from-stone-900 via-amber-950/30 to-stone-900 p-4 sm:p-6 text-stone-200 shadow-md">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+                  <Landmark className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-amber-400 font-sans">
+                  Enciclopédia Teológica & Histórica
+                </span>
+              </div>
+              <h3 className="text-base sm:text-xl font-serif font-bold text-stone-100">
+                História da Igreja, Concílios & Teologia Sistemática
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
+                Explore os 20 séculos de fé cristã: as 5 Eras da Igreja, o debate soteriológico de Dort (TULIP vs. Remonstrantes) e os textos integrais dos Grandes Credos Ecumênicos.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => onOpenChurchHistory('timeline')}
+                className="px-3.5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 hover:border-amber-500/40 text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs"
+              >
+                <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Linha do Tempo (5 Eras)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onOpenChurchHistory('theological-systems')}
+                className="px-3.5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 hover:border-amber-500/40 text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs"
+              >
+                <Scale className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Calvino vs. Armínio</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onOpenChurchHistory('creeds')}
+                className="px-3.5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 hover:border-amber-500/40 text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs"
+              >
+                <Scroll className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Grandes Credos</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter and Search Controls for 365 Days */}
       <div className="space-y-3 pt-2">

@@ -30,6 +30,68 @@ export interface WorldHistoryContext {
   biblicalCorrelation: string; // Como o evento mundial se cruza com o texto e profecias do dia
 }
 
+export interface ArchaeologicalArtifact {
+  id: string;
+  name: string; // Ex: "Estela de Tel Dã", "Prisma de Senaqueribe", "Cilindro de Ciro", "Ossuário de Caifás"
+  period: string; // Ex: "Século IX a.C."
+  locationFound: string; // Ex: "Tel Dan, Norte de Israel"
+  currentLocation: string; // Ex: "Museu de Israel, Jerusalém"
+  significance: string; // Importância para a leitura bíblica corrente
+  imageUrl?: string;
+}
+
+export interface GeographyContext {
+  regionName: string; // Ex: "Crescente Fértil", "Planalto da Judeia", "Ásia Menor"
+  modernLocation: string; // Ex: "Atual Iraque", "Atual Cisjordânia / Israel"
+  coordinatesSummary?: string;
+  mapReferenceUrl?: string; // Link para mapa interativo/satélite ou imagem
+  topographyNote: string; // Relevância teológico-topográfica (ex: "A descida de Jerusalém a Jericó: desnível de 1.000m")
+}
+
+export type LiteraryGenre = 
+  | 'NARRATIVA_HISTORICA'
+  | 'LEI_TORA'
+  | 'POESIA_SAPIENCIAL'
+  | 'PROFECIA_CLASSICA'
+  | 'APOCALIPTICA'
+  | 'EVANGELHO_BIOGRAFIA'
+  | 'PARABOLA'
+  | 'EPISTOLA_PAULINA'
+  | 'EPISTOLA_GERAL';
+
+export interface GenreHermeneuticsGuide {
+  genre: LiteraryGenre;
+  label: string; // Ex: "Poesia Sapiencial", "Literatura Apocalíptica"
+  description: string; // O que caracteriza esse gênero literário
+  hermeneuticalRule: string; // Regra de ouro para interpretação
+  commonPitfall: string; // Erro mais comum / anacronismo
+}
+
+export interface SitzImLeben {
+  authorOrTradition: string; // Ex: "Paulo de Tarso (comunidade paulina)", "Tradição Sacerdotal (P)"
+  originalAudience: string; // Ex: "Igreja mista (judeus e gentios) em Roma", "Exilados na Babilônia"
+  existentialCrisis: string; // A questão central que motivou o texto
+  theologicalTheme: string; // Grande eixo dogmático do trecho
+}
+
+export interface OriginalLanguageWord {
+  id: string;
+  term: string; // Termo na grafia original: ex: "חֶסֶד" ou "χάρις"
+  transliteration: string; // Ex: "Hesed" ou "Charis"
+  language: 'HEBRAICO' | 'ARAMAICO' | 'GREGO';
+  strongNumber?: string; // Ex: "H2617", "G5485"
+  literalTranslation: string; // Ex: "Lealdade pactual, amor leal, misericórdia constante"
+  theologicalSignificance: string; // Explicação teológica do termo no original
+  occurrencesNote?: string; // Onde mais ocorre com mesmo peso no cânone
+}
+
+export interface TypologyConnection {
+  typeOldTestament: string; // O tipo/sombra (ex: "O cordeiro pascoal sem defeito em Êxodo 12")
+  antitypeNewTestament: string; // O antítipo/cumprimento (ex: "Cristo, o Cordeiro pascal sacrificado por nós em 1 Coríntios 5:7")
+  theologicalBridge: string; // Como a teologia bíblica conecta ambos
+  intertextualCitations?: string[]; // Lista de versículos correlatos (ex: ["Is 53:7", "Jo 1:29", "1Pe 1:19"])
+}
+
 export interface DayReading {
   day: number;
   dateDefault: string; // e.g., "01 de Janeiro"
@@ -47,6 +109,12 @@ export interface DayReading {
   historicalNotes?: string;
   historicalContext?: string; // NOVO CAMPO
   worldHistory?: WorldHistoryContext;
+  artifacts?: ArchaeologicalArtifact[];
+  geography?: GeographyContext;
+  genreGuide?: GenreHermeneuticsGuide;
+  sitzImLeben?: SitzImLeben;
+  originalLexicon?: OriginalLanguageWord[];
+  typology?: TypologyConnection[];
 }
 
 export interface ScriptureVerse {
@@ -62,6 +130,55 @@ export interface ScriptureChapter {
   endVerse?: number;
   bookNumber?: number;
   label?: string;
+}
+
+export type StudyDepthMode = 'DEVOCIONAL' | 'EXEGÉTICO_ACADÉMICO';
+
+export interface ReaderPreferences {
+  theme: 'light' | 'dark' | 'sepia';
+  fontSize: number;
+  fontFamily: 'serif' | 'sans';
+  depthMode: StudyDepthMode;
+  visiblePanels: {
+    archaeology: boolean;
+    lexicon: boolean;
+    worldHistory: boolean;
+    intertextuality: boolean;
+    textualVariants: boolean;
+  };
+}
+
+export interface TextualVariant {
+  id: string;
+  verseReference: string; // Ex: "Marcos 16:9-20", "João 7:53–8:11", "1 João 5:7-8"
+  traditionOrManuscripts: string; // Ex: "Omissão no Códice Sinaítico (א) e Códice Vaticano (B)"
+  massoreticVsSeptuagint?: string; // Diferenças relevantes entre TM e LXX (para o AT)
+  scholarlyConsensus: string; // Resumo do consenso da crítica textual contemporânea (ex: NA28 / UBS5)
+  significanceForTranslation: string; // Explicação de como diferentes traduções (ARC, ARA, NVI) vertem o texto
+}
+
+export type TheologicalCategory =
+  | 'TEOLOGIA_PROPRIAMENTE_DITA' // Deus, Trindade, Decretos
+  | 'CRISTOLOGIA'               // Pessoa e Obra de Cristo
+  | 'PNEUMATOLOGIA'             // Espírito Santo
+  | 'ANTROPOLOGIA_E_HAMARTIOLOGIA' // Natureza humana e Queda
+  | 'SOTERIOLOGIA'              // Salvação, Graça, Justificação
+  | 'ECLESIOLOGIA'              // Igreja, Sacramentos/Ordenanças
+  | 'ESCATOLOGIA'               // Últimas Coisas e Juízo
+  | 'ARQUEOLOGIA_E_HISTORIA'    // Cultura material e contexto
+  | 'PRATICA_DEVOCIONAL';       // Aplicação diária e oração
+
+export interface UserTheologicalNote {
+  id: string;
+  date: string;
+  readingDay: number;
+  passageRef: string;
+  category: TheologicalCategory;
+  tags: string[];
+  title: string;
+  content: string; // Suporte a Markdown
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface UserProgress {
@@ -80,6 +197,14 @@ export interface ReaderSettings {
   lineHeight: number; // e.g., 1.7
   fontFamily: FontFamily;
   audioSpeed: number; // 0.75, 1, 1.25, 1.5
+  depthMode?: StudyDepthMode;
+  visiblePanels?: {
+    archaeology: boolean;
+    lexicon: boolean;
+    worldHistory: boolean;
+    intertextuality: boolean;
+    textualVariants: boolean;
+  };
 }
 
 export interface ReminderSettings {
@@ -87,6 +212,24 @@ export interface ReminderSettings {
   time: string; // "07:00"
   notifyBrowser: boolean;
   phoneWhatsapp?: string;
+}
+
+export interface IntertestamentalSubPhase {
+  id: string;
+  title: string;
+  period: string; // ex: "c. 430 - 332 a.C."
+  rulingPower: string; // ex: "Império Aquemênida Tardio"
+  description: string;
+  theologicalImpact: string; // ex: "Consolidação da sinagoga e escribas"
+  keyFiguresOrEvents: string[]; // ex: ["Artaxerxes II e III", "Fechamento do cânon do AT"]
+}
+
+export interface ContemporaryLiteratureItem {
+  title: string; // ex: "Código de Hamurabi", "Epopeia de Gilgamesh", "Poemas Homéricos (Ilíada)", "Manuscritos do Mar Morto (Qumran)"
+  authorOrOrigin: string; // ex: "Mesopotâmia / Babilônia", "Atenas, Grécia", "Comunidade Essênia de Qumran"
+  approxDate: string; // ex: "c. 1750 a.C.", "c. 800 a.C."
+  summary: string;
+  biblicalParallel: string; // Relação com a revelação bíblica
 }
 
 export interface HistoricalPeriod {
@@ -105,4 +248,54 @@ export interface HistoricalPeriod {
     event: string;
     archaeologyRef?: string;
   }>;
+  isIntertestamental?: boolean;
+  subPhases?: IntertestamentalSubPhase[];
+  contemporaryLiterature?: ContemporaryLiteratureItem[];
+  biblicalTrackSummary?: string;
+  empiresTrackSummary?: string;
+  literatureTrackSummary?: string;
+}
+
+export type ChurchHistoryEra = 
+  | 'PATRISTICA' 
+  | 'MEDIEVAL' 
+  | 'REFORMA' 
+  | 'POS_REFORMA_DESPERTARES' 
+  | 'CONTEMPORANEA';
+
+export interface ChurchHistoryEvent {
+  id: string;
+  era: ChurchHistoryEra;
+  title: string; // Ex: "O Sínodo de Dort", "A Fixação das 95 Teses", "O Concílio de Niceia"
+  year: string; // Ex: "325 d.C.", "1517 d.C."
+  keyFigures: string[]; // Ex: ["Atanásio", "Ário"] ou ["Martin Lutero"]
+  description: string;
+  historicalSignificance: string;
+  category: 'CONCILIO' | 'REFORMA' | 'AVIVAMENTO' | 'PERSEGUICAO' | 'TEOLOGIA';
+}
+
+export interface TheologicalSystemComparison {
+  topic: string; // Ex: "Depravação e Livre-Arbítrio", "Eleição e Predestinação", "A Natureza da Expiação", "A Eficácia da Graça", "Perseverança dos Santos"
+  calvinismAcronym?: string; // T, U, L, I, P
+  calvinismTitle: string; // Ex: "Depravação Total (Total Depravity)"
+  calvinismView: string; // Perspetiva Reformada / Calvinista
+  calvinismKeyPassages?: string[]; // Versículos base
+  arminianismArticle?: string; // Artigo I, II, III, IV, V dos Remonstrantes
+  arminianismTitle: string; // Ex: "Graça Preveniente e Livre-Arbítrio Restaurado"
+  arminianismView: string; // Perspetiva Arminiana / Remonstrante
+  arminianismKeyPassages?: string[]; // Versículos base
+  historicalContext: string; // Contexto do debate (ex: Sínodo de Dort)
+}
+
+export interface EcumenicalCreed {
+  id: string;
+  title: string; // Ex: "Credo Niceno-Constantinopolitano"
+  originalName: string; // Ex: "Symbolum Nicaeno-Constantinopolitanum"
+  year: string; // Ex: "381 d.C."
+  council: string; // Ex: "I Concílio de Constantinopla"
+  historicalOccasion: string; // Refutação de Ário, Macedônio, Apolinário
+  keyThemes: string[]; // ["Trindade", "Divindade do Espírito Santo", "Homoousios"]
+  fullTextPt: string;
+  latinOrGreekSnippet?: string;
+  theologicalLegacy: string;
 }

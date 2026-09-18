@@ -1,6 +1,14 @@
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { DayReading } from '../types';
+import { 
+  DayReading, 
+  ArchaeologicalArtifact, 
+  GeographyContext,
+  GenreHermeneuticsGuide,
+  SitzImLeben,
+  OriginalLanguageWord,
+  TypologyConnection
+} from '../types';
 
 export interface ReadingContent {
   theologicalContext: string;
@@ -10,6 +18,12 @@ export interface ReadingContent {
     reference: string;
     text: string;
   };
+  artifacts?: ArchaeologicalArtifact[];
+  geography?: GeographyContext;
+  genreGuide?: GenreHermeneuticsGuide;
+  sitzImLeben?: SitzImLeben;
+  originalLexicon?: OriginalLanguageWord[];
+  typology?: TypologyConnection[];
 }
 
 export const getReadingContent = async (

@@ -7,7 +7,8 @@ import {
   Bell, 
   Info,
   Calendar,
-  Layers
+  Layers,
+  Landmark
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -18,6 +19,7 @@ interface NavbarProps {
   onOpenReminders: () => void;
   onOpenPlanInfo: () => void;
   onOpenTimeline: () => void;
+  onOpenChurchHistory?: (tab?: 'timeline' | 'theological-systems' | 'creeds') => void;
   currentView: 'dashboard' | 'reader';
   onGoToDashboard: () => void;
 }
@@ -30,6 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenReminders,
   onOpenPlanInfo,
   onOpenTimeline,
+  onOpenChurchHistory,
   currentView,
   onGoToDashboard
 }) => {
@@ -101,6 +104,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Calendar className="w-3.5 h-3.5 text-amber-600" />
             <span className="hidden lg:inline">Linha do Tempo</span>
           </button>
+
+          {/* Church History & Theology Trigger */}
+          {onOpenChurchHistory && (
+            <button
+              type="button"
+              onClick={() => onOpenChurchHistory('timeline')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 border border-stone-200 dark:border-zinc-700 transition-colors"
+              title="História da Igreja, Teologia & Grandes Credos"
+            >
+              <Landmark className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden md:inline">História da Igreja</span>
+            </button>
+          )}
 
           {/* Streak indicator */}
           <div 
