@@ -70,8 +70,8 @@ export const ChronologicalTimelineModal: React.FC<TimelineModalProps> = ({
 
                   <div className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
                     isCurrent 
-                      ? 'bg-stone-50 dark:bg-zinc-800/90 border-amber-300 dark:border-amber-700 shadow-xs' 
-                      : 'bg-white dark:bg-zinc-850 border-stone-200 dark:border-zinc-800 hover:border-amber-300 dark:hover:border-zinc-700'
+                      ? 'bg-zinc-800/90 border-amber-700 shadow-xs' 
+                      : 'bg-zinc-900 border-zinc-800 hover:border-amber-700'
                   }`}>
                     <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2">
                       <div className="flex items-center gap-1.5 sm:gap-2">
@@ -123,7 +123,7 @@ export const ChronologicalTimelineModal: React.FC<TimelineModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 sm:p-4 border-t border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-850 flex justify-end">
+        <div className="p-3.5 sm:p-4 border-t border-zinc-800 bg-zinc-950 flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-stone-800 hover:bg-stone-900 dark:bg-stone-200 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-medium rounded-xl transition-colors"

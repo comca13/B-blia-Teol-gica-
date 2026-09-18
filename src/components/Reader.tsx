@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { DayReading, ReaderSettings, ReadingTheme, ScriptureChapter } from '../types';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { DayReading, ReaderSettings, ScriptureChapter } from '../types';
+import { getScriptureForPlanDay, parseDayPassagesToTargets } from '../lib/biblePlanService';
 import { getScriptureForDay } from '../data/biblicalTexts';
 import { getReadingContent, ReadingContent } from '../lib/dataService';
 import confetti from 'canvas-confetti';
@@ -22,7 +23,12 @@ import {
   HelpCircle,
   Clock,
   Compass,
-  Check
+  Check,
+  BookOpen,
+  Copy,
+  Layers,
+  RefreshCw,
+  Highlighter
 } from 'lucide-react';
 
 import { WorldHistoryCard } from './WorldHistoryCard';
@@ -41,6 +47,7 @@ interface ReaderProps {
   onUpdateSettings: (settings: ReaderSettings) => void;
   personalNote: string;
   onSaveNote: (day: number, note: string) => void;
+  onOpenBible?: (bookNumber: number, chapter: number) => void;
 }
 
 export const Reader: React.FC<ReaderProps> = ({
@@ -55,9 +62,16 @@ export const Reader: React.FC<ReaderProps> = ({
   settings,
   onUpdateSettings,
   personalNote,
-  onSaveNote
+  onSaveNote,
+  onOpenBible
 }) => {
   const [chapters, setChapters] = useState<ScriptureChapter[]>([]);
+  const [loadingScripture, setLoadingScripture] = useState<boolean>(true);
+  const [scriptureTranslation, setScriptureTranslation] = useState<'ARA' | 'WEB'>('ARA');
+  const [activeChapterFilter, setActiveChapterFilter] = useState<number | 'all'>('all');
+  const [copiedVerseKey, setCopiedVerseKey] = useState<string | null>(null);
+  const [highlightedVerses, setHighlightedVerses] = useState<Record<string, boolean>>({});
+
   const [enrichedContent, setEnrichedContent] = useState<ReadingContent | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState<number>(settings.audioSpeed || 1.0);
@@ -65,25 +79,82 @@ export const Reader: React.FC<ReaderProps> = ({
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [noteText, setNoteText] = useState(personalNote);
   const [isNoteSaved, setIsNoteSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'text' | 'context' | 'notes'>('text');
+
+  // Targets assigned for this day
+  const assignedTargets = useMemo(() => {
+    return parseDayPassagesToTargets(dayReading.passages);
+  }, [dayReading.passages]);
 
   // Load Scripture Text and Firestore content for this day
+  const loadScriptureData = async () => {
+    setLoadingScripture(true);
+    try {
+      const fullChapters = await getScriptureForPlanDay(
+        dayReading.day, 
+        dayReading.passages, 
+        scriptureTranslation
+      );
+      if (fullChapters && fullChapters.length > 0) {
+        setChapters(fullChapters);
+      } else {
+        // Fallback to curated texts if offline or not in cache
+        const fallbackChapters = await getScriptureForDay(
+          dayReading.day, 
+          dayReading.title, 
+          dayReading.passages
+        );
+        setChapters(fallbackChapters);
+      }
+    } catch (err) {
+      console.warn('Failed to load scripture:', err);
+      const fallbackChapters = await getScriptureForDay(
+        dayReading.day, 
+        dayReading.title, 
+        dayReading.passages
+      );
+      setChapters(fallbackChapters);
+    } finally {
+      setLoadingScripture(false);
+    }
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      const textData = await getScriptureForDay(dayReading.day, dayReading.title, dayReading.passages);
-      setChapters(textData);
-      
-      // Determine plan type from dayReading.periodId
+    loadScriptureData();
+    setActiveChapterFilter('all');
+  }, [dayReading.day, scriptureTranslation]);
+
+  useEffect(() => {
+    const loadContent = async () => {
       const planType = dayReading.periodId === 'canonical-flow' ? 'canonical' : 'chronological';
       const content = await getReadingContent(planType, dayReading.day);
       setEnrichedContent(content);
     };
 
-    loadData();
+    loadContent();
     setNoteText(personalNote);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     stopAudio();
   }, [dayReading.day]);
+
+  // Handle Copy Verse to clipboard
+  const handleCopyVerse = (bookName: string, chapterNum: number, verseNum: number, verseText: string) => {
+    const fullCitation = `"${verseText}" — ${bookName} ${chapterNum}:${verseNum} (${scriptureTranslation === 'ARA' ? 'ARA' : 'WEB'})`;
+    navigator.clipboard.writeText(fullCitation);
+    const key = `${bookName}-${chapterNum}-${verseNum}`;
+    setCopiedVerseKey(key);
+    setTimeout(() => {
+      setCopiedVerseKey(null);
+    }, 2000);
+  };
+
+  // Toggle highlight for a verse
+  const toggleHighlightVerse = (bookName: string, chapterNum: number, verseNum: number) => {
+    const key = `${bookName}-${chapterNum}-${verseNum}`;
+    setHighlightedVerses(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   // Handle Complete with Confetti
   const handleCompleteClick = () => {
@@ -117,10 +188,10 @@ export const Reader: React.FC<ReaderProps> = ({
       return;
     }
 
-    // Build the narrative text
+    // Build complete narrative text from all loaded chapters
     const fullText = [
       `Leitura do Dia ${dayReading.day}: ${dayReading.title}.`,
-      `Contexto Teológico: ${dayReading.theologicalContext}`,
+      `Contexto Teológico: ${enrichedContent?.theologicalContext || dayReading.theologicalContext}`,
       ...chapters.flatMap(ch => [
         `${ch.book}, capítulo ${ch.chapter}.`,
         ...ch.verses.map(v => `Versículo ${v.verse}: ${v.text}`)
@@ -128,14 +199,14 @@ export const Reader: React.FC<ReaderProps> = ({
     ].join(' ');
 
     const utterance = new SpeechSynthesisUtterance(fullText);
-    utterance.lang = 'pt-BR';
+    utterance.lang = scriptureTranslation === 'ARA' ? 'pt-BR' : 'en-US';
     utterance.rate = audioSpeed;
 
-    // Pick best Portuguese voice if available
     const voices = window.speechSynthesis.getVoices();
-    const ptVoice = voices.find(v => v.lang.startsWith('pt')) || null;
-    if (ptVoice) {
-      utterance.voice = ptVoice;
+    const voiceLang = scriptureTranslation === 'ARA' ? 'pt' : 'en';
+    const chosenVoice = voices.find(v => v.lang.startsWith(voiceLang)) || null;
+    if (chosenVoice) {
+      utterance.voice = chosenVoice;
     }
 
     utterance.onend = () => {
@@ -180,22 +251,31 @@ export const Reader: React.FC<ReaderProps> = ({
     }
   };
 
-  // Theme container classes
+  // Theme container classes (Exclusive Dark Mode)
   const getThemeContainerClasses = () => {
-    switch (settings.theme) {
-      case 'sepia':
-        return 'bg-[#F9F5EC] text-[#332A21] border-[#EADDC9]';
-      case 'dark':
-        return 'bg-zinc-950 text-stone-200 border-zinc-800';
-      case 'light':
-      default:
-        return 'bg-white text-stone-900 border-stone-200';
-    }
+    return 'bg-zinc-950 text-stone-200 border-zinc-800';
   };
+
+  // Filter chapters to display
+  const chaptersToDisplay = activeChapterFilter === 'all'
+    ? chapters
+    : chapters.filter((_, idx) => idx === activeChapterFilter);
+
+  const totalVersesCount = useMemo(() => {
+    return chapters.reduce((sum, ch) => sum + ch.verses.length, 0);
+  }, [chapters]);
 
   return (
     <div className={`min-h-[calc(100vh-4rem)] transition-colors ${getThemeContainerClasses()}`}>
       
+      {/* Toast confirmation for copied verse */}
+      {copiedVerseKey && (
+        <div className="fixed bottom-6 right-6 z-50 bg-amber-500 text-zinc-950 px-4 py-2 rounded-xl text-xs font-bold shadow-xl flex items-center gap-2 animate-bounce">
+          <Check className="w-4 h-4" />
+          <span>Versículo copiado para a área de transferência!</span>
+        </div>
+      )}
+
       {/* Sticky Reader Bar */}
       <div className="sticky top-14 sm:top-16 z-30 border-b backdrop-blur-md px-2 sm:px-4 py-2 flex items-center justify-between gap-1 sm:gap-2 border-inherit bg-inherit/95 w-full">
         {/* Left: Back & Day Navigation */}
@@ -215,19 +295,19 @@ export const Reader: React.FC<ReaderProps> = ({
               type="button"
               disabled={dayReading.day <= 1}
               onClick={onPrevDay}
-              className="p-1 sm:p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-zinc-800 disabled:opacity-30 transition-colors"
+              className="p-1 sm:p-1.5 rounded-md hover:bg-zinc-800 disabled:opacity-30 transition-colors text-stone-300"
               title="Dia Anterior"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="font-semibold px-0.5 sm:px-1 whitespace-nowrap text-stone-900 dark:text-stone-100">
-              D{dayReading.day}<span className="text-stone-400 font-normal hidden sm:inline">/365</span>
+            <span className="font-semibold px-0.5 sm:px-1 whitespace-nowrap text-stone-200">
+              D{dayReading.day}<span className="text-zinc-500 font-normal hidden sm:inline">/365</span>
             </span>
             <button
               type="button"
               disabled={dayReading.day >= 365}
               onClick={onNextDay}
-              className="p-1 sm:p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-zinc-800 disabled:opacity-30 transition-colors"
+              className="p-1 sm:p-1.5 rounded-md hover:bg-zinc-800 disabled:opacity-30 transition-colors text-stone-300"
               title="Próximo Dia"
             >
               <ArrowRight className="w-3.5 h-3.5" />
@@ -235,7 +315,7 @@ export const Reader: React.FC<ReaderProps> = ({
           </div>
         </div>
 
-        {/* Center: Audio Player Quick Control */}
+        {/* Center: Audio Player Quick Control & Bible Shortcut */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <button
             type="button"
@@ -245,7 +325,7 @@ export const Reader: React.FC<ReaderProps> = ({
                 ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-400'
                 : 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-200'
             }`}
-            title={isPlayingAudio ? 'Pausar Áudio' : 'Ouvir Narração'}
+            title={isPlayingAudio ? 'Pausar Áudio' : 'Ouvir Narração Completa'}
           >
             {isPlayingAudio ? (
               <>
@@ -272,6 +352,19 @@ export const Reader: React.FC<ReaderProps> = ({
                 </button>
               ))}
             </div>
+          )}
+
+          {/* Quick jump to Bible Reader if onOpenBible exists */}
+          {onOpenBible && assignedTargets.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onOpenBible(assignedTargets[0].bookNumber, assignedTargets[0].chapter)}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 transition-colors"
+              title="Abrir na Bíblia Completa"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+              <span>Bíblia de Estudo</span>
+            </button>
           )}
         </div>
 
@@ -316,7 +409,7 @@ export const Reader: React.FC<ReaderProps> = ({
 
       {/* Typography & Appearance Drawer */}
       {showSettingsDrawer && (
-        <div className="border-b px-3 sm:px-4 py-2.5 sm:py-3 bg-stone-50/95 dark:bg-zinc-900/95 border-inherit w-full">
+        <div className="border-b px-3 sm:px-4 py-2.5 sm:py-3 bg-zinc-900/95 border-zinc-800 w-full">
           <ReaderSettingsComponent
             isFocusMode={isFocusMode}
             setIsFocusMode={setIsFocusMode}
@@ -334,34 +427,6 @@ export const Reader: React.FC<ReaderProps> = ({
               onUpdateSettings({ ...settings, fontFamily: font === 'sans' ? 'sans' : 'lora' });
             }}
           />
-          
-          {/* Theme Control still needed as ReaderSettings doesn't have it */}
-          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-stone-200 dark:border-zinc-800 text-xs">
-            <span className="text-stone-500 dark:text-stone-400 font-medium">Fundo:</span>
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ ...settings, theme: 'light' })}
-                className={`px-2 py-1 rounded border text-[11px] ${settings.theme === 'light' ? 'border-amber-700 bg-white font-bold text-amber-900' : 'border-stone-300'}`}
-              >
-                Claro
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ ...settings, theme: 'sepia' })}
-                className={`px-2 py-1 rounded border text-[11px] ${settings.theme === 'sepia' ? 'border-amber-800 bg-[#EADDC9] font-bold text-amber-950' : 'border-[#EADDC9] bg-[#F9F5EC]'}`}
-              >
-                Sépia
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ ...settings, theme: 'dark' })}
-                className={`px-2 py-1 rounded border text-[11px] ${settings.theme === 'dark' ? 'border-amber-500 bg-zinc-800 font-bold text-white' : 'border-zinc-700 bg-zinc-900 text-stone-300'}`}
-              >
-                Escuro
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -390,6 +455,11 @@ export const Reader: React.FC<ReaderProps> = ({
             <span className="font-serif text-amber-800 dark:text-amber-400 font-semibold">
               {dayReading.passages.map(p => `${p.book} ${p.reference}`).join(' | ')}
             </span>
+            {assignedTargets.length > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-amber-400 font-sans border border-zinc-700">
+                {assignedTargets.length} {assignedTargets.length === 1 ? 'capítulo' : 'capítulos'}
+              </span>
+            )}
           </div>
         </div>
 
@@ -408,7 +478,7 @@ export const Reader: React.FC<ReaderProps> = ({
           </p>
 
           {/* Key verse highlight quote */}
-          <div className="p-3 sm:p-4 rounded-xl bg-white/80 dark:bg-zinc-900/70 border border-amber-200/60 dark:border-amber-900/30 flex items-start gap-2.5 sm:gap-3 my-3 sm:my-4">
+          <div className="p-3 sm:p-4 rounded-xl bg-zinc-900/80 border border-amber-900/40 flex items-start gap-2.5 sm:gap-3 my-3 sm:my-4">
             <Quote className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <p className="font-serif italic text-xs sm:text-base text-stone-900 dark:text-stone-100 leading-snug mb-1 break-words">
@@ -469,10 +539,12 @@ export const Reader: React.FC<ReaderProps> = ({
             </div>
             <div className="min-w-0">
               <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate">
-                Áudio Narração Integrada
+                Áudio Narração da Leitura Completa
               </h4>
               <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
-                {isPlayingAudio ? 'Reproduzindo voz em português...' : 'Ouça enquanto se desloca ou trabalha'}
+                {isPlayingAudio 
+                  ? 'Reproduzindo narração dos capítulos de hoje...' 
+                  : `Ouça os ${chapters.length} capítulos do dia (${totalVersesCount} versículos)`}
               </p>
             </div>
           </div>
@@ -488,7 +560,7 @@ export const Reader: React.FC<ReaderProps> = ({
               }`}
             >
               {isPlayingAudio ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              <span>{isPlayingAudio ? 'Pausar Áudio' : 'Ouvir Texto'}</span>
+              <span>{isPlayingAudio ? 'Pausar Áudio' : 'Ouvir Tudo'}</span>
             </button>
 
             {isPlayingAudio && (
@@ -504,39 +576,246 @@ export const Reader: React.FC<ReaderProps> = ({
           </div>
         </section>
 
-        {/* Scripture Reading Content */}
-        <section 
-          aria-label="Texto Bíblico do Dia"
-          className={`space-y-8 ${getFontFamilyClass()}`}
-          style={{ 
-            fontSize: `${settings.fontSize}px`, 
-            lineHeight: settings.lineHeight 
-          }}
-        >
-          {chapters.map((chap, cIdx) => (
-            <article key={cIdx} className="space-y-4">
-              <div className="flex items-center gap-3 border-b border-inherit pb-2">
-                <h3 className="font-bold text-xl sm:text-2xl text-amber-800 dark:text-amber-400">
-                  {chap.book} {chap.chapter}
-                </h3>
-                <span className="text-xs px-2 py-0.5 rounded bg-stone-100 dark:bg-zinc-800 text-stone-500 font-sans">
-                  João Ferreira de Almeida
-                </span>
+        {/* SCRIPTURE READING HEADER & CONTROLS */}
+        <div className="pt-2 border-t border-inherit">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-amber-500" />
+                <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-100">
+                  Texto Bíblico Completo do Dia
+                </h2>
+              </div>
+              <p className="text-xs text-stone-400 mt-0.5">
+                Capítulos e versículos determinados para hoje ({dayReading.passages.map(p => `${p.book} ${p.reference}`).join(', ')})
+              </p>
+            </div>
+
+            {/* Translation switch and refresh */}
+            <div className="flex items-center gap-2">
+              <div className="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setScriptureTranslation('ARA')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                    scriptureTranslation === 'ARA'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                  title="Almeida Revista e Atualizada"
+                >
+                  Almeida (ARA)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScriptureTranslation('WEB')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                    scriptureTranslation === 'WEB'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                  title="World English Bible"
+                >
+                  English (WEB)
+                </button>
               </div>
 
-              <div className="space-y-3">
-                {chap.verses.map((verse) => (
-                  <p key={verse.verse} className="group relative transition-colors hover:bg-amber-50/40 dark:hover:bg-amber-950/20 rounded p-1">
-                    <sup className="font-sans font-bold text-xs text-amber-700 dark:text-amber-400 select-none mr-2">
-                      {verse.verse}
-                    </sup>
-                    <span>{verse.text}</span>
-                  </p>
-                ))}
-              </div>
-            </article>
-          ))}
-        </section>
+              <button
+                type="button"
+                onClick={loadScriptureData}
+                disabled={loadingScripture}
+                className="p-1.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors disabled:opacity-50"
+                title="Recarregar texto bíblico"
+              >
+                <RefreshCw className={`w-4 h-4 ${loadingScripture ? 'animate-spin text-amber-500' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Chapter Quick Tabs (if day has multiple chapters) */}
+          {chapters.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none">
+              <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                <Layers className="w-3.5 h-3.5" />
+                Navegar:
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setActiveChapterFilter('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
+                  activeChapterFilter === 'all'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800'
+                }`}
+              >
+                Todos os Capítulos ({chapters.length})
+              </button>
+
+              {chapters.map((ch, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveChapterFilter(idx)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
+                    activeChapterFilter === idx
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800'
+                  }`}
+                >
+                  {ch.book} {ch.chapter}
+                  <span className="ml-1 text-[10px] opacity-70">
+                    ({ch.verses.length}v)
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* LOADING SKELETON */}
+        {loadingScripture && (
+          <div className="py-12 px-6 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 text-center space-y-4 animate-pulse">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center border border-amber-500/30">
+              <BookOpen className="w-5 h-5 animate-bounce" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-serif text-base sm:text-lg font-bold text-zinc-200">
+                Carregando Texto Bíblico Completo...
+              </h3>
+              <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                Buscando todos os versículos de {dayReading.passages.map(p => `${p.book} ${p.reference}`).join(', ')} na versão {scriptureTranslation === 'ARA' ? 'Almeida Revista e Atualizada' : 'World English Bible'}...
+              </p>
+            </div>
+            <div className="space-y-2 max-w-lg mx-auto pt-2">
+              <div className="h-4 bg-zinc-800 rounded w-full"></div>
+              <div className="h-4 bg-zinc-800 rounded w-5/6 mx-auto"></div>
+              <div className="h-4 bg-zinc-800 rounded w-4/6 mx-auto"></div>
+            </div>
+          </div>
+        )}
+
+        {/* Scripture Reading Content */}
+        {!loadingScripture && chapters.length === 0 && (
+          <div className="py-12 px-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center space-y-4">
+            <p className="text-sm text-zinc-300">
+              Não foi possível carregar os versículos para esta data no momento.
+            </p>
+            <button
+              type="button"
+              onClick={loadScriptureData}
+              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition-colors"
+            >
+              Tentar Novamente
+            </button>
+          </div>
+        )}
+
+        {!loadingScripture && chapters.length > 0 && (
+          <section 
+            aria-label="Texto Bíblico do Dia"
+            className={`space-y-10 ${getFontFamilyClass()}`}
+            style={{ 
+              fontSize: `${settings.fontSize}px`, 
+              lineHeight: settings.lineHeight 
+            }}
+          >
+            {chaptersToDisplay.map((chap, cIdx) => (
+              <article 
+                key={`${chap.book}-${chap.chapter}-${cIdx}`} 
+                className="p-5 sm:p-7 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 shadow-xs space-y-5"
+              >
+                {/* Chapter Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-3.5">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-bold text-xl sm:text-2xl text-amber-400 font-serif">
+                      {chap.book} {chap.chapter}
+                    </h3>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-800 text-amber-300 font-sans border border-zinc-700">
+                      {chap.verses.length} versículos
+                    </span>
+                    <span className="hidden sm:inline text-xs text-zinc-500 font-sans">
+                      {scriptureTranslation === 'ARA' ? 'Almeida Revista e Atualizada' : 'World English Bible'}
+                    </span>
+                  </div>
+
+                  {/* Action button: Open full book in BibleReader */}
+                  {onOpenBible && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenBible(chap.bookNumber || 1, chap.chapter)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-medium border border-zinc-700 transition-colors shadow-xs"
+                      title={`Abrir ${chap.book} na Bíblia de Estudo`}
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Abrir na Bíblia</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Optional note if reading plan specified a sub-range */}
+                {chap.startVerse && chap.endVerse && (
+                  <div className="text-[11px] font-sans px-3 py-1.5 rounded-lg bg-amber-950/30 text-amber-300 border border-amber-900/40 inline-flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Foco do Plano: Versículos {chap.startVerse} ao {chap.endVerse}</span>
+                  </div>
+                )}
+
+                {/* Verses List */}
+                <div className="space-y-3">
+                  {chap.verses.map((verse) => {
+                    const verseKey = `${chap.book}-${chap.chapter}-${verse.verse}`;
+                    const isHighlighted = !!highlightedVerses[verseKey];
+                    const isInTargetRange = !chap.startVerse || (verse.verse >= chap.startVerse && (!chap.endVerse || verse.verse <= chap.endVerse));
+
+                    return (
+                      <p 
+                        key={verse.verse} 
+                        className={`group relative transition-all rounded-xl p-2 sm:p-2.5 flex items-start gap-2 ${
+                          isHighlighted
+                            ? 'bg-amber-500/20 ring-1 ring-amber-500/40 text-amber-100'
+                            : isInTargetRange
+                              ? 'hover:bg-zinc-800/60'
+                              : 'opacity-70 hover:opacity-100 hover:bg-zinc-800/40'
+                        }`}
+                      >
+                        <sup className="font-sans font-bold text-xs text-amber-400 select-none shrink-0 mt-1">
+                          {verse.verse}
+                        </sup>
+
+                        <span className="flex-1 leading-relaxed">
+                          {verse.text}
+                        </span>
+
+                        {/* Hover Action icons: Copy & Highlight */}
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0 select-none ml-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleHighlightVerse(chap.book, chap.chapter, verse.verse)}
+                            className={`p-1 rounded-md transition-colors ${
+                              isHighlighted ? 'text-amber-400 bg-amber-500/30' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800'
+                            }`}
+                            title={isHighlighted ? 'Remover destaque' : 'Destacar versículo'}
+                          >
+                            <Highlighter className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyVerse(chap.book, chap.chapter, verse.verse, verse.text)}
+                            className="p-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                            title="Copiar versículo com citação"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      </p>
+                    );
+                  })}
+                </div>
+              </article>
+            ))}
+          </section>
+        )}
 
         {/* Personal Notes / Devotional Diary for the Day */}
         <section className="pt-6 border-t border-inherit space-y-3">

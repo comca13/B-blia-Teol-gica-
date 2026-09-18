@@ -348,7 +348,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 type="button"
                 onClick={() => setViewMode('cards')}
                 className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors text-center ${
-                  viewMode === 'cards' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-500'
+                  viewMode === 'cards' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-400 hover:text-stone-200'
                 }`}
               >
                 <span>Cartões</span>
@@ -358,7 +358,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 type="button"
                 onClick={() => setViewMode('grid')}
                 className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors text-center ${
-                  viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-500'
+                  viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-400 hover:text-stone-200'
                 }`}
               >
                 Grade 365
@@ -367,7 +367,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 type="button"
                 onClick={() => setViewMode('table')}
                 className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors text-center ${
-                  viewMode === 'table' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-500'
+                  viewMode === 'table' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-400 hover:text-stone-200'
                 }`}
               >
                 <span>Lista</span>
@@ -409,12 +409,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Status Filter */}
-          <div className="grid grid-cols-3 rounded-xl border border-stone-200 dark:border-zinc-700 p-0.5 bg-stone-50 dark:bg-zinc-850 text-xs text-center">
+          <div className="grid grid-cols-3 rounded-xl border border-zinc-700 p-0.5 bg-zinc-900 text-xs text-center">
             <button
               type="button"
               onClick={() => setFilterStatus('all')}
               className={`py-1.5 px-1 rounded-lg font-medium transition-colors truncate text-[11px] sm:text-xs ${
-                filterStatus === 'all' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-500'
+                filterStatus === 'all' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-400 hover:text-stone-200'
               }`}
             >
               Todos ({days.length})
@@ -423,7 +423,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               type="button"
               onClick={() => setFilterStatus('pending')}
               className={`py-1.5 px-1 rounded-lg font-medium transition-colors truncate text-[11px] sm:text-xs ${
-                filterStatus === 'pending' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-500'
+                filterStatus === 'pending' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-400 hover:text-stone-200'
               }`}
             >
               Pendentes ({365 - completedCount})
@@ -432,7 +432,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               type="button"
               onClick={() => setFilterStatus('completed')}
               className={`py-1.5 px-1 rounded-lg font-medium transition-colors truncate text-[11px] sm:text-xs ${
-                filterStatus === 'completed' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-500'
+                filterStatus === 'completed' ? 'bg-white dark:bg-zinc-700 text-stone-900 dark:text-white shadow-xs font-semibold' : 'text-stone-400 hover:text-stone-200'
               }`}
             >
               Lidos ({completedCount})
@@ -654,7 +654,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <h4 className="font-serif font-bold text-stone-800 dark:text-stone-200">
             Nenhum dia encontrado com esses filtros
           </h4>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-stone-400">
             Tente pesquisar com outro termo ou limpe os filtros de período e status.
           </p>
           <button

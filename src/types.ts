@@ -58,6 +58,10 @@ export interface ScriptureChapter {
   book: string;
   chapter: number;
   verses: ScriptureVerse[];
+  startVerse?: number;
+  endVerse?: number;
+  bookNumber?: number;
+  label?: string;
 }
 
 export interface UserProgress {

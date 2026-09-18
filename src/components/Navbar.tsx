@@ -1,12 +1,9 @@
 import React from 'react';
-import { PlanType, ReadingTheme } from '../types';
+import { PlanType } from '../types';
 import { 
   BookOpen, 
   Compass, 
   Flame, 
-  Sun, 
-  Moon, 
-  Coffee, 
   Bell, 
   Info,
   Calendar,
@@ -18,8 +15,6 @@ interface NavbarProps {
   onSelectPlan: (plan: PlanType) => void;
   streak: number;
   completedCount: number;
-  theme: ReadingTheme;
-  onThemeChange: (theme: ReadingTheme) => void;
   onOpenReminders: () => void;
   onOpenPlanInfo: () => void;
   onOpenTimeline: () => void;
@@ -32,8 +27,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectPlan,
   streak,
   completedCount,
-  theme,
-  onThemeChange,
   onOpenReminders,
   onOpenPlanInfo,
   onOpenTimeline,
@@ -147,46 +140,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Info className="w-4 h-4" />
           </button>
-
-          {/* Theme Switcher */}
-          <div className="flex items-center border border-stone-200 dark:border-zinc-700 rounded-lg p-0.5 bg-stone-50 dark:bg-zinc-800/80 shrink-0">
-            <button
-              type="button"
-              onClick={() => onThemeChange('light')}
-              className={`p-1 sm:p-1.5 rounded-md transition-colors ${
-                theme === 'light'
-                  ? 'bg-white dark:bg-zinc-700 text-amber-700 shadow-xs font-bold'
-                  : 'text-stone-500 hover:text-stone-900 dark:text-stone-400'
-              }`}
-              title="Modo Claro"
-            >
-              <Sun className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onThemeChange('sepia')}
-              className={`p-1 sm:p-1.5 rounded-md transition-colors ${
-                theme === 'sepia'
-                  ? 'bg-[#EADDC9] text-amber-950 shadow-xs font-bold'
-                  : 'text-stone-500 hover:text-stone-900 dark:text-stone-400'
-              }`}
-              title="Modo Sépia (Pergaminho)"
-            >
-              <Coffee className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onThemeChange('dark')}
-              className={`p-1 sm:p-1.5 rounded-md transition-colors ${
-                theme === 'dark'
-                  ? 'bg-zinc-700 text-stone-100 shadow-xs font-bold'
-                  : 'text-stone-500 hover:text-stone-900 dark:text-stone-400'
-              }`}
-              title="Modo Escuro (OLED)"
-            >
-              <Moon className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       </div>
 

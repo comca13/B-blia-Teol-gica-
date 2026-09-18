@@ -230,7 +230,7 @@ export const RemindersModal: React.FC<RemindersModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 sm:p-4 border-t border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-850 flex items-center justify-end gap-2">
+        <div className="p-3.5 sm:p-4 border-t border-zinc-800 bg-zinc-950 flex items-center justify-end gap-2">
           <button
             onClick={onClose}
             className="px-3 py-2 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 text-xs font-medium"

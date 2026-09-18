@@ -20,7 +20,7 @@ const DEFAULT_PROGRESS: UserProgress = {
 };
 
 const DEFAULT_SETTINGS: ReaderSettings = {
-  theme: 'light',
+  theme: 'dark',
   fontSize: 18,
   lineHeight: 1.7,
   fontFamily: 'lora',
@@ -64,7 +64,7 @@ export const loadReaderSettings = (): ReaderSettings => {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw), theme: 'dark' };
   } catch (err) {
     return DEFAULT_SETTINGS;
   }

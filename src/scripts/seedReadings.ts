@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { CHRONOLOGICAL_PLAN } from '../data/chronologicalPlan';
-import { allAnnualReadings } from '../data/allReadings';
+import { CANONICAL_PLAN } from '../data/canonicalPlan';
 
 async function seedDatabase() {
   console.log("Iniciando a carga de dados para o Firestore (coletânea 'readings')...");
@@ -24,13 +24,13 @@ async function seedDatabase() {
     }
 
     // Seed Canonical
-    for (const item of allAnnualReadings) {
+    for (const item of CANONICAL_PLAN) {
       const docId = `canonical_${item.day}`;
       const data = {
-        theologicalContext: item.theologicalContext || 'Conteúdo em desenvolvimento.',
-        historicalContext: item.historicalWorldContext || 'Sem contexto histórico definido.',
-        reflectionQuestions: [item.reflectionQuestion || 'Reflita sobre a leitura de hoje.'],
-        keyVerse: { reference: item.bibleReference || 'N/A', text: 'Versículo a ser definido.' },
+        theologicalContext: item.theologicalContext || 'Reflexão bíblica canônica.',
+        historicalContext: item.historicalContext || 'Sem contexto histórico definido.',
+        reflectionQuestions: item.reflectionQuestions.length > 0 ? item.reflectionQuestions : ['Reflita sobre a leitura de hoje.'],
+        keyVerse: item.keyVerse || { reference: item.passages.map(p => `${p.book} ${p.reference}`).join(', '), text: 'Palavra do Senhor.' },
         planType: 'canonical',
         day: item.day
       };
@@ -45,3 +45,4 @@ async function seedDatabase() {
 }
 
 seedDatabase();
+

@@ -18,7 +18,7 @@ export const ReaderSettings: React.FC<ReaderSettingsProps> = ({
   setFontFamily,
 }) => {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6 shadow-lg flex flex-wrap items-center justify-between gap-4 text-zinc-300">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 shadow-md flex flex-wrap items-center justify-between gap-3 text-zinc-300">
       <div className="flex items-center gap-4">
         {/* Controle do Modo Foco */}
         <button

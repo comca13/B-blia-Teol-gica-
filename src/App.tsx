@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PlanType, ReadingTheme, ReaderSettings, ReminderSettings, UserProgress } from './types';
+import { ArrowLeft } from 'lucide-react';
+import { PlanType, ReaderSettings, ReminderSettings, UserProgress } from './types';
 import { CHRONOLOGICAL_PLAN } from './data/chronologicalPlan';
 import { CANONICAL_PLAN } from './data/canonicalPlan';
 import { 
@@ -28,6 +29,7 @@ export default function App() {
 
   const [currentView, setCurrentView] = useState<'dashboard' | 'reader' | 'bible'>('dashboard');
   const [selectedDayNumber, setSelectedDayNumber] = useState<number>(1);
+  const [bibleNav, setBibleNav] = useState<{ bookNumber: number; chapter: number } | null>(null);
 
   // Modals
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
@@ -46,14 +48,10 @@ export default function App() {
   // Save settings on change
   useEffect(() => {
     saveReaderSettings(readerSettings);
-    // Apply theme classes to root document
+    // Apply dark theme exclusively to root document
     const root = document.documentElement;
-    root.classList.remove('dark', 'sepia-theme');
-    if (readerSettings.theme === 'dark') {
-      root.classList.add('dark');
-    } else if (readerSettings.theme === 'sepia') {
-      root.classList.add('sepia-theme');
-    }
+    root.classList.remove('sepia-theme');
+    root.classList.add('dark');
   }, [readerSettings]);
 
   // Handle plan selection
@@ -135,10 +133,6 @@ export default function App() {
     }
   };
 
-  const handleThemeChange = (newTheme: ReadingTheme) => {
-    setReaderSettings(prev => ({ ...prev, theme: newTheme }));
-  };
-
   const handleSaveReminders = (newSettings: ReminderSettings) => {
     setReminderSettings(newSettings);
     saveReminderSettings(newSettings);
@@ -150,7 +144,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-stone-900 dark:text-stone-100 flex flex-col font-sans selection:bg-amber-200 selection:text-amber-950">
+    <div className="min-h-screen bg-zinc-950 text-stone-100 flex flex-col font-sans selection:bg-amber-900 selection:text-amber-100">
       
       {/* Top Navigation */}
       <Navbar
@@ -158,8 +152,6 @@ export default function App() {
         onSelectPlan={handleSelectPlan}
         streak={progress.streak}
         completedCount={progress.completedDays.length}
-        theme={readerSettings.theme}
-        onThemeChange={handleThemeChange}
         onOpenReminders={() => setIsRemindersOpen(true)}
         onOpenPlanInfo={() => setIsPlanInfoOpen(true)}
         onOpenTimeline={() => setIsTimelineOpen(true)}
@@ -197,16 +189,34 @@ export default function App() {
             onUpdateSettings={setReaderSettings}
             personalNote={progress.notes[selectedDayNumber] || ''}
             onSaveNote={handleSaveNote}
+            onOpenBible={(bookNumber, chapter) => {
+              setBibleNav({ bookNumber, chapter });
+              setCurrentView('bible');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         ) : (
-          <div className="pt-4 pb-20">
-            <button 
-              onClick={() => setCurrentView('dashboard')}
-              className="ml-4 mb-4 px-4 py-2 bg-zinc-800 text-zinc-100 rounded-lg hover:bg-zinc-700"
-            >
-              Voltar ao Painel
-            </button>
-            <BibleReader />
+          <div className="pt-2 sm:pt-4 pb-20">
+            <div className="max-w-4xl mx-auto px-3 sm:px-6 mb-3">
+              <button 
+                onClick={() => setCurrentView('dashboard')}
+                className="inline-flex items-center gap-2 px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-xl text-xs font-semibold border border-zinc-700 transition-colors shadow-xs"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Voltar ao Painel</span>
+              </button>
+            </div>
+            <BibleReader 
+              initialBookNumber={bibleNav?.bookNumber}
+              initialChapter={bibleNav?.chapter}
+              currentPlan={progress.planType}
+              currentDay={selectedDayNumber}
+              onGoToDayReading={(day) => {
+                setSelectedDayNumber(day);
+                setCurrentView('reader');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
           </div>
         )}
       </div>

@@ -235,13 +235,24 @@ const fetchBibleText = async (book: string, chapter: number): Promise<ScriptureC
   }
 };
 
-// Generates an authentic, continuous Scripture reading for any passage
+import { getScriptureForPlanDay } from '../lib/biblePlanService';
+
+// Generates an authentic, continuous Scripture reading for all chapters assigned for any day
 export const getScriptureForDay = async (
   dayNumber: number,
   title: string,
   passages: Array<{ book: string; reference: string; testament: 'AT' | 'NT' }>
 ): Promise<ScriptureChapter[]> => {
-  // Check exact curated key matches
+  try {
+    const chapters = await getScriptureForPlanDay(dayNumber, passages, 'ARA');
+    if (chapters && chapters.length > 0) {
+      return chapters;
+    }
+  } catch (err) {
+    console.warn(`Error loading full scripture for day ${dayNumber}:`, err);
+  }
+
+  // Fallback to curated texts if offline and not in cache
   if (dayNumber === 1 && CURATED_SCRIPTURES['Gênesis 1']) return CURATED_SCRIPTURES['Gênesis 1'];
   if (dayNumber === 4 && CURATED_SCRIPTURES['Jó 1']) return CURATED_SCRIPTURES['Jó 1'];
   if (dayNumber === 11 && CURATED_SCRIPTURES['Gênesis 12']) return CURATED_SCRIPTURES['Gênesis 12'];
@@ -252,22 +263,10 @@ export const getScriptureForDay = async (
   if (dayNumber === 350 && CURATED_SCRIPTURES['Romanos 8']) return CURATED_SCRIPTURES['Romanos 8'];
   if (dayNumber === 365 && CURATED_SCRIPTURES['Apocalipse 21']) return CURATED_SCRIPTURES['Apocalipse 21'];
 
-  // Check matching book names in curated scriptures
   for (const p of passages) {
     const key = Object.keys(CURATED_SCRIPTURES).find(k => k.toLowerCase().includes(p.book.toLowerCase()));
     if (key) return CURATED_SCRIPTURES[key];
   }
 
-  // Fetch from API
-  const chapters: ScriptureChapter[] = [];
-  for (const passage of passages) {
-    const matchCap = passage.reference.match(/(\d+)/);
-    const capNum = matchCap ? parseInt(matchCap[1], 10) : 1;
-    
-    const chapterData = await fetchBibleText(passage.book, capNum);
-    if (chapterData) {
-      chapters.push(chapterData);
-    }
-  }
-  return chapters;
+  return [];
 };
