@@ -65,7 +65,7 @@ export const HistoryView: React.FC = () => {
 
   const handleCopyCreed = () => {
     if (selectedCreed) {
-      navigator.clipboard.writeText(`${selectedCreed.title}\n(${selectedCreed.year})\n\n${selectedCreed.textPt}`);
+      navigator.clipboard.writeText(`${selectedCreed.title}\n(${selectedCreed.year})\n\n${selectedCreed.fullTextPt}`);
       setCopiedCreed(true);
       setTimeout(() => setCopiedCreed(false), 2000);
     }
@@ -258,67 +258,100 @@ export const HistoryView: React.FC = () => {
       {activeTab === 'creeds' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Creed Selector Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
             {ECUMENICAL_CREEDS.map(creed => (
               <button
                 key={creed.id}
                 type="button"
                 onClick={() => setSelectedCreedId(creed.id)}
-                className={`py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`py-2 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
                   selectedCreedId === creed.id
                     ? 'bg-amber-600 text-white shadow-md'
                     : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
                 }`}
               >
-                {creed.title} ({creed.year})
+                {creed.title}
               </button>
             ))}
           </div>
 
           {/* Active Creed Detail Card */}
-          <div className="p-5 sm:p-7 rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-400">
-                  {selectedCreed.year} • {selectedCreed.context}
-                </span>
-                <h3 className="font-serif text-xl font-bold text-stone-100">
+          <div className="p-5 sm:p-7 rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-zinc-800">
+              <div className="space-y-1.5 max-w-3xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-500/30">
+                    {selectedCreed.year}
+                  </span>
+                  <span className="text-xs font-mono text-zinc-400">
+                    {selectedCreed.council}
+                  </span>
+                </div>
+
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-100">
                   {selectedCreed.title}
                 </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Significado: {selectedCreed.significance}
+
+                <p className="text-xs font-mono italic text-zinc-400">
+                  {selectedCreed.originalName}
                 </p>
+
+                <p className="text-xs sm:text-sm text-zinc-300 pt-1 leading-relaxed">
+                  <strong className="text-stone-200 font-semibold">Ocasião & Propósito Histórico:</strong> {selectedCreed.historicalOccasion}
+                </p>
+
+                {selectedCreed.keyThemes && selectedCreed.keyThemes.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {selectedCreed.keyThemes.map((theme, i) => (
+                      <span key={i} className="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-800/90 text-amber-300/90 border border-zinc-700/60 font-medium">
+                        {theme}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button
                 type="button"
                 onClick={handleCopyCreed}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors self-start sm:self-auto"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-colors shrink-0 self-start"
               >
-                {copiedCreed ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedCreed ? 'Copiado!' : 'Copiar Texto'}</span>
+                {copiedCreed ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                <span>{copiedCreed ? 'Copiado!' : 'Copiar Credo'}</span>
               </button>
             </div>
 
             {/* Portuguese Text */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <h4 className="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold mb-3">
-                Texto em Português
-              </h4>
-              <p className="font-serif text-sm sm:text-base text-stone-200 leading-relaxed whitespace-pre-line">
-                {selectedCreed.textPt}
-              </p>
+            <div className="p-4 sm:p-6 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-3">
+              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">
+                  Texto em Português
+                </h4>
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                  Confissão Cristã
+                </span>
+              </div>
+              <div className="font-serif text-sm sm:text-base text-stone-200 leading-relaxed whitespace-pre-line border-l-2 border-amber-500/60 pl-4 py-1">
+                {selectedCreed.fullTextPt}
+              </div>
             </div>
 
             {/* Original Latin/Greek text */}
-            {selectedCreed.textOriginal && (
-              <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950/60 border border-zinc-800/60">
-                <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-bold mb-3">
+            {selectedCreed.latinOrGreekSnippet && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 space-y-2">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-bold">
                   Texto Original (Latim / Grego)
                 </h4>
-                <p className="font-serif italic text-xs sm:text-sm text-zinc-400 leading-relaxed whitespace-pre-line">
-                  {selectedCreed.textOriginal}
+                <p className="font-serif italic text-xs sm:text-sm text-zinc-400 leading-relaxed whitespace-pre-line border-l-2 border-zinc-700 pl-4 py-1">
+                  {selectedCreed.latinOrGreekSnippet}
                 </p>
+              </div>
+            )}
+
+            {/* Theological Legacy */}
+            {selectedCreed.theologicalLegacy && (
+              <div className="p-3.5 sm:p-4 rounded-xl bg-amber-950/20 border border-amber-800/30 text-xs sm:text-sm text-amber-200/90 leading-relaxed">
+                <strong className="text-amber-300 font-semibold">Legado Teológico:</strong> {selectedCreed.theologicalLegacy}
               </div>
             )}
           </div>

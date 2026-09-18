@@ -529,5 +529,65 @@ de tal modo que a distinção das naturezas de modo algum é anulada pela união
 como desde o princípio os profetas anunciaram a seu respeito, e o próprio Senhor Jesus Cristo nos ensinou, e o símbolo dos santos Pais nos transmitiu.`,
     latinOrGreekSnippet: '...in duabus naturis inconfuse, immutabiliter, indivise, inseparabiliter agnoscendum...',
     theologicalLegacy: 'A fronteira e baliza eterna da ortodoxia cristológica. Garante que se Jesus não for plenamente Deus, não pode nos salvar; se não for plenamente Homem, não pode nos representar.'
+  },
+  {
+    id: 'credo-atanasiano',
+    title: 'O Credo Atanasiano',
+    originalName: 'Symbolum Quicunque Vult',
+    year: 'c. final do séc. V – VI d.C.',
+    council: 'Atribuído historicamente a Santo Atanásio de Alexandria',
+    historicalOccasion: 'Composto para expor com máxima precisão lógica a doutrina da Santíssima Trindade e a dupla natureza da Encarnação de Cristo contra as sutilezas do arianismo e sabelianismo.',
+    keyThemes: ['Trindade na Unidade', 'Igualdade e Coeternidade das Pessoas', 'Não confusão das Pessoas nem divisão da Substância', 'Dupla Natureza em Uma só Pessoa'],
+    fullTextPt: `Todo aquele que quiser ser salvo deve, antes de tudo, professar a fé universal.
+Aquele que não a guardar íntegra e inviolada perecerá sem dúvida eternamente.
+
+Ora, a fé universal é esta: que veneremos um só Deus na Trindade, e a Trindade na Unidade;
+Não confundindo as Pessoas, nem dividindo a Substância.
+Pois uma é a Pessoa do Pai, outra a do Filho, outra a do Espírito Santo;
+Mas uma só é a divindade do Pai, do Filho e do Espírito Santo, igual a glória, coeterna a majestade.
+
+Qual o Pai, tal o Filho, tal o Espírito Santo:
+O Pai é incriado, o Filho é incriado, o Espírito Santo é incriado;
+O Pai é incomensurável, o Filho é incomensurável, o Espírito Santo é incomensurável;
+O Pai é eterno, o Filho é eterno, o Espírito Santo é eterno;
+E, contudo, não há três eternos, mas um só eterno;
+Assim como não há três incriados, nem três incomensuráveis, mas um só incriado e um só incomensurável.
+
+Do mesmo modo, o Pai é onipotente, o Filho é onipotente, o Espírito Santo é onipotente;
+E, contudo, não há três onipotentes, mas um só onipotente.
+Assim o Pai é Deus, o Filho é Deus, o Espírito Santo é Deus;
+E, contudo, não há três Deuses, mas um só Deus.
+
+Assim o Pai é Senhor, o Filho é Senhor, o Espírito Santo é Senhor;
+E, contudo, não há três Senhores, mas um só Senhor.
+Porque, assim como a verdade cristã nos obriga a confessar cada Pessoa individualmente como Deus e Senhor,
+Assim a religião universal nos proíbe dizer que há três Deuses ou três Senhores.
+
+O Pai por ninguém foi feito, nem criado, nem gerado.
+O Filho é somente do Pai; não feito, nem criado, mas gerado.
+O Espírito Santo é do Pai e do Filho; não feito, nem criado, nem gerado, mas procedente.
+
+Há, pois, um só Pai, não três Pais; um só Filho, não três Filhos; um só Espírito Santo, não três Espíritos Santos.
+E nesta Trindade nada é anterior ou posterior, nada maior ou menor;
+Mas todas as três Pessoas são coeternas e iguais entre si;
+De sorte que em tudo, como já foi dito acima, deve ser venerada a Unidade na Trindade e a Trindade na Unidade.
+Portanto, quem quiser ser salvo deve pensar assim da Trindade.
+
+Além disso, é necessário para a salvação eterna crer com fidelidade também na Encarnação de nosso Senhor Jesus Cristo.
+A fé reta consiste em crermos e confessarmos que nosso Senhor Jesus Cristo, Filho de Deus, é Deus e Homem:
+É Deus, gerado da substância do Pai antes dos séculos; e é Homem, nascido no tempo da substância de sua mãe;
+Perfeito Deus, perfeito Homem, composto de alma racional e carne humana;
+Igual ao Pai segundo a divindade, menor que o Pai segundo a humanidade.
+
+O qual, embora seja Deus e Homem, contudo não é dois, mas um só Cristo;
+Um, porém, não por conversão da divindade em carne, mas pela assunção da humanidade em Deus;
+Um absolutamente, não por confusão de substância, mas por unidade de Pessoa.
+Pois assim como a alma racional e a carne são um só homem, assim Deus e o Homem são um só Cristo;
+O qual padeceu pela nossa salvação, desceu à mansão dos mortos, ressuscitou ao terceiro dia,
+Subiu aos céus, está sentado à direita do Pai Todo-Poderoso, donde há de vir a julgar os vivos e os mortos.
+
+Esta é a fé universal: quem não crer nela com fidelidade e firmeza não poderá ser salvo.`,
+    latinOrGreekSnippet: 'Quicumque vult salvus esse, ante omnia opus est, ut teneat catholicam fidem. Quam nisi quisque integram inviolatamque servaverit, absque dubio in aeternum peribit...',
+    theologicalLegacy: 'A mais rigorosa, majestosa e detalhada confissão dos dogmas trinitário e cristológico já produzida na história da Igreja, reverenciada por todas as confissões da Reforma e do Ocidente.'
   }
 ];
