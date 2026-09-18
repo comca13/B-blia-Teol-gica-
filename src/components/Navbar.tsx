@@ -1,205 +1,120 @@
 import React from 'react';
-import { PlanType } from '../types';
-import { 
-  BookOpen, 
-  Compass, 
-  Flame, 
-  Bell, 
-  Info,
-  Calendar,
-  Layers,
-  Landmark,
-  Eye,
-  Maximize2,
-  Map
-} from 'lucide-react';
+import { BookOpen, Flame, Eye, EyeOff, Layers } from 'lucide-react';
+import { MainRoute } from '../types';
 
 interface NavbarProps {
-  planType: PlanType;
-  onSelectPlan: (plan: PlanType) => void;
+  activeRoute: MainRoute;
+  dynamicTitle: string;
+  dynamicSubtitle?: string;
+  isFocusMode?: boolean;
+  onToggleFocusMode?: () => void;
+  isStudyDrawerOpen?: boolean;
+  onToggleStudyDrawer?: () => void;
   streak: number;
-  completedCount: number;
-  onOpenReminders: () => void;
-  onOpenPlanInfo: () => void;
-  onOpenTimeline: () => void;
-  onOpenChurchHistory?: (tab?: 'timeline' | 'theological-systems' | 'creeds') => void;
-  onOpenSecondTemple: () => void;
-  isFocusMode: boolean;
-  onToggleFocusMode: () => void;
-  currentView: 'dashboard' | 'reader';
-  onGoToDashboard: () => void;
+  onGoToHome: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  planType,
-  onSelectPlan,
-  streak,
-  completedCount,
-  onOpenReminders,
-  onOpenPlanInfo,
-  onOpenTimeline,
-  onOpenChurchHistory,
-  onOpenSecondTemple,
-  isFocusMode,
+  activeRoute,
+  dynamicTitle,
+  dynamicSubtitle,
+  isFocusMode = false,
   onToggleFocusMode,
-  currentView,
-  onGoToDashboard
+  isStudyDrawerOpen = false,
+  onToggleStudyDrawer,
+  streak,
+  onGoToHome
 }) => {
-  const percent = Math.round((completedCount / 365) * 100);
-
   return (
-    <header className="sticky top-0 z-40 w-full border-b transition-colors backdrop-blur-md bg-white/95 dark:bg-zinc-900/95 border-stone-200 dark:border-zinc-800">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-2">
-        {/* Brand & Logo */}
+    <header className="sticky top-0 z-30 w-full border-b transition-colors backdrop-blur-md bg-zinc-950/90 dark:bg-zinc-950/90 border-zinc-800/80">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
+        
+        {/* Esquerda: Logo da Bíblia Teológica */}
         <div 
-          className="flex items-center gap-2 sm:gap-3 cursor-pointer shrink-0 min-w-0" 
-          onClick={onGoToDashboard}
-          title="Ir para o Painel Principal"
+          className="flex items-center gap-2 sm:gap-3 cursor-pointer shrink-0"
+          onClick={onGoToHome}
+          title="Ir para o início"
         >
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-700 dark:bg-amber-600 flex items-center justify-center text-white shadow-xs shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs shrink-0">
             <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div className="min-w-0">
-            <h1 className="font-serif text-base sm:text-xl font-bold tracking-tight text-stone-900 dark:text-stone-100 truncate">
+          <div className="hidden sm:block">
+            <h1 className="font-serif text-sm sm:text-base font-bold text-stone-100 tracking-tight leading-none">
               Cronos & Cânon
             </h1>
-            <p className="text-[10px] sm:text-[11px] text-stone-500 dark:text-stone-400 font-sans hidden sm:block truncate">
-              Leitura Bíblica Anual em 365 Dias
-            </p>
+            <span className="text-[10px] text-amber-500/90 font-medium">
+              Bíblia Teológica 365
+            </span>
           </div>
         </div>
 
-        {/* Plan Switcher Pills (Desktop view only - on mobile it moves to secondary full-width bar) */}
-        <div className="hidden md:flex items-center bg-stone-100 dark:bg-zinc-800 p-1 rounded-xl text-xs font-medium border border-stone-200 dark:border-zinc-700 shrink-0">
-          <button
-            type="button"
-            onClick={() => onSelectPlan('chronological')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-              planType === 'chronological'
-                ? 'bg-amber-800 text-white shadow-sm'
-                : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
-            }`}
-            title="Lê os livros na ordem que os fatos aconteceram (Salmos na vida de Davi, profetas nos Reis)"
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>Histórico-Cronológico</span>
-            <span className="px-1.5 py-0.2 text-[9px] uppercase font-bold bg-amber-950/40 rounded">Destaque</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onSelectPlan('canonical')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-              planType === 'canonical'
-                ? 'bg-amber-800 text-white shadow-sm'
-                : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
-            }`}
-            title="Ordem tradicional das Bíblias (Gênesis ao Apocalipse)"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Canônico</span>
-          </button>
+        {/* Centro: Título Dinâmico baseado na View Ativa */}
+        <div className="flex-1 text-center px-2 min-w-0">
+          <h2 className="font-serif text-sm sm:text-base font-bold text-stone-100 truncate">
+            {dynamicTitle}
+          </h2>
+          {dynamicSubtitle && (
+            <p className="text-[10px] sm:text-[11px] text-stone-400 truncate">
+              {dynamicSubtitle}
+            </p>
+          )}
         </div>
 
-        {/* Right Actions: Streak, Reminders, Timeline, Theme */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {/* Timeline Modal Trigger (Desktop/Tablet only) */}
-          <button
-            type="button"
-            onClick={onOpenTimeline}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 border border-stone-200 dark:border-zinc-700 transition-colors"
-            title="Visualizar a Linha do Tempo das Eras Bíblicas"
-          >
-            <Calendar className="w-3.5 h-3.5 text-amber-600" />
-            <span className="hidden lg:inline">Linha do Tempo</span>
-          </button>
-
-          {/* Church History & Theology Trigger */}
-          {onOpenChurchHistory && (
+        {/* Direita: Apenas ações contextuais da tela */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Se estiver na rota BÍBLIA: Botão Modo Foco e Painel de Estudo */}
+          {activeRoute === 'BIBLIA' && onToggleFocusMode && (
             <button
               type="button"
-              onClick={() => onOpenChurchHistory('timeline')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 border border-stone-200 dark:border-zinc-700 transition-colors"
-              title="História da Igreja, Teologia & Grandes Credos"
+              onClick={onToggleFocusMode}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                isFocusMode
+                  ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
+                  : 'bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60'
+              }`}
+              title={isFocusMode ? 'Desativar Modo Foco' : 'Ativar Modo Foco (Leitura Imersiva)'}
             >
-              <Landmark className="w-3.5 h-3.5 text-amber-500" />
-              <span className="hidden md:inline">História da Igreja</span>
+              {isFocusMode ? (
+                <>
+                  <EyeOff className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Modo Foco Ativo</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Modo Foco</span>
+                </>
+              )}
             </button>
           )}
 
-          {/* Streak indicator */}
+          {activeRoute === 'BIBLIA' && !isFocusMode && onToggleStudyDrawer && (
+            <button
+              type="button"
+              onClick={onToggleStudyDrawer}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                isStudyDrawerOpen
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60'
+              }`}
+              title="Abrir Gaveta de Estudos Acadêmicos"
+            >
+              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Painel de Estudo</span>
+            </button>
+          )}
+
+          {/* Indicador de Constância (Streak) */}
           <div 
-            className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg text-[11px] sm:text-xs font-semibold text-amber-800 dark:text-amber-300 shrink-0"
-            title={`${streak} dias seguidos de constância`}
+            className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-amber-950/40 border border-amber-800/40 rounded-xl text-[11px] sm:text-xs font-semibold text-amber-300 shrink-0"
+            title={`${streak} dias seguidos de leitura bíblica`}
           >
             <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500 animate-pulse shrink-0" />
             <span>{streak}d</span>
           </div>
-
-          {/* Progress pill (desktop only) */}
-          <div 
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-lg text-xs font-medium text-stone-700 dark:text-stone-300 cursor-pointer"
-            onClick={onGoToDashboard}
-            title={`${completedCount} de 365 dias lidos (${percent}%)`}
-          >
-            <span className="text-amber-700 dark:text-amber-400 font-bold">{percent}%</span>
-            <span className="text-stone-400 dark:text-stone-500">({completedCount}/365)</span>
-          </div>
-
-          {/* Reminders button */}
-          <button
-            type="button"
-            onClick={onOpenReminders}
-            className="p-1.5 sm:p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
-            title="Lembretes diários e notificações"
-          >
-            <Bell className="w-4 h-4" />
-          </button>
-
-          {/* Plan Info button */}
-          <button
-            type="button"
-            onClick={onOpenPlanInfo}
-            className="p-1.5 sm:p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
-            title="Comparativo dos Planos"
-          >
-            <Info className="w-4 h-4" />
-          </button>
         </div>
+
       </div>
-
-      {/* Responsive Plan Switcher for Mobile Devices (Only on Dashboard view) */}
-      {currentView === 'dashboard' && (
-        <div className="md:hidden px-3 py-1.5 border-t border-stone-200 dark:border-zinc-800 bg-stone-50/90 dark:bg-zinc-900/90">
-          <div className="grid grid-cols-2 gap-1 bg-stone-200/60 dark:bg-zinc-800/90 p-1 rounded-xl text-xs font-medium border border-stone-200/80 dark:border-zinc-700">
-            <button
-              type="button"
-              onClick={() => onSelectPlan('chronological')}
-              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-all ${
-                planType === 'chronological'
-                  ? 'bg-amber-800 text-white shadow-xs font-bold'
-                  : 'text-stone-600 dark:text-stone-300 hover:text-stone-900'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Cronológico</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onSelectPlan('canonical')}
-              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-all ${
-                planType === 'canonical'
-                  ? 'bg-amber-800 text-white shadow-xs font-bold'
-                  : 'text-stone-600 dark:text-stone-300 hover:text-stone-900'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Canônico</span>
-            </button>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

@@ -72,6 +72,10 @@ interface ReaderProps {
   personalNote: string;
   onSaveNote: (day: number, note: string) => void;
   onOpenBible?: (bookNumber: number, chapter: number) => void;
+  isFocusMode?: boolean;
+  onToggleFocusMode?: () => void;
+  isStudyDrawerOpen?: boolean;
+  onToggleStudyDrawer?: () => void;
 }
 
 export const Reader: React.FC<ReaderProps> = ({
@@ -87,7 +91,11 @@ export const Reader: React.FC<ReaderProps> = ({
   onUpdateSettings,
   personalNote,
   onSaveNote,
-  onOpenBible
+  onOpenBible,
+  isFocusMode: propIsFocusMode,
+  onToggleFocusMode: propOnToggleFocusMode,
+  isStudyDrawerOpen: propIsStudyDrawerOpen,
+  onToggleStudyDrawer: propOnToggleStudyDrawer
 }) => {
   const [chapters, setChapters] = useState<ScriptureChapter[]>([]);
   const [loadingScripture, setLoadingScripture] = useState<boolean>(true);
@@ -98,8 +106,20 @@ export const Reader: React.FC<ReaderProps> = ({
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState<number>(settings.audioSpeed || 1.0);
-  const [isFocusMode, setIsFocusMode] = useState(false);
-  const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState(false);
+  const [internalIsFocusMode, setInternalIsFocusMode] = useState(false);
+  const [internalIsStudyDrawerOpen, setInternalIsStudyDrawerOpen] = useState(false);
+
+  const isFocusMode = propIsFocusMode !== undefined ? propIsFocusMode : internalIsFocusMode;
+  const toggleFocusMode = propOnToggleFocusMode || (() => setInternalIsFocusMode(prev => !prev));
+  const isStudyDrawerOpen = propIsStudyDrawerOpen !== undefined ? propIsStudyDrawerOpen : internalIsStudyDrawerOpen;
+  const setStudyDrawerOpen = (open?: boolean) => {
+    if (propOnToggleStudyDrawer) {
+      propOnToggleStudyDrawer();
+    } else {
+      setInternalIsStudyDrawerOpen(prev => (open !== undefined ? open : !prev));
+    }
+  };
+
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [noteText, setNoteText] = useState(personalNote);
   const [isNoteSaved, setIsNoteSaved] = useState(false);
@@ -481,7 +501,11 @@ export const Reader: React.FC<ReaderProps> = ({
         <div className="border-b px-3 sm:px-4 py-2.5 sm:py-3 bg-zinc-900/95 border-zinc-800 w-full">
           <ReaderSettingsComponent
             isFocusMode={isFocusMode}
-            setIsFocusMode={setIsFocusMode}
+            setIsFocusMode={(val: boolean) => {
+              if (val !== isFocusMode) {
+                toggleFocusMode();
+              }
+            }}
             fontSize={
               settings.fontSize <= 14 ? 'sm' :
               settings.fontSize <= 18 ? 'base' :
@@ -628,57 +652,42 @@ export const Reader: React.FC<ReaderProps> = ({
             </div>
           )}
 
-          {/* Archaeology & Material Culture Card (conditional on depthMode and visiblePanels) */}
-          {depthMode === 'EXEGÉTICO_ACADÉMICO' && visiblePanels.archaeology && effectiveArtifacts && effectiveArtifacts.length > 0 && (
-            <div className="mt-4">
-              <ArchaeologyCard artifacts={effectiveArtifacts} />
-            </div>
-          )}
+          {/* Banner de Acesso Rápido ao Painel de Estudo Retrátil (Progressive Disclosure) */}
+          {!isFocusMode && (
+            <div className="mt-4 p-3.5 sm:p-4 rounded-2xl bg-stone-100/90 dark:bg-zinc-900/90 border border-stone-200 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-xs sm:text-sm text-stone-900 dark:text-stone-100">
+                    Aparelho de Estudo & Erudição Retrátil
+                  </h4>
+                  <p className="text-[11px] text-stone-500 dark:text-zinc-400">
+                    Arqueologia, geografia, léxico hebraico/grego, crítica textual e teologia organizados em abas dedicadas.
+                  </p>
+                </div>
+              </div>
 
-          {/* Biblical Geography & Historical Cartography Card */}
-          {effectiveGeography && (
-            <div className="mt-4">
-              <BiblicalMapCard geography={effectiveGeography} />
-            </div>
-          )}
-
-          {/* Eixo Teológico, Hermenêutico & Exegético */}
-          {/* Sitz im Leben (A Situação Vital do Texto) */}
-          {effectiveSitzImLeben && (
-            <div className="mt-4">
-              <SitzImLebenCard sitzImLeben={effectiveSitzImLeben} />
-            </div>
-          )}
-
-          {/* Chaves Linguísticas & Léxico Original (conditional on depthMode and visiblePanels) */}
-          {depthMode === 'EXEGÉTICO_ACADÉMICO' && visiblePanels.lexicon && effectiveLexicon && effectiveLexicon.length > 0 && (
-            <div className="mt-4">
-              <OriginalLexiconCard words={effectiveLexicon} />
-            </div>
-          )}
-
-          {/* Tipologia Bíblica & Ecos Intertextuais (conditional on depthMode and visiblePanels) */}
-          {depthMode === 'EXEGÉTICO_ACADÉMICO' && visiblePanels.intertextuality && effectiveTypology && effectiveTypology.length > 0 && (
-            <div className="mt-4">
-              <IntertextualEchoesCard typologies={effectiveTypology} />
-            </div>
-          )}
-
-          {/* Aparelho de Crítica Textual & Variantes de Manuscritos (C2) */}
-          {depthMode === 'EXEGÉTICO_ACADÉMICO' && visiblePanels.textualVariants && effectiveTextualVariants && effectiveTextualVariants.length > 0 && (
-            <div className="mt-4">
-              <TextualVariantsCard variants={effectiveTextualVariants} />
+              <button
+                type="button"
+                onClick={() => setStudyDrawerOpen(true)}
+                className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white flex items-center justify-center gap-1.5 shadow-xs transition-colors shrink-0"
+              >
+                <span>Abrir Painel de Estudo</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
           {/* Indicador suave quando em Modo Devocional */}
           {depthMode === 'DEVOCIONAL' && (
-            <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/80 flex items-center justify-between gap-2 font-sans">
+            <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300/80 flex items-center justify-between gap-2 font-sans">
               <span>🌿 <strong>Modo Devocional Ativo:</strong> foco em oração, edificação e meditação prática.</span>
               <button
                 type="button"
                 onClick={() => onUpdateSettings({ ...settings, depthMode: 'EXEGÉTICO_ACADÉMICO' })}
-                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-semibold transition-colors shrink-0"
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 text-[11px] font-semibold transition-colors shrink-0"
               >
                 Alternar para Exegético
               </button>
@@ -1050,6 +1059,49 @@ export const Reader: React.FC<ReaderProps> = ({
       <SecondTempleBridgeModal
         isOpen={isSecondTempleModalOpen}
         onClose={() => setIsSecondTempleModalOpen(false)}
+      />
+
+      {/* Retractable Study Drawer */}
+      <StudyDrawer
+        isOpen={isStudyDrawerOpen && !isFocusMode}
+        onClose={() => setStudyDrawerOpen(false)}
+        contextHistoryContent={
+          <div className="space-y-4">
+            {dayReading.historicalContext && (
+              <HistoricalContextCard context={dayReading.historicalContext} />
+            )}
+            {effectiveGeography && (
+              <BiblicalMapCard geography={effectiveGeography} />
+            )}
+          </div>
+        }
+        archaeologyCultureContent={
+          <div className="space-y-4">
+            {effectiveArtifacts && effectiveArtifacts.length > 0 && (
+              <ArchaeologyCard artifacts={effectiveArtifacts} />
+            )}
+            {effectiveSitzImLeben && (
+              <SitzImLebenCard sitzImLeben={effectiveSitzImLeben} />
+            )}
+          </div>
+        }
+        linguisticsTextContent={
+          <div className="space-y-4">
+            {effectiveLexicon && effectiveLexicon.length > 0 && (
+              <OriginalLexiconCard words={effectiveLexicon} />
+            )}
+            {effectiveTextualVariants && effectiveTextualVariants.length > 0 && (
+              <TextualVariantsCard variants={effectiveTextualVariants} />
+            )}
+          </div>
+        }
+        theologyEchoesContent={
+          <div className="space-y-4">
+            {effectiveTypology && effectiveTypology.length > 0 && (
+              <IntertextualEchoesCard typologies={effectiveTypology} />
+            )}
+          </div>
+        }
       />
     </div>
   );

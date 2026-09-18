@@ -1,5 +1,7 @@
 export type PlanType = 'chronological' | 'canonical';
 
+export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'PERFIL';
+
 export type ReadingTheme = 'light' | 'sepia' | 'dark';
 
 export type FontFamily = 'lora' | 'sans' | 'cinzel';

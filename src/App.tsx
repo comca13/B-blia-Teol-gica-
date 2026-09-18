@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { PlanType, ReaderSettings, ReminderSettings, UserProgress } from './types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MainRoute, PlanType, ReaderSettings, ReminderSettings, UserProgress } from './types';
 import { CHRONOLOGICAL_PLAN } from './data/chronologicalPlan';
 import { CANONICAL_PLAN } from './data/canonicalPlan';
 import { 
@@ -14,35 +13,23 @@ import {
   saveUserName
 } from './utils/storage';
 import { Navbar } from './components/Navbar';
-import { Dashboard } from './components/Dashboard';
-import { Reader } from './components/Reader';
-import { BibleReader } from './components/BibleReader';
-import { ChronologicalTimelineModal } from './components/ChronologicalTimelineModal';
-import { PlanComparisonModal } from './components/PlanComparisonModal';
-import { RemindersModal } from './components/RemindersModal';
-import { ChurchHistoryModal } from './components/ChurchHistoryModal';
+import { BottomNav } from './components/BottomNav';
+import { BibleView } from './views/BibleView';
+import { PlansView } from './views/PlansView';
+import { HistoryView } from './views/HistoryView';
+import { ProfileView } from './views/ProfileView';
 
 export default function App() {
+  const [activeRoute, setActiveRoute] = useState<MainRoute>('BIBLIA');
   const [progress, setProgress] = useState<UserProgress>(loadUserProgress());
   const [readerSettings, setReaderSettings] = useState<ReaderSettings>(loadReaderSettings());
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(loadReminderSettings());
   const [userName, setUserName] = useState<string>(loadUserName());
 
-  const [currentView, setCurrentView] = useState<'dashboard' | 'reader' | 'bible'>('dashboard');
   const [selectedDayNumber, setSelectedDayNumber] = useState<number>(1);
-  const [bibleNav, setBibleNav] = useState<{ bookNumber: number; chapter: number } | null>(null);
-
-  // Modals
-  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
-  const [isPlanInfoOpen, setIsPlanInfoOpen] = useState(false);
-  const [isRemindersOpen, setIsRemindersOpen] = useState(false);
-  const [isChurchHistoryOpen, setIsChurchHistoryOpen] = useState(false);
-  const [churchHistoryTab, setChurchHistoryTab] = useState<'timeline' | 'theological-systems' | 'creeds'>('timeline');
-
-  const handleOpenChurchHistory = (tab: 'timeline' | 'theological-systems' | 'creeds' = 'timeline') => {
-    setChurchHistoryTab(tab);
-    setIsChurchHistoryOpen(true);
-  };
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
+  const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState<boolean>(false);
+  const [bibleReadingMode, setBibleReadingMode] = useState<'plan-day' | 'browse-books'>('browse-books');
 
   // Active plan dataset
   const currentPlanDays = progress.planType === 'chronological' ? CHRONOLOGICAL_PLAN : CANONICAL_PLAN;
@@ -56,9 +43,8 @@ export default function App() {
   // Save settings on change
   useEffect(() => {
     saveReaderSettings(readerSettings);
-    // Apply dark theme exclusively to root document
+    // Dark theme support
     const root = document.documentElement;
-    root.classList.remove('sepia-theme');
     root.classList.add('dark');
   }, [readerSettings]);
 
@@ -121,13 +107,6 @@ export default function App() {
     }));
   };
 
-  // Open Reader directly at day
-  const handleOpenDay = (day: number) => {
-    setSelectedDayNumber(day);
-    setCurrentView('reader');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   // Previous & Next navigation
   const handlePrevDay = () => {
     if (selectedDayNumber > 1) {
@@ -141,7 +120,7 @@ export default function App() {
     }
   };
 
-  const handleSaveReminders = (newSettings: ReminderSettings) => {
+  const handleUpdateReminderSettings = (newSettings: ReminderSettings) => {
     setReminderSettings(newSettings);
     saveReminderSettings(newSettings);
   };
@@ -151,152 +130,132 @@ export default function App() {
     saveUserName(newName);
   };
 
+  // Dynamic Navbar Title & Subtitle based on Route
+  const { navTitle, navSubtitle } = useMemo(() => {
+    const percent = Math.round((progress.completedDays.length / 365) * 100);
+    switch (activeRoute) {
+      case 'BIBLIA':
+        return {
+          navTitle: currentReading.title,
+          navSubtitle: `Dia ${selectedDayNumber} de 365 • ${currentReading.periodName}`
+        };
+      case 'PLANOS':
+        return {
+          navTitle: progress.planType === 'chronological' ? 'Plano Cronológico' : 'Plano Canônico',
+          navSubtitle: `${progress.completedDays.length} de 365 dias lidos (${percent}%)`
+        };
+      case 'HISTORIA':
+        return {
+          navTitle: 'História da Igreja & Teologia',
+          navSubtitle: 'Eras Patrística à Contemporânea, Credos e Sistemas'
+        };
+      case 'PERFIL':
+        return {
+          navTitle: userName || 'Perfil & Caderno Teológico',
+          navSubtitle: `${progress.streak} dias seguidos • Teologia Sistemática`
+        };
+      default:
+        return {
+          navTitle: 'Cronos & Cânon',
+          navSubtitle: 'Bíblia Teológica 365'
+        };
+    }
+  }, [activeRoute, currentReading, selectedDayNumber, progress, userName]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-stone-100 flex flex-col font-sans selection:bg-amber-900 selection:text-amber-100">
       
-      {/* Top Navigation */}
+      {/* 1. Header Simplificado (Navbar) */}
       <Navbar
-        planType={progress.planType}
-        onSelectPlan={handleSelectPlan}
+        activeRoute={activeRoute}
+        dynamicTitle={navTitle}
+        dynamicSubtitle={navSubtitle}
+        isFocusMode={isFocusMode}
+        onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+        isStudyDrawerOpen={isStudyDrawerOpen}
+        onToggleStudyDrawer={() => setIsStudyDrawerOpen(prev => !prev)}
         streak={progress.streak}
-        completedCount={progress.completedDays.length}
-        onOpenReminders={() => setIsRemindersOpen(true)}
-        onOpenPlanInfo={() => setIsPlanInfoOpen(true)}
-        onOpenTimeline={() => setIsTimelineOpen(true)}
-        onOpenChurchHistory={handleOpenChurchHistory}
-        currentView={currentView}
-        onGoToDashboard={() => setCurrentView('dashboard')}
+        onGoToHome={() => {
+          setActiveRoute('BIBLIA');
+          setBibleReadingMode('browse-books');
+          setIsFocusMode(false);
+        }}
       />
 
-      {/* Main View Area */}
-      <div className="flex-1">
-        {currentView === 'dashboard' ? (
-          <Dashboard
-            planType={progress.planType}
-            onSelectPlan={handleSelectPlan}
-            days={currentPlanDays}
-            progress={progress}
-            onToggleComplete={handleToggleComplete}
-            onOpenDay={handleOpenDay}
-            onOpenTimeline={() => setIsTimelineOpen(true)}
-            onOpenPlanInfo={() => setIsPlanInfoOpen(true)}
-            onOpenBibleReader={() => setCurrentView('bible')}
-            onOpenChurchHistory={handleOpenChurchHistory}
-            userName={userName}
-            onUpdateUserName={handleUpdateUserName}
-          />
-        ) : currentView === 'reader' ? (
-          <Reader
-            dayReading={currentReading}
+      {/* 2. Área Central de Visualização (Views dedicadas com pb-28 para a Bottom Dock) */}
+      <main className="flex-1 pb-24 sm:pb-28">
+        {activeRoute === 'BIBLIA' && (
+          <BibleView
+            currentDayReading={currentReading}
             isCompleted={progress.completedDays.includes(selectedDayNumber)}
             isBookmarked={progress.bookmarks.includes(selectedDayNumber)}
             onToggleComplete={handleToggleComplete}
             onToggleBookmark={handleToggleBookmark}
             onPrevDay={handlePrevDay}
             onNextDay={handleNextDay}
-            onBackToDashboard={() => setCurrentView('dashboard')}
+            onBackToDashboard={() => setActiveRoute('PLANOS')}
             settings={readerSettings}
             onUpdateSettings={setReaderSettings}
             personalNote={progress.notes[selectedDayNumber] || ''}
             onSaveNote={handleSaveNote}
-            onOpenBible={(bookNumber, chapter) => {
-              setBibleNav({ bookNumber, chapter });
-              setCurrentView('bible');
+            isFocusMode={isFocusMode}
+            onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+            isStudyDrawerOpen={isStudyDrawerOpen}
+            onToggleStudyDrawer={() => setIsStudyDrawerOpen(prev => !prev)}
+            readingMode={bibleReadingMode}
+            onReadingModeChange={setBibleReadingMode}
+          />
+        )}
+
+        {activeRoute === 'PLANOS' && (
+          <PlansView
+            activePlan={progress.planType}
+            onSelectPlan={handleSelectPlan}
+            progress={progress}
+            days={currentPlanDays}
+            onToggleComplete={handleToggleComplete}
+            onSelectDay={(day) => {
+              setSelectedDayNumber(day);
+              setBibleReadingMode('plan-day');
+              setActiveRoute('BIBLIA');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+            currentDayNumber={selectedDayNumber}
           />
-        ) : (
-          <div className="pt-2 sm:pt-4 pb-20">
-            <div className="max-w-4xl mx-auto px-3 sm:px-6 mb-3">
-              <button 
-                onClick={() => setCurrentView('dashboard')}
-                className="inline-flex items-center gap-2 px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-xl text-xs font-semibold border border-zinc-700 transition-colors shadow-xs"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Voltar ao Painel</span>
-              </button>
-            </div>
-            <BibleReader 
-              initialBookNumber={bibleNav?.bookNumber}
-              initialChapter={bibleNav?.chapter}
-              currentPlan={progress.planType}
-              currentDay={selectedDayNumber}
-              onGoToDayReading={(day) => {
-                setSelectedDayNumber(day);
-                setCurrentView('reader');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-          </div>
         )}
-      </div>
 
-      {/* Modals */}
-      <ChronologicalTimelineModal
-        isOpen={isTimelineOpen}
-        onClose={() => setIsTimelineOpen(false)}
-        onSelectDay={handleOpenDay}
-        currentDay={selectedDayNumber}
-      />
+        {activeRoute === 'HISTORIA' && (
+          <HistoryView />
+        )}
 
-      <PlanComparisonModal
-        isOpen={isPlanInfoOpen}
-        onClose={() => setIsPlanInfoOpen(false)}
-        activePlan={progress.planType}
-        onSelectPlan={handleSelectPlan}
-      />
+        {activeRoute === 'PERFIL' && (
+          <ProfileView
+            userName={userName}
+            onUpdateUserName={handleUpdateUserName}
+            progress={progress}
+            settings={readerSettings}
+            onUpdateSettings={setReaderSettings}
+            reminderSettings={reminderSettings}
+            onUpdateReminderSettings={handleUpdateReminderSettings}
+            currentDayReading={currentReading}
+          />
+        )}
+      </main>
 
-      <RemindersModal
-        isOpen={isRemindersOpen}
-        onClose={() => setIsRemindersOpen(false)}
-        settings={reminderSettings}
-        onSaveSettings={handleSaveReminders}
-        todayReading={currentReading}
-      />
-
-      <ChurchHistoryModal
-        isOpen={isChurchHistoryOpen}
-        onClose={() => setIsChurchHistoryOpen(false)}
-        initialTab={churchHistoryTab}
-      />
-
-      {/* Subtle Footer */}
-      <footer className="border-t border-stone-200 dark:border-zinc-800 py-6 px-4 text-center text-xs text-stone-500 dark:text-stone-400 bg-white/50 dark:bg-zinc-900/50">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="font-serif">
-            <strong>Cronos & Cânon</strong> • Leitura Bíblica em 365 Dias (Tradução João Ferreira de Almeida)
-          </p>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsPlanInfoOpen(true)}
-              className="hover:underline text-amber-800 dark:text-amber-400 font-medium"
-            >
-              Sobre os Planos
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setIsTimelineOpen(true)}
-              className="hover:underline text-amber-800 dark:text-amber-400 font-medium"
-            >
-              Linha do Tempo
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => handleOpenChurchHistory('timeline')}
-              className="hover:underline text-amber-800 dark:text-amber-400 font-medium font-semibold"
-            >
-              História da Igreja & Teologia
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setIsRemindersOpen(true)}
-              className="hover:underline text-amber-800 dark:text-amber-400 font-medium"
-            >
-              Lembretes
-            </button>
-          </div>
-        </div>
-      </footer>
+      {/* 3. Barra de Navegação Inferior Flutuante (Bottom Pill Dock) */}
+      {/* Oculta apenas quando o usuário entra voluntariamente no Modo Foco Total na Bíblia */}
+      {!isFocusMode && (
+        <BottomNav
+          activeRoute={activeRoute}
+          onRouteChange={(route) => {
+            if (route === 'BIBLIA') {
+              setBibleReadingMode('browse-books');
+            }
+            setActiveRoute(route);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
 
     </div>
   );
