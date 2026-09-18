@@ -14,6 +14,7 @@ import {
 } from './utils/storage';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { BibleView } from './views/BibleView';
 import { PlansView } from './views/PlansView';
 import { HistoryView } from './views/HistoryView';
@@ -256,6 +257,9 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Indicador de Conexão Offline */}
+      <OfflineIndicator />
 
     </div>
   );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, Flame, Eye, EyeOff, Layers } from 'lucide-react';
 import { MainRoute } from '../types';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface NavbarProps {
   activeRoute: MainRoute;
@@ -40,10 +41,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div className="hidden sm:block">
             <h1 className="font-serif text-sm sm:text-base font-bold text-stone-100 tracking-tight leading-none">
-              Cronos & Cânon
+              Bíblia Teológica
             </h1>
             <span className="text-[10px] text-amber-500/90 font-medium">
-              Bíblia Teológica 365
+              Cronos & Cânon 365
             </span>
           </div>
         </div>
@@ -103,6 +104,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden md:inline">Painel de Estudo</span>
             </button>
           )}
+
+          {/* Botão de Instalar App (PWA) */}
+          <PWAInstallButton />
 
           {/* Indicador de Constância (Streak) */}
           <div 

@@ -1,15 +1,32 @@
 {
-  "short_name": "Cronos & Cânon",
-  "name": "Cronos & Cânon - Leitura Bíblica Anual",
+  "id": "/",
+  "name": "Bíblia Teológica",
+  "short_name": "Bíblia Teol.",
+  "description": "Bíblia Teológica - Leitura bíblica diária em 365 dias, ordens canônica e cronológica, contexto teológico e história da igreja.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ],
-  "start_url": "/",
-  "background_color": "#09090b",
-  "theme_color": "#f59e0b",
-  "display": "standalone"
+  ]
 }

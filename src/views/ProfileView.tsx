@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserProgress, ReaderSettings as ReaderSettingsType, ReminderSettings, DayReading } from '../types';
 import { PersonalNotes } from '../components/PersonalNotes';
 import { ReaderSettings } from '../components/ReaderSettings';
+import { PWAInstallButton } from '../components/PWAInstallButton';
 import { 
   User, 
   Flame, 
@@ -248,6 +249,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               });
             }}
           />
+
+          {/* Seção de Instalação do Aplicativo (PWA) */}
+          <PWAInstallButton variant="card" />
         </div>
       )}
 
