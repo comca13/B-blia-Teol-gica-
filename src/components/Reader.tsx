@@ -31,6 +31,7 @@ import {
   Highlighter
 } from 'lucide-react';
 
+import { StudyDrawer } from './StudyDrawer';
 import { WorldHistoryCard } from './WorldHistoryCard';
 import { HistoricalContextCard } from './HistoricalContextCard';
 import { ArchaeologyCard } from './ArchaeologyCard';
@@ -95,10 +96,10 @@ export const Reader: React.FC<ReaderProps> = ({
   const [copiedVerseKey, setCopiedVerseKey] = useState<string | null>(null);
   const [highlightedVerses, setHighlightedVerses] = useState<Record<string, boolean>>({});
 
-  const [enrichedContent, setEnrichedContent] = useState<ReadingContent | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState<number>(settings.audioSpeed || 1.0);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState(false);
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [noteText, setNoteText] = useState(personalNote);
   const [isNoteSaved, setIsNoteSaved] = useState(false);
@@ -114,46 +115,36 @@ export const Reader: React.FC<ReaderProps> = ({
     if (dayReading.artifacts && dayReading.artifacts.length > 0) {
       return dayReading.artifacts;
     }
-    if (enrichedContent?.artifacts && enrichedContent.artifacts.length > 0) {
-      return enrichedContent.artifacts;
-    }
     return getArtifactsForDay(dayReading.day, dayReading.periodId, dayReading.passages);
-  }, [dayReading, enrichedContent]);
+  }, [dayReading]);
 
   const effectiveGeography = useMemo(() => {
     if (dayReading.geography) {
       return dayReading.geography;
     }
-    if (enrichedContent?.geography) {
-      return enrichedContent.geography;
-    }
     return getGeographyForDay(dayReading.day, dayReading.periodId, dayReading.passages);
-  }, [dayReading, enrichedContent]);
+  }, [dayReading]);
 
   // Hermeneutical, Exegetical and Typological Context Resolvers
   const effectiveGenreGuide = useMemo(() => {
     if (dayReading.genreGuide) return dayReading.genreGuide;
-    if (enrichedContent?.genreGuide) return enrichedContent.genreGuide;
     return getGenreForReading(dayReading.day, dayReading.passages);
-  }, [dayReading, enrichedContent]);
+  }, [dayReading]);
 
   const effectiveSitzImLeben = useMemo(() => {
     if (dayReading.sitzImLeben) return dayReading.sitzImLeben;
-    if (enrichedContent?.sitzImLeben) return enrichedContent.sitzImLeben;
     return getSitzImLebenForReading(dayReading.day, dayReading.passages);
-  }, [dayReading, enrichedContent]);
+  }, [dayReading]);
 
   const effectiveLexicon = useMemo(() => {
     if (dayReading.originalLexicon && dayReading.originalLexicon.length > 0) return dayReading.originalLexicon;
-    if (enrichedContent?.originalLexicon && enrichedContent.originalLexicon.length > 0) return enrichedContent.originalLexicon;
     return getLexiconForReading(dayReading.day, dayReading.passages);
-  }, [dayReading, enrichedContent]);
+  }, [dayReading]);
 
   const effectiveTypology = useMemo(() => {
     if (dayReading.typology && dayReading.typology.length > 0) return dayReading.typology;
-    if (enrichedContent?.typology && enrichedContent.typology.length > 0) return enrichedContent.typology;
     return getTypologyForReading(dayReading.day, dayReading.passages);
-  }, [dayReading, enrichedContent]);
+  }, [dayReading]);
 
   const effectiveTextualVariants = useMemo(() => {
     return getTextualVariantsForDay(dayReading.day, dayReading.passages);
@@ -209,17 +200,10 @@ export const Reader: React.FC<ReaderProps> = ({
   }, [dayReading.day, scriptureTranslation]);
 
   useEffect(() => {
-    const loadContent = async () => {
-      const planType = dayReading.periodId === 'canonical-flow' ? 'canonical' : 'chronological';
-      const content = await getReadingContent(planType, dayReading.day);
-      setEnrichedContent(content);
-    };
-
-    loadContent();
     setNoteText(personalNote);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     stopAudio();
-  }, [dayReading.day]);
+  }, [dayReading.day, personalNote]);
 
   // Handle Copy Verse to clipboard
   const handleCopyVerse = (bookName: string, chapterNum: number, verseNum: number, verseText: string) => {
@@ -276,7 +260,7 @@ export const Reader: React.FC<ReaderProps> = ({
     // Build complete narrative text from all loaded chapters
     const fullText = [
       `Leitura do Dia ${dayReading.day}: ${dayReading.title}.`,
-      `Contexto Teológico: ${enrichedContent?.theologicalContext || dayReading.theologicalContext}`,
+      `Contexto Teológico: ${dayReading.theologicalContext}`,
       ...chapters.flatMap(ch => [
         `${ch.book}, capítulo ${ch.chapter}.`,
         ...ch.verses.map(v => `Versículo ${v.verse}: ${v.text}`)
@@ -580,7 +564,7 @@ export const Reader: React.FC<ReaderProps> = ({
           </div>
 
           <p className="text-xs sm:text-base leading-relaxed text-stone-800 dark:text-stone-200 font-serif mb-4 sm:mb-5">
-            {enrichedContent?.theologicalContext || dayReading.theologicalContext}
+            {dayReading.theologicalContext}
           </p>
 
           {/* Key verse highlight quote */}
@@ -588,10 +572,10 @@ export const Reader: React.FC<ReaderProps> = ({
             <Quote className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <p className="font-serif italic text-xs sm:text-base text-stone-900 dark:text-stone-100 leading-snug mb-1 break-words">
-                "{enrichedContent?.keyVerse.text || dayReading.keyVerse.text}"
+                "{dayReading.keyVerse.text}"
               </p>
               <p className="text-[11px] sm:text-xs font-semibold text-amber-800 dark:text-amber-400">
-                — {enrichedContent?.keyVerse.reference || dayReading.keyVerse.reference} (João Ferreira de Almeida)
+                — {dayReading.keyVerse.reference} (João Ferreira de Almeida)
               </p>
             </div>
           </div>
@@ -708,7 +692,7 @@ export const Reader: React.FC<ReaderProps> = ({
               <span>Para Meditar e Praticar Hoje:</span>
             </h4>
             <ul className="space-y-1.5 text-xs sm:text-sm text-stone-700 dark:text-stone-300">
-              {(enrichedContent?.reflectionQuestions || dayReading.reflectionQuestions).map((q, idx) => (
+              {(dayReading.reflectionQuestions).map((q, idx) => (
                 <li key={idx} className="flex items-start gap-2">
                   <span className="text-amber-600 font-bold shrink-0">•</span>
                   <span className="break-words">{q}</span>
@@ -961,7 +945,7 @@ export const Reader: React.FC<ReaderProps> = ({
                     const verseVariants = getTextualVariantsForPassage(chap.book, chap.chapter, verse.verse);
 
                     return (
-                      <p 
+                      <div 
                         key={verse.verse} 
                         className={`group relative transition-all rounded-xl p-2 sm:p-2.5 flex items-start gap-2 ${
                           isHighlighted
@@ -1005,7 +989,7 @@ export const Reader: React.FC<ReaderProps> = ({
                             <Copy className="w-3.5 h-3.5" />
                           </button>
                         </span>
-                      </p>
+                      </div>
                     );
                   })}
                 </div>

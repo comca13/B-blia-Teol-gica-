@@ -8,7 +8,10 @@ import {
   Info,
   Calendar,
   Layers,
-  Landmark
+  Landmark,
+  Eye,
+  Maximize2,
+  Map
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -20,6 +23,9 @@ interface NavbarProps {
   onOpenPlanInfo: () => void;
   onOpenTimeline: () => void;
   onOpenChurchHistory?: (tab?: 'timeline' | 'theological-systems' | 'creeds') => void;
+  onOpenSecondTemple: () => void;
+  isFocusMode: boolean;
+  onToggleFocusMode: () => void;
   currentView: 'dashboard' | 'reader';
   onGoToDashboard: () => void;
 }
@@ -33,6 +39,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPlanInfo,
   onOpenTimeline,
   onOpenChurchHistory,
+  onOpenSecondTemple,
+  isFocusMode,
+  onToggleFocusMode,
   currentView,
   onGoToDashboard
 }) => {
