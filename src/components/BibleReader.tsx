@@ -22,6 +22,13 @@ import { OriginalLexiconCard } from './OriginalLexiconCard';
 import { IntertextualEchoesCard } from './IntertextualEchoesCard';
 import { TextualVariantsCard } from './TextualVariantsCard';
 import { TextualVariantIndicator } from './TextualVariantIndicator';
+import { CulturalContextCard } from './CulturalContextCard';
+import { HistoricalCommentaryCard } from './HistoricalCommentaryCard';
+import { GospelHarmonyGrid } from './GospelHarmonyGrid';
+import { GospelHarmonyModal } from './GospelHarmonyModal';
+import { getCulturalContextForBookChapter } from '../data/culturalContextData';
+import { getHistoricalCommentariesForPassage } from '../data/historicalCommentaryData';
+import { getHarmonyEventsForBookChapter } from '../data/gospelHarmonyData';
 import { 
   getGenreForReading, 
   getSitzImLebenForReading, 
@@ -29,7 +36,12 @@ import {
   getTypologyForReading 
 } from '../data/theologicalExegesisData';
 import { getTextualVariantsForPassage } from '../data/textualVariantsData';
-import { BiblePassage } from '../types';
+import { BiblePassage, GospelHarmonyEvent, BiblicalDifficulty } from '../types';
+import { Landmark, Layers, ShieldQuestion } from 'lucide-react';
+import { ApologeticsBadge } from './ApologeticsBadge';
+import { ApologeticsCard } from './ApologeticsCard';
+import { StudyDrawer, StudyDrawerTab } from './StudyDrawer';
+import { getDifficultiesForVerse, getDifficultiesForChapter } from '../data/apologeticsData';
 
 interface BibleReaderProps {
   initialBookNumber?: number;
@@ -75,12 +87,57 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [testamentFilter, setTestamentFilter] = useState<'ALL' | 'AT' | 'NT'>('ALL');
 
+  // Gospel Harmony States
+  const [isHarmonyModalOpen, setIsHarmonyModalOpen] = useState<boolean>(false);
+  const [selectedHarmonyEvent, setSelectedHarmonyEvent] = useState<GospelHarmonyEvent | undefined>(undefined);
+
+  // Study Drawer & Apologetics States
+  const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState<boolean>(false);
+  const [studyDrawerTab, setStudyDrawerTab] = useState<StudyDrawerTab>('apologetics');
+  const [selectedDifficultyId, setSelectedDifficultyId] = useState<string | undefined>(undefined);
+
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Active Book Details
   const currentBook: BibleBookInfo = useMemo(() => {
     return ALL_BIBLE_BOOKS.find(b => b.number === bookNumber) || ALL_BIBLE_BOOKS[0];
   }, [bookNumber]);
+
+  // Matching Gospel Harmony Events for currently viewed book and chapter
+  const currentHarmonyEvents = useMemo(() => {
+    return getHarmonyEventsForBookChapter(currentBook.namePt, chapter);
+  }, [currentBook.namePt, chapter]);
+
+  // Matching Apologetics Difficulties for currently viewed book and chapter
+  const currentChapterDifficulties = useMemo(() => {
+    return getDifficultiesForChapter(currentBook.namePt, chapter);
+  }, [currentBook.namePt, chapter]);
+
+  const handleOpenApologetics = (difficulty: BiblicalDifficulty) => {
+    setSelectedDifficultyId(difficulty.id);
+    setStudyDrawerTab('apologetics');
+    setIsStudyDrawerOpen(true);
+  };
+
+  // Navigate to passage reference from Harmony Grid (e.g. "Lucas 9:10-17")
+  const handleNavigateToPassage = (ref: string) => {
+    const match = ref.match(/^([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+)/);
+    if (match) {
+      const rawBook = match[1].trim().toLowerCase();
+      const targetChapter = parseInt(match[2], 10);
+      const foundBook = ALL_BIBLE_BOOKS.find(b => {
+        const bPt = b.namePt.toLowerCase();
+        const bEn = b.nameEn.toLowerCase();
+        const bAb = b.abbrevPt.toLowerCase();
+        return bPt.includes(rawBook) || rawBook.includes(bPt) || bEn.includes(rawBook) || bAb === rawBook;
+      });
+      if (foundBook) {
+        setBookNumber(foundBook.number);
+        setChapter(targetChapter);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  };
 
   // Bubble up dynamic section title to Navbar (Single Source of Truth)
   const onSectionChangeRef = useRef(onSectionChange);
@@ -476,6 +533,75 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
         )}
       </div>
 
+      {/* Alerta Elegante Contextual de Harmonia dos Evangelhos */}
+      {currentHarmonyEvents.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-950/70 via-stone-900 to-amber-950/50 border border-amber-500/40 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-xs">
+              <Layers className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Harmonia Sinótica
+                </span>
+                <span className="text-xs text-zinc-400 font-mono">
+                  {currentHarmonyEvents.length} {currentHarmonyEvents.length === 1 ? 'relato paralelo' : 'relatos paralelos'}
+                </span>
+              </div>
+              <h3 className="font-serif text-sm sm:text-base font-bold text-stone-100 mt-0.5">
+                {currentHarmonyEvents[0].title}
+              </h3>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedHarmonyEvent(currentHarmonyEvents[0]);
+              setIsHarmonyModalOpen(true);
+            }}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 shrink-0 border border-amber-500/50 hover:shadow-amber-900/40 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>💡 Comparar este evento nos 4 Evangelhos</span>
+          </button>
+        </div>
+      )}
+
+      {/* Alerta Elegante Contextual de Apologética & Dificuldades Bíblicas */}
+      {currentChapterDifficulties.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-indigo-950/40 border border-blue-500/30 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0 shadow-xs">
+              <ShieldQuestion className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  Dificuldade Bíblica & Apologética
+                </span>
+                <span className="text-xs text-zinc-400 font-mono">
+                  {currentChapterDifficulties.length} {currentChapterDifficulties.length === 1 ? 'questão' : 'questões'} neste capítulo
+                </span>
+              </div>
+              <h3 className="font-serif text-sm sm:text-base font-bold text-stone-100 mt-0.5">
+                {currentChapterDifficulties[0].question}
+              </h3>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleOpenApologetics(currentChapterDifficulties[0])}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 shrink-0 border border-blue-500/50 hover:shadow-blue-900/40 cursor-pointer"
+          >
+            <ShieldQuestion className="w-4 h-4" />
+            <span>🛡️ Ver Resolução Exegética</span>
+          </button>
+        </div>
+      )}
+
       {/* Main Scripture Card */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 sm:p-8 shadow-2xl space-y-6">
         
@@ -552,18 +678,25 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             {verses.map((v) => {
               const isCopied = copiedVerse === v.number;
               const verseVariants = getTextualVariantsForPassage(currentBook.namePt, chapter, v.number);
+              const verseDifficulties = getDifficultiesForVerse(currentBook.namePt, chapter, v.number);
 
               return (
                 <div
                   key={v.number}
                   className="group relative rounded-xl p-2 sm:p-2.5 transition-colors hover:bg-zinc-800/60 flex items-start gap-2.5"
                 >
-                  <div className="shrink-0 flex items-center gap-1 pt-0.5 select-none">
+                  <div className="shrink-0 flex items-center gap-1.5 pt-0.5 select-none">
                     <span className="text-amber-500 font-sans text-xs sm:text-sm font-bold w-6 text-right">
                       {v.number}
                     </span>
                     {verseVariants.length > 0 && (
                       <TextualVariantIndicator variant={verseVariants[0]} compact={true} />
+                    )}
+                    {verseDifficulties.length > 0 && (
+                      <ApologeticsBadge
+                        difficulty={verseDifficulties[0]}
+                        onClick={handleOpenApologetics}
+                      />
                     )}
                   </div>
                   
@@ -640,6 +773,21 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               <IntertextualEchoesCard typologies={typologies} defaultExpanded={false} />
             )}
 
+            {/* Contexto Cultural e Literário da Antiguidade para o Capítulo */}
+            {(() => {
+              const culturalContexts = getCulturalContextForBookChapter(currentBook.namePt, chapter);
+              if (culturalContexts.length > 0) {
+                return (
+                  <div className="space-y-3">
+                    {culturalContexts.map(c => (
+                      <CulturalContextCard key={c.id} context={c} defaultExpanded={true} />
+                    ))}
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             {/* Aparelho de Crítica Textual para o capítulo se houver */}
             {(() => {
               const chapterVariants = getTextualVariantsForPassage(currentBook.namePt, chapter);
@@ -648,10 +796,107 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               }
               return null;
             })()}
+
+            {/* Vozes do Passado (Comentários Patrísticos & Reformados) */}
+            {(() => {
+              const chapterHistComm = getHistoricalCommentariesForPassage(currentBook.namePt, chapter);
+              if (chapterHistComm.length > 0) {
+                return (
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                      <Landmark className="w-4 h-4 text-amber-400" />
+                      <span>Vozes do Passado (Comentários Patrísticos & Reformados)</span>
+                    </div>
+                    {chapterHistComm.map(c => (
+                      <HistoricalCommentaryCard key={c.id} commentary={c} />
+                    ))}
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Harmonia dos Evangelhos (Leitura Paralela) */}
+            {currentHarmonyEvents.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                    <Layers className="w-4 h-4 text-amber-400" />
+                    <span>Harmonia dos Evangelhos (Leitura Paralela)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedHarmonyEvent(currentHarmonyEvents[0]);
+                      setIsHarmonyModalOpen(true);
+                    }}
+                    className="text-xs text-amber-400 hover:text-amber-300 underline font-semibold cursor-pointer"
+                  >
+                    Comparar em Tela Inteira
+                  </button>
+                </div>
+                {currentHarmonyEvents.map(ev => (
+                  <GospelHarmonyGrid
+                    key={ev.id}
+                    event={ev}
+                    onNavigateToPassage={handleNavigateToPassage}
+                    currentBook={currentBook.namePt}
+                    currentChapter={chapter}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Apologética & Dificuldades Bíblicas deste Capítulo */}
+            {currentChapterDifficulties.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
+                    <ShieldQuestion className="w-4 h-4 text-blue-400" />
+                    <span>Apologética & Dificuldades Textuais ({currentChapterDifficulties.length})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenApologetics(currentChapterDifficulties[0])}
+                    className="text-xs text-blue-400 hover:text-blue-300 underline font-semibold cursor-pointer"
+                  >
+                    Ver no Painel de Estudo
+                  </button>
+                </div>
+                {currentChapterDifficulties.map(diff => (
+                  <ApologeticsCard
+                    key={diff.id}
+                    difficulty={diff}
+                    defaultExpanded={currentChapterDifficulties.length === 1}
+                    onNavigateToPassage={handleNavigateToPassage}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
       </div>
+
+      {/* Modal de Harmonia dos Evangelhos */}
+      <GospelHarmonyModal
+        isOpen={isHarmonyModalOpen}
+        onClose={() => setIsHarmonyModalOpen(false)}
+        initialEvent={selectedHarmonyEvent || currentHarmonyEvents[0]}
+        onNavigateToPassage={handleNavigateToPassage}
+        currentBook={currentBook.namePt}
+        currentChapter={chapter}
+      />
+
+      {/* Painel Lateral de Estudo (Drawer com Apologética, Contexto Histórico, etc.) */}
+      <StudyDrawer
+        isOpen={isStudyDrawerOpen}
+        onClose={() => setIsStudyDrawerOpen(false)}
+        currentPassageRef={`${currentBook.namePt} ${chapter}`}
+        initialTab={studyDrawerTab}
+        initialDifficultyId={selectedDifficultyId}
+        onNavigateToPassage={handleNavigateToPassage}
+      />
     </div>
   );
 };

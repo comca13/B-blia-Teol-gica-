@@ -13,7 +13,8 @@ import {
   Users, 
   Crown, 
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Coins
 } from 'lucide-react';
 import { 
   CHURCH_HISTORY_ERAS_INFO, 
@@ -22,14 +23,25 @@ import {
 } from '../data/churchHistoryData';
 import { HISTORICAL_PERIODS } from '../data/theologicalPeriods';
 import { TheologicalSystemsCard } from '../components/TheologicalSystemsCard';
-import { IntertestamentalSubPhase, TheologicalCategory } from '../types';
+import { CulturalContextCard } from '../components/CulturalContextCard';
+import { DocumentCard } from '../components/DocumentCard';
+import { DocumentReaderModal } from '../components/DocumentReaderModal';
+import { CULTURAL_CONTEXTS } from '../data/culturalContextData';
+import { IntertestamentalSubPhase, TheologicalCategory, DocumentCategory, HistoricalDocument } from '../types';
 import { THEOLOGICAL_DEBATES, THEOLOGICAL_CATEGORIES_META } from '../data/theologicalSystemsData';
+import { confessionalDocumentsData, DOCUMENT_CATEGORY_META } from '../data/confessionalDocumentsData';
 
-type HistorySubTab = 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline';
+type HistorySubTab = 'confessional' | 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline' | 'cultural-context';
 
 export const HistoryView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<HistorySubTab>('church');
+  const [activeTab, setActiveTab] = useState<HistorySubTab>('confessional');
   
+  // Confessional Library State
+  const [confessionalCategory, setConfessionalCategory] = useState<DocumentCategory | 'all'>('all');
+  const [confessionalSearch, setConfessionalSearch] = useState('');
+  const [readingDocument, setReadingDocument] = useState<HistoricalDocument | null>(null);
+  const [isReaderModalOpen, setIsReaderModalOpen] = useState(false);
+
   // Church History Filter State
   const [selectedEra, setSelectedEra] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -55,6 +67,19 @@ export const HistoryView: React.FC = () => {
   const selectedCreed = useMemo(() => {
     return ECUMENICAL_CREEDS.find(c => c.id === selectedCreedId) || ECUMENICAL_CREEDS[0];
   }, [selectedCreedId]);
+
+  // Filter Confessional Documents
+  const filteredDocuments = useMemo(() => {
+    return confessionalDocumentsData.filter(doc => {
+      const matchesCategory = confessionalCategory === 'all' || doc.category === confessionalCategory;
+      const matchesSearch = 
+        confessionalSearch === '' ||
+        doc.title.toLowerCase().includes(confessionalSearch.toLowerCase()) ||
+        doc.historicalContext.toLowerCase().includes(confessionalSearch.toLowerCase()) ||
+        doc.keyTheologicalThemes.some(t => t.toLowerCase().includes(confessionalSearch.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    });
+  }, [confessionalCategory, confessionalSearch]);
 
   // Filter Church Events
   const filteredEvents = useMemo(() => {
@@ -102,10 +127,12 @@ export const HistoryView: React.FC = () => {
       {/* Sub-navigation Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
         {[
+          { id: 'confessional', label: '📜 Biblioteca Confessional', icon: BookOpen },
           { id: 'church', label: 'História da Igreja', icon: Landmark },
           { id: 'theology', label: 'Sistemas Teológicos', icon: Scale },
           { id: 'creeds', label: 'Grandes Credos', icon: Scroll },
           { id: 'second-temple', label: 'Segundo Templo', icon: BookOpen },
+          { id: 'cultural-context', label: 'Contexto Cultural & Medidas', icon: Coins },
           { id: 'biblical-timeline', label: 'Eras Bíblicas', icon: Compass },
         ].map(tab => {
           const Icon = tab.icon;
@@ -127,6 +154,149 @@ export const HistoryView: React.FC = () => {
           );
         })}
       </div>
+
+      {/* 0. BIBLIOTECA CONFESSIONAL E CREDAL (DOCUMENTOS HISTÓRICOS) */}
+      {activeTab === 'confessional' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Search and Category Filter Toolbar */}
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3.5 sm:p-4 space-y-3.5 shadow-md">
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  value={confessionalSearch}
+                  onChange={e => setConfessionalSearch(e.target.value)}
+                  placeholder="Buscar documento por título, tema teológico ou heresia combatida..."
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-xs sm:text-sm text-zinc-200 placeholder-zinc-500 focus:outline-hidden focus:border-amber-500 transition-colors"
+                />
+              </div>
+
+              {confessionalSearch && (
+                <button
+                  type="button"
+                  onClick={() => setConfessionalSearch('')}
+                  className="text-xs text-amber-400 hover:text-amber-300 font-semibold shrink-0"
+                >
+                  Limpar busca
+                </button>
+              )}
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setConfessionalCategory('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+                  confessionalCategory === 'all'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700/40'
+                }`}
+              >
+                Todos ({confessionalDocumentsData.length})
+              </button>
+
+              {(Object.keys(DOCUMENT_CATEGORY_META) as DocumentCategory[]).map(catKey => {
+                const meta = DOCUMENT_CATEGORY_META[catKey];
+                const count = confessionalDocumentsData.filter(d => d.category === catKey).length;
+                const isSelected = confessionalCategory === catKey;
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => setConfessionalCategory(isSelected ? 'all' : catKey)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 border ${
+                      isSelected
+                        ? 'bg-amber-600 text-white border-amber-500 shadow-xs'
+                        : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white border-zinc-700/40'
+                    }`}
+                  >
+                    <span>{meta.label}</span>
+                    <span className="text-[10px] opacity-75 font-mono">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sectioned Documents Layout vs Filtered Results */}
+          {confessionalCategory === 'all' && !confessionalSearch ? (
+            <div className="space-y-8">
+              {(Object.keys(DOCUMENT_CATEGORY_META) as DocumentCategory[]).map(catKey => {
+                const docs = confessionalDocumentsData.filter(d => d.category === catKey);
+                if (docs.length === 0) return null;
+                const meta = DOCUMENT_CATEGORY_META[catKey];
+
+                return (
+                  <div key={catKey} className="space-y-3.5">
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-zinc-800/80">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-serif text-lg sm:text-xl font-bold text-stone-100">
+                          {meta.label}
+                        </h3>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-zinc-800 text-amber-400 border border-zinc-700">
+                          {docs.length}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-400">
+                        {meta.description}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {docs.map(doc => (
+                        <DocumentCard
+                          key={doc.id}
+                          document={doc}
+                          onSelect={d => {
+                            setReadingDocument(d);
+                            setIsReaderModalOpen(true);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredDocuments.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredDocuments.map(doc => (
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      onSelect={d => {
+                        setReadingDocument(d);
+                        setIsReaderModalOpen(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 px-6 rounded-2xl bg-zinc-900/40 border border-zinc-800 text-center space-y-3">
+                  <Scroll className="w-8 h-8 text-zinc-600 mx-auto" />
+                  <p className="font-serif text-sm text-zinc-300">
+                    Nenhum documento encontrado para "{confessionalSearch}".
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfessionalSearch('');
+                      setConfessionalCategory('all');
+                    }}
+                    className="text-xs text-amber-400 hover:text-amber-300 underline font-semibold"
+                  >
+                    Exibir todos os documentos
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 1. HISTÓRIA DA IGREJA */}
       {activeTab === 'church' && (
@@ -545,6 +715,26 @@ export const HistoryView: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* 6. CONTEXTO CULTURAL & LITERÁRIO DA ANTIGUIDADE */}
+      {activeTab === 'cultural-context' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <CulturalContextCard 
+            contexts={CULTURAL_CONTEXTS} 
+            title="Enciclopédia de Contexto Cultural & Imaginário da Antiguidade"
+          />
+        </div>
+      )}
+
+      {/* Modal Leitor de Documentos Históricos & Confessionais */}
+      <DocumentReaderModal
+        document={readingDocument}
+        isOpen={isReaderModalOpen}
+        onClose={() => {
+          setIsReaderModalOpen(false);
+          setReadingDocument(null);
+        }}
+      />
 
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { DayReading, ReaderSettings, UserProgress } from '../types';
 import { Reader } from '../components/Reader';
 import { BibleReader } from '../components/BibleReader';
@@ -21,6 +21,7 @@ interface BibleViewProps {
   onToggleFocusMode: () => void;
   isStudyDrawerOpen: boolean;
   onToggleStudyDrawer: () => void;
+  onCloseStudyDrawer?: () => void;
   readingMode: 'plan-day' | 'browse-books';
   onReadingModeChange: (mode: 'plan-day' | 'browse-books') => void;
   onSectionChange?: (title: string, subtitle?: string) => void;
@@ -28,7 +29,7 @@ interface BibleViewProps {
   onToggleSettings?: () => void;
 }
 
-export const BibleView: React.FC<BibleViewProps> = ({
+export const BibleView: React.FC<BibleViewProps> = React.memo(({
   currentDayReading,
   isCompleted,
   isBookmarked,
@@ -45,6 +46,7 @@ export const BibleView: React.FC<BibleViewProps> = ({
   onToggleFocusMode,
   isStudyDrawerOpen,
   onToggleStudyDrawer,
+  onCloseStudyDrawer,
   readingMode,
   onReadingModeChange,
   onSectionChange,
@@ -54,11 +56,11 @@ export const BibleView: React.FC<BibleViewProps> = ({
   const [initialBook, setInitialBook] = useState<number>(1);
   const [initialChapter, setInitialChapter] = useState<number>(1);
 
-  const handleOpenBibleAt = (bookNumber: number, chapter: number) => {
+  const handleOpenBibleAt = useCallback((bookNumber: number, chapter: number) => {
     setInitialBook(bookNumber);
     setInitialChapter(chapter);
     onReadingModeChange('browse-books');
-  };
+  }, [onReadingModeChange]);
 
   return (
     <div className="w-full">
@@ -115,6 +117,7 @@ export const BibleView: React.FC<BibleViewProps> = ({
           onToggleFocusMode={onToggleFocusMode}
           isStudyDrawerOpen={isStudyDrawerOpen}
           onToggleStudyDrawer={onToggleStudyDrawer}
+          onCloseStudyDrawer={onCloseStudyDrawer}
           isSettingsOpen={isSettingsOpen}
           onToggleSettings={onToggleSettings}
         />
@@ -132,4 +135,6 @@ export const BibleView: React.FC<BibleViewProps> = ({
       )}
     </div>
   );
-};
+});
+
+BibleView.displayName = 'BibleView';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { DayReading, ReaderSettings, ScriptureChapter } from '../types';
 import { getScriptureForPlanDay, parseDayPassagesToTargets } from '../lib/biblePlanService';
 import { getScriptureForDay } from '../data/biblicalTexts';
@@ -31,7 +31,8 @@ import {
   Highlighter
 } from 'lucide-react';
 
-import { StudyDrawer } from './StudyDrawer';
+import { StudyDrawer, StudyDrawerTab } from './StudyDrawer';
+import { ScriptureBody } from './ScriptureBody';
 import { WorldHistoryCard } from './WorldHistoryCard';
 import { HistoricalContextCard } from './HistoricalContextCard';
 import { ArchaeologyCard } from './ArchaeologyCard';
@@ -43,9 +44,12 @@ import { OriginalLexiconCard } from './OriginalLexiconCard';
 import { IntertextualEchoesCard } from './IntertextualEchoesCard';
 import { TextualVariantsCard } from './TextualVariantsCard';
 import { TextualVariantIndicator } from './TextualVariantIndicator';
+import { CulturalContextCard } from './CulturalContextCard';
 import { PersonalNotes } from './PersonalNotes';
 import { getArtifactsForDay } from '../data/archaeologicalData';
 import { getGeographyForDay } from '../data/geographyData';
+import { getCulturalContextForDay } from '../data/culturalContextData';
+import { ALL_BIBLE_BOOKS } from '../data/bibleBooks';
 import { 
   getGenreForReading, 
   getSitzImLebenForReading, 
@@ -56,6 +60,9 @@ import {
   getTextualVariantsForDay, 
   getTextualVariantsForPassage 
 } from '../data/textualVariantsData';
+import { getHistoricalCommentariesForPassage } from '../data/historicalCommentaryData';
+import { getHarmonyEventsForBookChapter } from '../data/gospelHarmonyData';
+import { HistoricalCommentary, GospelHarmonyEvent, BiblicalDifficulty } from '../types';
 import { Scroll } from 'lucide-react';
 
 interface ReaderProps {
@@ -76,11 +83,12 @@ interface ReaderProps {
   onToggleFocusMode?: () => void;
   isStudyDrawerOpen?: boolean;
   onToggleStudyDrawer?: () => void;
+  onCloseStudyDrawer?: () => void;
   isSettingsOpen?: boolean;
   onToggleSettings?: () => void;
 }
 
-export const Reader: React.FC<ReaderProps> = ({
+export const Reader: React.FC<ReaderProps> = React.memo(({
   dayReading,
   isCompleted,
   isBookmarked,
@@ -98,6 +106,7 @@ export const Reader: React.FC<ReaderProps> = ({
   onToggleFocusMode: propOnToggleFocusMode,
   isStudyDrawerOpen: propIsStudyDrawerOpen,
   onToggleStudyDrawer: propOnToggleStudyDrawer,
+  onCloseStudyDrawer,
   isSettingsOpen: propIsSettingsOpen,
   onToggleSettings: propOnToggleSettings
 }) => {
@@ -112,17 +121,40 @@ export const Reader: React.FC<ReaderProps> = ({
   const [audioSpeed, setAudioSpeed] = useState<number>(settings.audioSpeed || 1.0);
   const [internalIsFocusMode, setInternalIsFocusMode] = useState(false);
   const [internalIsStudyDrawerOpen, setInternalIsStudyDrawerOpen] = useState(false);
+  const [studyDrawerTab, setStudyDrawerTab] = useState<StudyDrawerTab>('context');
+  const [studyDrawerDifficultyId, setStudyDrawerDifficultyId] = useState<string | undefined>(undefined);
 
   const isFocusMode = propIsFocusMode !== undefined ? propIsFocusMode : internalIsFocusMode;
   const toggleFocusMode = propOnToggleFocusMode || (() => setInternalIsFocusMode(prev => !prev));
   const isStudyDrawerOpen = propIsStudyDrawerOpen !== undefined ? propIsStudyDrawerOpen : internalIsStudyDrawerOpen;
-  const setStudyDrawerOpen = (open?: boolean) => {
+  
+  const setStudyDrawerOpen = useCallback((open?: boolean) => {
     if (propOnToggleStudyDrawer) {
       propOnToggleStudyDrawer();
     } else {
       setInternalIsStudyDrawerOpen(prev => (open !== undefined ? open : !prev));
     }
-  };
+  }, [propOnToggleStudyDrawer]);
+
+  const handleOpenDifficulty = useCallback((diff: BiblicalDifficulty) => {
+    setStudyDrawerDifficultyId(diff.id);
+    setStudyDrawerTab('apologetics');
+    if (propOnToggleStudyDrawer && !isStudyDrawerOpen) {
+      propOnToggleStudyDrawer();
+    } else {
+      setInternalIsStudyDrawerOpen(true);
+    }
+  }, [propOnToggleStudyDrawer, isStudyDrawerOpen]);
+
+  const handleCloseStudyDrawer = useCallback(() => {
+    if (onCloseStudyDrawer) {
+      onCloseStudyDrawer();
+    } else if (propOnToggleStudyDrawer && isStudyDrawerOpen) {
+      propOnToggleStudyDrawer();
+    } else {
+      setInternalIsStudyDrawerOpen(false);
+    }
+  }, [onCloseStudyDrawer, propOnToggleStudyDrawer, isStudyDrawerOpen]);
 
   const [internalShowSettingsDrawer, setInternalShowSettingsDrawer] = useState(false);
   const showSettingsDrawer = propIsSettingsOpen !== undefined ? propIsSettingsOpen : internalShowSettingsDrawer;
@@ -183,6 +215,11 @@ export const Reader: React.FC<ReaderProps> = ({
     return getTextualVariantsForDay(dayReading.day, dayReading.passages);
   }, [dayReading]);
 
+  const effectiveCulturalContext = useMemo(() => {
+    if (dayReading.culturalContext && dayReading.culturalContext.length > 0) return dayReading.culturalContext;
+    return getCulturalContextForDay(dayReading.day, dayReading.passages);
+  }, [dayReading]);
+
   const depthMode = settings.depthMode || 'EXEGÉTICO_ACADÉMICO';
   const visiblePanels = settings.visiblePanels || {
     archaeology: true,
@@ -195,7 +232,7 @@ export const Reader: React.FC<ReaderProps> = ({
   const isIntertestamentalNear = dayReading.day >= 294 && dayReading.day <= 297;
 
   // Load Scripture Text and Firestore content for this day
-  const loadScriptureData = async () => {
+  const loadScriptureData = useCallback(async () => {
     setLoadingScripture(true);
     try {
       const fullChapters = await getScriptureForPlanDay(
@@ -225,21 +262,30 @@ export const Reader: React.FC<ReaderProps> = ({
     } finally {
       setLoadingScripture(false);
     }
-  };
+  }, [dayReading.day, dayReading.passages, dayReading.title, scriptureTranslation]);
 
   useEffect(() => {
     loadScriptureData();
     setActiveChapterFilter('all');
-  }, [dayReading.day, scriptureTranslation]);
+  }, [loadScriptureData]);
 
+  // Decoupled Reading Scroll Retention: Only scroll to top when day actually changes
+  const prevDayRef = useRef(dayReading.day);
+  useEffect(() => {
+    if (prevDayRef.current !== dayReading.day) {
+      prevDayRef.current = dayReading.day;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      stopAudio();
+    }
+  }, [dayReading.day]);
+
+  // Separate note state sync without causing window scroll shifts
   useEffect(() => {
     setNoteText(personalNote);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    stopAudio();
-  }, [dayReading.day, personalNote]);
+  }, [personalNote]);
 
-  // Handle Copy Verse to clipboard
-  const handleCopyVerse = (bookName: string, chapterNum: number, verseNum: number, verseText: string) => {
+  // Handle Copy Verse to clipboard (stabilized)
+  const handleCopyVerse = useCallback((bookName: string, chapterNum: number, verseNum: number, verseText: string) => {
     const fullCitation = `"${verseText}" — ${bookName} ${chapterNum}:${verseNum} (${scriptureTranslation === 'ARA' ? 'ARA' : 'WEB'})`;
     navigator.clipboard.writeText(fullCitation);
     const key = `${bookName}-${chapterNum}-${verseNum}`;
@@ -247,16 +293,16 @@ export const Reader: React.FC<ReaderProps> = ({
     setTimeout(() => {
       setCopiedVerseKey(null);
     }, 2000);
-  };
+  }, [scriptureTranslation]);
 
-  // Toggle highlight for a verse
-  const toggleHighlightVerse = (bookName: string, chapterNum: number, verseNum: number) => {
+  // Toggle highlight for a verse (stabilized)
+  const toggleHighlightVerse = useCallback((bookName: string, chapterNum: number, verseNum: number) => {
     const key = `${bookName}-${chapterNum}-${verseNum}`;
     setHighlightedVerses(prev => ({
       ...prev,
       [key]: !prev[key]
     }));
-  };
+  }, []);
 
   // Handle Complete with Confetti
   const handleCompleteClick = () => {
@@ -345,8 +391,8 @@ export const Reader: React.FC<ReaderProps> = ({
     toggleFocusMode();
   };
 
-  // Font class resolver
-  const getFontFamilyClass = () => {
+  // Font class resolver (memoized)
+  const fontFamilyClass = useMemo(() => {
     switch (settings.fontFamily) {
       case 'cinzel':
         return 'font-serif';
@@ -356,17 +402,124 @@ export const Reader: React.FC<ReaderProps> = ({
       default:
         return 'font-serif';
     }
-  };
+  }, [settings.fontFamily]);
 
   // Theme container classes (Exclusive Dark Mode)
   const getThemeContainerClasses = () => {
     return 'bg-zinc-950 text-stone-200 border-zinc-800';
   };
 
-  // Filter chapters to display
-  const chaptersToDisplay = activeChapterFilter === 'all'
-    ? chapters
-    : chapters.filter((_, idx) => idx === activeChapterFilter);
+  // Filter chapters to display (memoized for reference stability)
+  const chaptersToDisplay = useMemo(() => {
+    if (activeChapterFilter === 'all') {
+      return chapters;
+    }
+    return chapters.filter((_, idx) => idx === activeChapterFilter);
+  }, [chapters, activeChapterFilter]);
+
+  // Memoized Study Drawer Panel Contents (prevents rebuilding child trees on drawer toggles)
+  const contextHistoryContent = useMemo(() => (
+    <div className="space-y-4">
+      {dayReading.historicalContext && (
+        <HistoricalContextCard context={dayReading.historicalContext} />
+      )}
+      {effectiveGeography && (
+        <BiblicalMapCard geography={effectiveGeography} />
+      )}
+    </div>
+  ), [dayReading.historicalContext, effectiveGeography]);
+
+  const archaeologyCultureContent = useMemo(() => (
+    <div className="space-y-4">
+      {effectiveArtifacts && effectiveArtifacts.length > 0 && (
+        <ArchaeologyCard artifacts={effectiveArtifacts} />
+      )}
+      {effectiveSitzImLeben && (
+        <SitzImLebenCard sitzImLeben={effectiveSitzImLeben} />
+      )}
+    </div>
+  ), [effectiveArtifacts, effectiveSitzImLeben]);
+
+  const linguisticsTextContent = useMemo(() => (
+    <div className="space-y-4">
+      {effectiveLexicon && effectiveLexicon.length > 0 && (
+        <OriginalLexiconCard words={effectiveLexicon} />
+      )}
+      {effectiveTextualVariants && effectiveTextualVariants.length > 0 && (
+        <TextualVariantsCard variants={effectiveTextualVariants} />
+      )}
+    </div>
+  ), [effectiveLexicon, effectiveTextualVariants]);
+
+  const theologyEchoesContent = useMemo(() => (
+    <div className="space-y-4">
+      {effectiveTypology && effectiveTypology.length > 0 && (
+        <IntertextualEchoesCard typologies={effectiveTypology} />
+      )}
+    </div>
+  ), [effectiveTypology]);
+
+  const effectiveHistoricalCommentaries = useMemo(() => {
+    const allMatches: HistoricalCommentary[] = [];
+    const seenIds = new Set<string>();
+
+    for (const p of dayReading.passages) {
+      const matches = getHistoricalCommentariesForPassage(p.book, p.chapter);
+      for (const m of matches) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          allMatches.push(m);
+        }
+      }
+    }
+
+    if (allMatches.length === 0 && dayReading.targetBook) {
+      const matches = getHistoricalCommentariesForPassage(dayReading.targetBook);
+      for (const m of matches) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          allMatches.push(m);
+        }
+      }
+    }
+
+    return allMatches;
+  }, [dayReading.passages, dayReading.targetBook]);
+
+  const effectiveHarmonyEvents = useMemo(() => {
+    const allMatches: GospelHarmonyEvent[] = [];
+    const seenIds = new Set<string>();
+
+    for (const p of dayReading.passages) {
+      const matches = getHarmonyEventsForBookChapter(p.book, p.chapter || 1);
+      for (const m of matches) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          allMatches.push(m);
+        }
+      }
+    }
+
+    if (allMatches.length === 0 && dayReading.targetBook) {
+      const matches = getHarmonyEventsForBookChapter(dayReading.targetBook, 1);
+      for (const m of matches) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          allMatches.push(m);
+        }
+      }
+    }
+
+    return allMatches;
+  }, [dayReading.passages, dayReading.targetBook]);
+
+  const currentPassageRef = useMemo(() => {
+    if (dayReading.passages.length > 0) {
+      const first = dayReading.passages[0];
+      return `${first.book} ${first.chapter || ''}`.trim();
+    }
+    return dayReading.targetBook || '';
+  }, [dayReading.passages, dayReading.targetBook]);
 
   const totalVersesCount = useMemo(() => {
     return chapters.reduce((sum, ch) => sum + ch.verses.length, 0);
@@ -866,116 +1019,18 @@ export const Reader: React.FC<ReaderProps> = ({
         )}
 
         {!loadingScripture && chapters.length > 0 && (
-          <section 
-            aria-label="Texto Bíblico do Dia"
-            className={`space-y-10 ${getFontFamilyClass()}`}
-            style={{ 
-              fontSize: `${settings.fontSize}px`, 
-              lineHeight: settings.lineHeight 
-            }}
-          >
-            {chaptersToDisplay.map((chap, cIdx) => (
-              <article 
-                key={`${chap.book}-${chap.chapter}-${cIdx}`} 
-                className="p-5 sm:p-7 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 shadow-xs space-y-5"
-              >
-                {/* Chapter Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-3.5">
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-bold text-xl sm:text-2xl text-amber-400 font-serif">
-                      {chap.book} {chap.chapter}
-                    </h3>
-                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-800 text-amber-300 font-sans border border-zinc-700">
-                      {chap.verses.length} versículos
-                    </span>
-                    <span className="hidden sm:inline text-xs text-zinc-500 font-sans">
-                      {scriptureTranslation === 'ARA' ? 'Almeida Revista e Atualizada' : 'World English Bible'}
-                    </span>
-                  </div>
-
-                  {/* Action button: Open full book in BibleReader */}
-                  {onOpenBible && (
-                    <button
-                      type="button"
-                      onClick={() => onOpenBible(chap.bookNumber || 1, chap.chapter)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-medium border border-zinc-700 transition-colors shadow-xs"
-                      title={`Abrir ${chap.book} na Bíblia de Estudo`}
-                    >
-                      <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Abrir na Bíblia</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Optional note if reading plan specified a sub-range */}
-                {chap.startVerse && chap.endVerse && (
-                  <div className="text-[11px] font-sans px-3 py-1.5 rounded-lg bg-amber-950/30 text-amber-300 border border-amber-900/40 inline-flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Foco do Plano: Versículos {chap.startVerse} ao {chap.endVerse}</span>
-                  </div>
-                )}
-
-                {/* Verses List */}
-                <div className="space-y-3">
-                  {chap.verses.map((verse) => {
-                    const verseKey = `${chap.book}-${chap.chapter}-${verse.verse}`;
-                    const isHighlighted = !!highlightedVerses[verseKey];
-                    const isInTargetRange = !chap.startVerse || (verse.verse >= chap.startVerse && (!chap.endVerse || verse.verse <= chap.endVerse));
-
-                    const verseVariants = getTextualVariantsForPassage(chap.book, chap.chapter, verse.verse);
-
-                    return (
-                      <div 
-                        key={verse.verse} 
-                        className={`group relative transition-all rounded-xl p-2 sm:p-2.5 flex items-start gap-2 ${
-                          isHighlighted
-                            ? 'bg-amber-500/20 ring-1 ring-amber-500/40 text-amber-100'
-                            : isInTargetRange
-                              ? 'hover:bg-zinc-800/60'
-                              : 'opacity-70 hover:opacity-100 hover:bg-zinc-800/40'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1 shrink-0 mt-1 select-none">
-                          <sup className="font-sans font-bold text-xs text-amber-400">
-                            {verse.verse}
-                          </sup>
-                          {verseVariants.length > 0 && (
-                            <TextualVariantIndicator variant={verseVariants[0]} compact={true} />
-                          )}
-                        </div>
-
-                        <span className="flex-1 leading-relaxed">
-                          {verse.text}
-                        </span>
-
-                        {/* Hover Action icons: Copy & Highlight */}
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0 select-none ml-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleHighlightVerse(chap.book, chap.chapter, verse.verse)}
-                            className={`p-1 rounded-md transition-colors ${
-                              isHighlighted ? 'text-amber-400 bg-amber-500/30' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800'
-                            }`}
-                            title={isHighlighted ? 'Remover destaque' : 'Destacar versículo'}
-                          >
-                            <Highlighter className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleCopyVerse(chap.book, chap.chapter, verse.verse, verse.text)}
-                            className="p-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-                            title="Copiar versículo com citação"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </article>
-            ))}
-          </section>
+          <ScriptureBody
+            chapters={chaptersToDisplay}
+            scriptureTranslation={scriptureTranslation}
+            fontFamilyClass={fontFamilyClass}
+            fontSize={settings.fontSize}
+            lineHeight={settings.lineHeight}
+            highlightedVerses={highlightedVerses}
+            onToggleHighlightVerse={toggleHighlightVerse}
+            onCopyVerse={handleCopyVerse}
+            onOpenBible={onOpenBible}
+            onOpenDifficulty={handleOpenDifficulty}
+          />
         )}
 
         {/* Caderno de Teologia Sistemática Pessoal & Diário Devocional (C3) */}
@@ -1035,45 +1090,39 @@ export const Reader: React.FC<ReaderProps> = ({
       {/* Retractable Study Drawer */}
       <StudyDrawer
         isOpen={isStudyDrawerOpen && !isFocusMode}
-        onClose={() => setStudyDrawerOpen(false)}
-        contextHistoryContent={
-          <div className="space-y-4">
-            {dayReading.historicalContext && (
-              <HistoricalContextCard context={dayReading.historicalContext} />
-            )}
-            {effectiveGeography && (
-              <BiblicalMapCard geography={effectiveGeography} />
-            )}
-          </div>
-        }
-        archaeologyCultureContent={
-          <div className="space-y-4">
-            {effectiveArtifacts && effectiveArtifacts.length > 0 && (
-              <ArchaeologyCard artifacts={effectiveArtifacts} />
-            )}
-            {effectiveSitzImLeben && (
-              <SitzImLebenCard sitzImLeben={effectiveSitzImLeben} />
-            )}
-          </div>
-        }
-        linguisticsTextContent={
-          <div className="space-y-4">
-            {effectiveLexicon && effectiveLexicon.length > 0 && (
-              <OriginalLexiconCard words={effectiveLexicon} />
-            )}
-            {effectiveTextualVariants && effectiveTextualVariants.length > 0 && (
-              <TextualVariantsCard variants={effectiveTextualVariants} />
-            )}
-          </div>
-        }
-        theologyEchoesContent={
-          <div className="space-y-4">
-            {effectiveTypology && effectiveTypology.length > 0 && (
-              <IntertextualEchoesCard typologies={effectiveTypology} />
-            )}
-          </div>
-        }
+        onClose={handleCloseStudyDrawer}
+        contextHistoryContent={contextHistoryContent}
+        archaeologyCultureContent={archaeologyCultureContent}
+        culturalContexts={effectiveCulturalContext}
+        linguisticsTextContent={linguisticsTextContent}
+        theologyEchoesContent={theologyEchoesContent}
+        historicalCommentaries={effectiveHistoricalCommentaries}
+        harmonyEvents={effectiveHarmonyEvents}
+        currentPassageRef={currentPassageRef}
+        initialTab={studyDrawerTab}
+        initialDifficultyId={studyDrawerDifficultyId}
+        onNavigateToPassage={(ref) => {
+          if (onOpenBible) {
+            const match = ref.match(/^([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+)/);
+            if (match) {
+              const rawBook = match[1].trim().toLowerCase();
+              const targetChapter = parseInt(match[2], 10);
+              const foundBook = ALL_BIBLE_BOOKS.find(b => {
+                const bPt = b.namePt.toLowerCase();
+                const bEn = b.nameEn.toLowerCase();
+                const bAb = b.abbrevPt.toLowerCase();
+                return bPt.includes(rawBook) || rawBook.includes(bPt) || bEn.includes(rawBook) || bAb === rawBook;
+              });
+              if (foundBook) {
+                onOpenBible(foundBook.number, targetChapter);
+                handleCloseStudyDrawer();
+              }
+            }
+          }
+        }}
       />
     </div>
   );
-};
+});
+
+Reader.displayName = 'Reader';

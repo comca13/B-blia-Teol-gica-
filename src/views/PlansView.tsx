@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { PlanType, UserProgress, DayReading } from '../types';
+import { PlanType, UserProgress, DayReading, ThematicPlan, ThematicCategory } from '../types';
 import { HISTORICAL_PERIODS } from '../data/theologicalPeriods';
+import { CANONICAL_PLAN } from '../data/canonicalPlan';
+import { CHRONOLOGICAL_PLAN } from '../data/chronologicalPlan';
+import { thematicPlansData, THEMATIC_CATEGORIES_META } from '../data/thematicPlansData';
+import { ThematicPlanCard } from '../components/ThematicPlanCard';
+import { ThematicPlanDetailsModal } from '../components/ThematicPlanDetailsModal';
 import { 
   Compass, 
   Layers, 
@@ -14,7 +19,10 @@ import {
   Filter, 
   Bookmark, 
   ArrowRight,
-  BookOpen
+  BookOpen,
+  Scroll,
+  Info,
+  CheckCheck
 } from 'lucide-react';
 
 interface PlansViewProps {
@@ -25,6 +33,7 @@ interface PlansViewProps {
   onToggleComplete: (day: number) => void;
   onSelectDay: (day: number) => void;
   currentDayNumber: number;
+  onSelectThematicPassage?: (passageRef: string) => void;
 }
 
 export const PlansView: React.FC<PlansViewProps> = ({
@@ -34,22 +43,43 @@ export const PlansView: React.FC<PlansViewProps> = ({
   days,
   onToggleComplete,
   onSelectDay,
-  currentDayNumber
+  currentDayNumber,
+  onSelectThematicPassage
 }) => {
-  const [activeTab, setActiveTab] = useState<'comparison' | 'browser'>('browser');
+  // 3 Main Tabs: 1. Canônico, 2. Cronológico, 3. Jornadas Temáticas
+  const [activeTab, setActiveTab] = useState<'canonical' | 'chronological' | 'thematic'>(
+    activePlan === 'canonical' ? 'canonical' : 'chronological'
+  );
+
+  // States for 365 days browser (used in canonical and chronological tabs)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'bookmarked'>('all');
 
+  // States for Thematic Journeys tab
+  const [thematicSearchTerm, setThematicSearchTerm] = useState('');
+  const [selectedThemeCategory, setSelectedThemeCategory] = useState<ThematicCategory | 'ALL'>('ALL');
+  const [selectedThematicPlan, setSelectedThematicPlan] = useState<ThematicPlan | null>(null);
+
   const percent = Math.round((progress.completedDays.length / 365) * 100);
 
-  // Filter days for browser
+  // Pick dataset based on current tab: canonical or chronological
+  const currentTabDays = useMemo(() => {
+    if (activeTab === 'canonical') return CANONICAL_PLAN;
+    if (activeTab === 'chronological') return CHRONOLOGICAL_PLAN;
+    return days;
+  }, [activeTab, days]);
+
+  // Filter 365 days for the active canonical/chronological tab
   const filteredDays = useMemo(() => {
-    return days.filter(day => {
+    return currentTabDays.filter(day => {
       const matchesSearch = 
         day.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         day.day.toString().includes(searchTerm) ||
-        day.passages.some(p => p.reference.toLowerCase().includes(searchTerm.toLowerCase()) || p.book.toLowerCase().includes(searchTerm.toLowerCase()));
+        day.passages.some(p => 
+          p.reference.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          p.book.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
       const matchesPeriod = selectedPeriod === 'all' || day.periodId === selectedPeriod;
 
@@ -63,26 +93,59 @@ export const PlansView: React.FC<PlansViewProps> = ({
 
       return matchesSearch && matchesPeriod && matchesStatus;
     });
-  }, [days, searchTerm, selectedPeriod, statusFilter, progress]);
+  }, [currentTabDays, searchTerm, selectedPeriod, statusFilter, progress]);
+
+  // Filter Thematic Plans
+  const filteredThematicPlans = useMemo(() => {
+    return thematicPlansData.filter(plan => {
+      const matchesCategory = 
+        selectedThemeCategory === 'ALL' || 
+        plan.themeCategory === selectedThemeCategory ||
+        (selectedThemeCategory === 'ESCATOLOGIA' && plan.themeCategory === 'ESCATOlOGIA');
+
+      const matchesSearch = 
+        plan.title.toLowerCase().includes(thematicSearchTerm.toLowerCase()) ||
+        plan.shortDescription.toLowerCase().includes(thematicSearchTerm.toLowerCase()) ||
+        plan.readings.some(r => r.passageRef.toLowerCase().includes(thematicSearchTerm.toLowerCase()));
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [thematicSearchTerm, selectedThemeCategory]);
+
+  // Helper to get completed days for a thematic plan from localStorage
+  const getThematicCompletedCount = (planId: string) => {
+    try {
+      const stored = localStorage.getItem(`thematic_plan_progress_${planId}`);
+      if (stored) {
+        const arr = JSON.parse(stored);
+        return Array.isArray(arr) ? arr.length : 0;
+      }
+    } catch {
+      return 0;
+    }
+    return 0;
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-6">
       
-      {/* Annual Progress Header Card */}
+      {/* Top Banner: Overview & Progress */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-zinc-900 to-zinc-950 border border-zinc-800 p-5 sm:p-7 shadow-xl">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Jornada de Leitura Anual</span>
+              <span>Plataforma de Leitura & Teologia Bíblica</span>
             </div>
             <h2 className="font-serif text-xl sm:text-2xl font-bold text-stone-100">
-              {activePlan === 'chronological' ? 'Plano Histórico-Cronológico' : 'Plano Canônico Balanceado'}
+              {activeTab === 'canonical' && '1. Plano Canônico Balanceado'}
+              {activeTab === 'chronological' && '2. Plano Histórico-Cronológico'}
+              {activeTab === 'thematic' && '3. Jornadas Temáticas (Teologia Bíblica)'}
             </h2>
             <p className="text-xs sm:text-sm text-zinc-400 max-w-xl">
-              {activePlan === 'chronological'
-                ? 'Lendo os livros conforme a cronologia dos eventos (Salmos na vida de Davi, Profetas nos Reis, Epístolas em Atos).'
-                : 'Lendo na ordem canônica tradicional impressa dos 66 livros bíblicos, de Gênesis ao Apocalipse.'}
+              {activeTab === 'canonical' && 'Leitura contínua na ordem impressa tradicional dos 66 livros da Bíblia sagrada, de Gênesis ao Apocalipse.'}
+              {activeTab === 'chronological' && 'Leitura segundo a cronologia real dos eventos históricos (Salmos nos episódios de Davi, Profetas nos Reis, Epístolas em Atos).'}
+              {activeTab === 'thematic' && 'Estudos focados em rastrear os grandes fios condutores da Redenção (Templo, Sábado, O Cordeiro, O Reino) desde o Éden até a Consumação.'}
             </p>
           </div>
 
@@ -92,7 +155,7 @@ export const PlansView: React.FC<PlansViewProps> = ({
                 {percent}%
               </span>
               <p className="text-[11px] text-zinc-400">
-                {progress.completedDays.length} de 365 dias lidos
+                {progress.completedDays.length} de 365 dias do plano anual
               </p>
             </div>
 
@@ -103,7 +166,7 @@ export const PlansView: React.FC<PlansViewProps> = ({
           </div>
         </div>
 
-        {/* Progress bar */}
+        {/* Annual Progress Bar */}
         <div className="mt-5">
           <div className="w-full bg-zinc-800/80 rounded-full h-2.5 overflow-hidden p-0.5">
             <div 
@@ -114,38 +177,107 @@ export const PlansView: React.FC<PlansViewProps> = ({
         </div>
       </section>
 
-      {/* Internal Navigation Tabs */}
+      {/* 3 Main Navigation Tabs */}
       <div className="flex items-center justify-center">
-        <div className="inline-flex p-1 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-sm">
+        <div className="inline-flex p-1 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-md flex-wrap justify-center gap-1">
+          {/* Tab 1: Canônico */}
           <button
             type="button"
-            onClick={() => setActiveTab('browser')}
-            className={`px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'browser'
+            onClick={() => setActiveTab('canonical')}
+            className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === 'canonical'
                 ? 'bg-amber-600 text-white shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
             }`}
           >
-            Navegador dos 365 Dias
+            <Layers className="w-4 h-4" />
+            <span>1. Canônico</span>
+            {activePlan === 'canonical' && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400" title="Seu plano ativo" />
+            )}
           </button>
+
+          {/* Tab 2: Cronológico */}
           <button
             type="button"
-            onClick={() => setActiveTab('comparison')}
-            className={`px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'comparison'
+            onClick={() => setActiveTab('chronological')}
+            className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === 'chronological'
                 ? 'bg-amber-600 text-white shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
             }`}
           >
-            Comparativo & Troca de Plano
+            <Compass className="w-4 h-4" />
+            <span>2. Cronológico</span>
+            {activePlan === 'chronological' && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400" title="Seu plano ativo" />
+            )}
+          </button>
+
+          {/* Tab 3: Jornadas Temáticas */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('thematic')}
+            className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === 'thematic'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>3. Jornadas Temáticas</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Novo
+            </span>
           </button>
         </div>
       </div>
 
-      {/* TAB 1: BROWSER DOS 365 DIAS */}
-      {activeTab === 'browser' && (
-        <section className="space-y-4">
-          {/* Filters Bar */}
+      {/* ========================================================================= */}
+      {/* ABA 1: CANÔNICO & ABA 2: CRONOLÓGICO */}
+      {/* ========================================================================= */}
+      {(activeTab === 'canonical' || activeTab === 'chronological') && (
+        <div className="space-y-5">
+          {/* Plan Activation Status Banner */}
+          <div className="rounded-2xl bg-zinc-900/70 border border-zinc-800 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-950/40 border border-amber-800/40 text-amber-400 flex items-center justify-center shrink-0">
+                {activeTab === 'canonical' ? <Layers className="w-5 h-5" /> : <Compass className="w-5 h-5" />}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-serif font-bold text-stone-100 text-sm sm:text-base">
+                    {activeTab === 'canonical' ? 'Plano Canônico Tradicional' : 'Plano Histórico-Cronológico'}
+                  </h4>
+                  {activePlan === activeTab ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
+                      <CheckCheck className="w-3 h-3 text-emerald-400" />
+                      <span>Plano Ativo</span>
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-zinc-500">Inativo</span>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-400">
+                  {activeTab === 'canonical'
+                    ? '365 dias lendo os livros na sequência canônica impressa (Gênesis a Apocalipse).'
+                    : '365 dias sincronizando livros históricos, proféticos e poéticos em tempo real.'}
+                </p>
+              </div>
+            </div>
+
+            {activePlan !== activeTab && (
+              <button
+                type="button"
+                onClick={() => onSelectPlan(activeTab)}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-colors shrink-0 shadow-xs"
+              >
+                Definir como Meu Plano Principal
+              </button>
+            )}
+          </div>
+
+          {/* Search & Filters Bar */}
           <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-3.5 space-y-3">
             <div className="flex flex-col sm:flex-row gap-2.5">
               {/* Search */}
@@ -182,43 +314,48 @@ export const PlansView: React.FC<PlansViewProps> = ({
               </div>
             </div>
 
-            {/* Period Selector */}
-            <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-thin">
-              <button
-                type="button"
-                onClick={() => setSelectedPeriod('all')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors ${
-                  selectedPeriod === 'all'
-                    ? 'bg-amber-600/30 text-amber-300 border border-amber-500/40'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                }`}
-              >
-                Todas as Eras ({days.length})
-              </button>
-              {HISTORICAL_PERIODS.map(period => (
+            {/* Historical Period Selector for Chronological tab */}
+            {activeTab === 'chronological' && (
+              <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-thin">
                 <button
-                  key={period.id}
                   type="button"
-                  onClick={() => setSelectedPeriod(period.id)}
+                  onClick={() => setSelectedPeriod('all')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors ${
-                    selectedPeriod === period.id
+                    selectedPeriod === 'all'
                       ? 'bg-amber-600/30 text-amber-300 border border-amber-500/40'
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
                   }`}
                 >
-                  {period.name}
+                  Todas as Eras ({CHRONOLOGICAL_PLAN.length})
                 </button>
-              ))}
-            </div>
+                {HISTORICAL_PERIODS.map(period => (
+                  <button
+                    key={period.id}
+                    type="button"
+                    onClick={() => setSelectedPeriod(period.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors ${
+                      selectedPeriod === period.id
+                        ? 'bg-amber-600/30 text-amber-300 border border-amber-500/40'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                    }`}
+                  >
+                    {period.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Days Grid / List */}
+          {/* Days Grid */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
               <span>Mostrando {filteredDays.length} leituras</span>
               <button
                 type="button"
-                onClick={() => onSelectDay(currentDayNumber)}
+                onClick={() => {
+                  if (activePlan !== activeTab) onSelectPlan(activeTab);
+                  onSelectDay(currentDayNumber);
+                }}
                 className="text-amber-400 hover:underline flex items-center gap-1 font-semibold"
               >
                 <span>Ir para a Leitura Atual (Dia {currentDayNumber})</span>
@@ -253,7 +390,7 @@ export const PlansView: React.FC<PlansViewProps> = ({
                             Dia {day.day}
                           </span>
                           <span className="text-[11px] text-zinc-400 truncate max-w-[140px] sm:max-w-[180px]">
-                            {day.periodName}
+                            {day.periodName || (activeTab === 'canonical' ? 'Ordem Canônica' : 'Cronologia')}
                           </span>
                         </div>
 
@@ -295,7 +432,12 @@ export const PlansView: React.FC<PlansViewProps> = ({
 
                       <button
                         type="button"
-                        onClick={() => onSelectDay(day.day)}
+                        onClick={() => {
+                          if (activePlan !== activeTab) {
+                            onSelectPlan(activeTab);
+                          }
+                          onSelectDay(day.day);
+                        }}
                         className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-amber-600 text-zinc-200 hover:text-white transition-colors"
                       >
                         <BookOpen className="w-3.5 h-3.5" />
@@ -307,123 +449,110 @@ export const PlansView: React.FC<PlansViewProps> = ({
               })}
             </div>
           </div>
-        </section>
+        </div>
       )}
 
-      {/* TAB 2: COMPARATIVO & TROCA DE PLANO */}
-      {activeTab === 'comparison' && (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Card Cronológico */}
-          <div className={`p-5 sm:p-6 rounded-3xl border-2 flex flex-col justify-between transition-all ${
-            activePlan === 'chronological'
-              ? 'border-amber-600 bg-amber-950/20 shadow-xl'
-              : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700'
-          }`}>
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
-                  <Compass className="w-5 h-5" />
-                </div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Mais Recomendado
-                </span>
-              </div>
-
-              <h3 className="font-serif text-lg sm:text-xl font-bold text-stone-100 mb-2">
-                Plano Histórico-Cronológico
-              </h3>
-
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-5">
-                Organiza a leitura pela linha do tempo real dos acontecimentos. Você não lê profecias ou salmos desconectados, mas dentro do exato contexto histórico dos reis e viagens missionárias.
-              </p>
-
-              <ul className="space-y-2.5 text-xs sm:text-sm text-zinc-300 mb-6">
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <span><strong>Jó na era patriarcal:</strong> lido contemporâneo a Abraão em Gênesis.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <span><strong>Salmos nos episódios de Davi:</strong> orações nas cavernas e arrependimento com Bateseba.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <span><strong>Profetas nos Reis:</strong> Amós e Isaías lidos durante os reinados históricos de Judá e Israel.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <span><strong>Epístolas em Atos:</strong> as cartas de Paulo inseridas nas cidades exatas das viagens missionárias.</span>
-                </li>
-              </ul>
+      {/* ========================================================================= */}
+      {/* ABA 3: JORNADAS TEMÁTICAS (TEOLOGIA BÍBLICA) */}
+      {/* ========================================================================= */}
+      {activeTab === 'thematic' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Informative Biblical Theology Header Card */}
+          <div className="rounded-3xl bg-gradient-to-br from-amber-950/30 via-zinc-900 to-zinc-950 border border-amber-800/40 p-5 sm:p-6 space-y-3">
+            <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
+              <Scroll className="w-4 h-4 text-amber-400" />
+              <span>Teologia Bíblica & História da Redenção</span>
             </div>
-
-            <button
-              type="button"
-              onClick={() => onSelectPlan('chronological')}
-              className={`w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                activePlan === 'chronological'
-                  ? 'bg-amber-600 text-white shadow-md cursor-default'
-                  : 'bg-zinc-800 hover:bg-amber-600 text-zinc-200 hover:text-white'
-              }`}
-            >
-              {activePlan === 'chronological' ? '✓ Plano Ativo Atual' : 'Mudar para Plano Cronológico'}
-            </button>
+            <h3 className="font-serif text-lg sm:text-xl font-bold text-stone-100">
+              Rastreando os Grandes Fios Condutores das Escrituras
+            </h3>
+            <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-sans max-w-3xl">
+              Em vez de ler sequencialmente livro por livro, as <strong>Jornadas Temáticas</strong> traçam um único tema estrutural através de todo o cânon bíblico — da Criação e Queda no Éden, passando pelas alianças e tipos proféticos de Israel, até o cumprimento pleno na morte e ressurreição de Cristo e a consumação na Nova Criação. Cada etapa inclui um comentário exegético fundamentado na Teologia Bíblica clássica (Geerhardus Vos, G.K. Beale).
+            </p>
           </div>
 
-          {/* Card Canônico */}
-          <div className={`p-5 sm:p-6 rounded-3xl border-2 flex flex-col justify-between transition-all ${
-            activePlan === 'canonical'
-              ? 'border-amber-600 bg-amber-950/20 shadow-xl'
-              : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700'
-          }`}>
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-zinc-800 text-white flex items-center justify-center shadow-xs">
-                  <Layers className="w-5 h-5" />
-                </div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300">
-                  Estrutura Tradicional
-                </span>
+          {/* Thematic Filters & Search */}
+          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search */}
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  value={thematicSearchTerm}
+                  onChange={(e) => setThematicSearchTerm(e.target.value)}
+                  placeholder="Pesquisar tema, palavra-chave ou passagem bíblica..."
+                  className="w-full pl-9 pr-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm text-stone-100 placeholder-zinc-500 focus:outline-hidden focus:border-amber-500"
+                />
               </div>
 
-              <h3 className="font-serif text-lg sm:text-xl font-bold text-stone-100 mb-2">
-                Plano Canônico Balanceado
-              </h3>
+              {/* Category Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-thin">
+                <button
+                  type="button"
+                  onClick={() => setSelectedThemeCategory('ALL')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                    selectedThemeCategory === 'ALL'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Todos ({thematicPlansData.length})
+                </button>
 
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-5">
-                Respeita a ordem convencional das Bíblias impressas, com blocos equilibrados de leitura diária (3 a 4 capítulos por dia) para percorrer todo o cânon bíblico sem sobrecarga.
-              </p>
+                {(['CRISTOLOGIA', 'PACTO', 'REINO', 'ESCATOLOGIA', 'SANTIDADE'] as const).map(cat => {
+                  const meta = THEMATIC_CATEGORIES_META[cat];
+                  const count = thematicPlansData.filter(p => p.themeCategory === cat || (cat === 'ESCATOLOGIA' && p.themeCategory === 'ESCATOlOGIA')).length;
+                  if (count === 0) return null;
 
-              <ul className="space-y-2.5 text-xs sm:text-sm text-zinc-300 mb-6">
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
-                  <span><strong>Familiaridade máxima:</strong> segue a sequência impressa de Gênesis ao Apocalipse.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
-                  <span><strong>Divisão balanceada:</strong> média de 3 a 4 capítulos por dia (aprox. 15 minutos).</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
-                  <span><strong>Visão de conjunto:</strong> ideal para quem está acostumado com leitura sequencial por livro.</span>
-                </li>
-              </ul>
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedThemeCategory(cat)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                        selectedThemeCategory === cat
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {meta?.label || cat} ({count})
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => onSelectPlan('canonical')}
-              className={`w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                activePlan === 'canonical'
-                  ? 'bg-amber-600 text-white shadow-md cursor-default'
-                  : 'bg-zinc-800 hover:bg-amber-600 text-zinc-200 hover:text-white'
-              }`}
-            >
-              {activePlan === 'canonical' ? '✓ Plano Ativo Atual' : 'Mudar para Plano Canônico'}
-            </button>
           </div>
-        </section>
+
+          {/* Thematic Plans Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+            {filteredThematicPlans.map(plan => (
+              <ThematicPlanCard
+                key={plan.id}
+                plan={plan}
+                onSelect={(selected) => setSelectedThematicPlan(selected)}
+                completedDaysCount={getThematicCompletedCount(plan.id)}
+              />
+            ))}
+          </div>
+
+          {filteredThematicPlans.length === 0 && (
+            <div className="text-center py-12 bg-zinc-900/30 rounded-3xl border border-zinc-800/60 p-6 space-y-2">
+              <Info className="w-8 h-8 text-zinc-500 mx-auto" />
+              <p className="font-serif text-base text-zinc-300">Nenhuma jornada temática encontrada</p>
+              <p className="text-xs text-zinc-500">Tente ajustar a busca ou os filtros de categoria.</p>
+            </div>
+          )}
+        </div>
       )}
+
+      {/* Details Modal for Thematic Plan */}
+      <ThematicPlanDetailsModal
+        plan={selectedThematicPlan}
+        isOpen={!!selectedThematicPlan}
+        onClose={() => setSelectedThematicPlan(null)}
+        onSelectPassage={onSelectThematicPassage}
+      />
 
     </div>
   );

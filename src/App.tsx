@@ -52,6 +52,10 @@ export default function App() {
     setIsStudyDrawerOpen(prev => !prev);
   }, []);
 
+  const handleCloseStudyDrawer = useCallback(() => {
+    setIsStudyDrawerOpen(false);
+  }, []);
+
   const handleToggleSettings = useCallback(() => {
     setIsSettingsOpen(prev => !prev);
   }, []);
@@ -243,6 +247,7 @@ export default function App() {
             onToggleFocusMode={handleToggleFocusMode}
             isStudyDrawerOpen={isStudyDrawerOpen}
             onToggleStudyDrawer={handleToggleStudyDrawer}
+            onCloseStudyDrawer={handleCloseStudyDrawer}
             isSettingsOpen={isSettingsOpen}
             onToggleSettings={handleToggleSettings}
             readingMode={bibleReadingMode}
@@ -265,6 +270,11 @@ export default function App() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             currentDayNumber={selectedDayNumber}
+            onSelectThematicPassage={(passageRef) => {
+              setBibleReadingMode('browse-books');
+              setActiveRoute('BIBLIA');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 

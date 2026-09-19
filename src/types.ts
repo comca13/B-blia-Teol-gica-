@@ -94,6 +94,21 @@ export interface TypologyConnection {
   intertextualCitations?: string[]; // Lista de versículos correlatos (ex: ["Is 53:7", "Jo 1:29", "1Pe 1:19"])
 }
 
+export type CulturalCategory = 
+  | 'VIDA_QUOTIDIANA'    // Moradia, casamento, agricultura, profissões
+  | 'POLITICA_E_SOCIEDADE' // Patronato romano, classes sociais, Sinédrio
+  | 'ECONOMIA_E_MEDIDAS' // Moedas (denário, talento), pesos, distâncias
+  | 'LITERATURA_E_IMAGINARIO'; // Cosmologia antiga, mitologia comparada, retórica
+
+export interface CulturalContext {
+  id: string;
+  category: CulturalCategory;
+  title: string; // Ex: "O Sistema de Patronato Romano", "O Valor do Denário"
+  description: string; // A explicação historiográfica do conceito
+  exegeticalRelevance: string; // Como esta informação altera a leitura do texto bíblico
+  scriptureReferences: string[]; // Versículos onde este contexto é chave (ex: ["Mateus 20:1-16", "Apocalipse 6:6"])
+}
+
 export interface DayReading {
   day: number;
   dateDefault: string; // e.g., "01 de Janeiro"
@@ -117,6 +132,7 @@ export interface DayReading {
   sitzImLeben?: SitzImLeben;
   originalLexicon?: OriginalLanguageWord[];
   typology?: TypologyConnection[];
+  culturalContext?: CulturalContext[];
 }
 
 export interface ScriptureVerse {
@@ -324,3 +340,119 @@ export interface EcumenicalCreed {
   latinOrGreekSnippet?: string;
   theologicalLegacy: string;
 }
+
+// ----------------------------------------------------
+// JORNADAS TEMÁTICAS (TEOLOGIA BÍBLICA / REDEMPTIVE-HISTORICAL)
+// ----------------------------------------------------
+
+export type ThematicCategory = 'CRISTOLOGIA' | 'ESCATOLOGIA' | 'ESCATOlOGIA' | 'PACTO' | 'SANTIDADE' | 'REINO';
+
+export interface ThematicReadingNode {
+  day: number;
+  passageRef: string; // Ex: "Gênesis 1:26-28; 2:15"
+  thematicConnection: string; // Explicação teológica de como este texto avança o tema central
+}
+
+export interface ThematicPlan {
+  id: string;
+  title: string; // Ex: "A Teologia do Templo: Do Éden à Nova Jerusalém"
+  shortDescription: string;
+  fullDescription: string;
+  themeCategory: 'CRISTOLOGIA' | 'ESCATOlOGIA' | 'PACTO' | 'SANTIDADE' | 'REINO' | 'ESCATOLOGIA';
+  estimatedDays: number;
+  readings: ThematicReadingNode[];
+}
+
+// ----------------------------------------------------
+// COMENTÁRIOS HISTÓRICOS (VOZES DO PASSADO / PATRÍSTICA E REFORMA)
+// ----------------------------------------------------
+
+export type HistoricalEra = 
+  | 'IGREJA_PRIMITIVA_E_PATRISTICA' 
+  | 'IDADE_MEDIA_E_ESCOLASTICA' 
+  | 'REFORMA_PROTESTANTE' 
+  | 'PURITANISMO_E_POS_REFORMA'
+  | 'ERA_MODERNA';
+
+export interface Commentator {
+  name: string; // Ex: "Agostinho de Hipona", "Martinho Lutero"
+  era: HistoricalEra;
+  shortBio: string; // Breve contexto de quem foi o autor (1-2 frases)
+}
+
+export interface HistoricalCommentary {
+  id: string;
+  passageRef: string; // Referência alvo (ex: "Gênesis 1:1", "Romanos 1:17")
+  commentator: Commentator;
+  quote: string; // A citação histórica em si
+  sourceDocument: string; // Ex: "Confissões, Livro XI", "Prefácio à Carta aos Romanos"
+  theologicalFocus: string; // Ex: "A Doutrina da Justificação", "A Criação ex nihilo"
+}
+
+// ----------------------------------------------------
+// HARMONIA DOS EVANGELHOS (LEITURA PARALELA SINÓTICA)
+// ----------------------------------------------------
+
+export interface GospelReferences {
+  matthew?: string; // Ex: "Mateus 14:13-21"
+  mark?: string;    // Ex: "Marcos 6:30-44"
+  luke?: string;    // Ex: "Lucas 9:10-17"
+  john?: string;    // Ex: "João 6:1-15"
+}
+
+export interface GospelHarmonyEvent {
+  id: string;
+  title: string; // Ex: "A Multiplicação dos Pães e Peixes"
+  category: 'MINISTERIO' | 'MILAGRE' | 'PARABOLA' | 'PAIXAO_E_RESSURREICAO' | 'NASCIMENTO';
+  references: GospelReferences;
+  theologicalEmphasis: string; // Explicação breve de por que os relatos diferem ou o que cada um foca
+}
+
+// ----------------------------------------------------
+// BIBLIOTECA CONFESSIONAL E CREDAL (DOCUMENTOS HISTÓRICOS)
+// ----------------------------------------------------
+
+export type DocumentCategory = 
+  | 'IGREJA_PRIMITIVA'     // Ex: Didaquê, Epístola a Diogneto
+  | 'CREDO_ECUMENICO'      // Ex: Credo Apostólico, Credo Niceno, Calcedônia
+  | 'CONFISSAO_REFORMADA'  // Ex: Westminster, Batista de 1689, Belga
+  | 'CATECISMO'            // Ex: Heidelberg, Maior/Breve de Westminster
+  | 'DECLARACAO_MODERNA';  // Ex: Declaração de Chicago, Pacto de Lausanne
+
+export interface HistoricalDocument {
+  id: string;
+  title: string; // Ex: "O Credo Niceno-Constantinopolitano"
+  year: string; // Ex: "381 d.C."
+  category: DocumentCategory;
+  historicalContext: string; // Breve explicação de por que o documento foi escrito (ex: combate ao Arianismo).
+  content: string; // O texto integral do documento (suporte a Markdown ou parágrafos formatados).
+  keyTheologicalThemes: string[]; // Ex: ["Trindade", "Cristologia", "Consubstancialidade"]
+}
+
+// ----------------------------------------------------
+// APOLOGÉTICA E DIFICULDADES BÍBLICAS
+// ----------------------------------------------------
+
+export type ApologeticsCategory = 
+  | 'CONTRADICAO_APARENTE' // Ex: Genealogias de Jesus, Morte de Judas
+  | 'DILEMA_ETICO'         // Ex: Guerras de Canaã, Leis do AT
+  | 'PRECISAO_HISTORICA'   // Ex: O Censo de Quirino, Êxodo
+  | 'PROBLEMA_TEXTUAL';    // Ex: Traduções difíceis, variantes complexas
+
+export interface BiblicalDifficulty {
+  id: string;
+  passageRefs: string[]; // Ex: ["Mateus 27:3-10", "Atos 1:18-19"]
+  category: ApologeticsCategory;
+  question: string; // Ex: "Como morreu Judas? Enforcou-se ou caiu e rebentou-se?"
+  scholarlyResolution: string; // Explicação académica harmonizando ou explicando o contexto
+  recommendedReading?: string; // Autores ou livros de referência para aprofundar
+  targetVerses?: {
+    book: string; // Ex: "Mateus", "Atos", "Josué", "Lucas", "Gênesis"
+    chapter: number;
+    startVerse?: number;
+    endVerse?: number;
+  }[];
+}
+
+
+
