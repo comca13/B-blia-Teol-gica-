@@ -76,6 +76,8 @@ interface ReaderProps {
   onToggleFocusMode?: () => void;
   isStudyDrawerOpen?: boolean;
   onToggleStudyDrawer?: () => void;
+  isSettingsOpen?: boolean;
+  onToggleSettings?: () => void;
 }
 
 export const Reader: React.FC<ReaderProps> = ({
@@ -95,7 +97,9 @@ export const Reader: React.FC<ReaderProps> = ({
   isFocusMode: propIsFocusMode,
   onToggleFocusMode: propOnToggleFocusMode,
   isStudyDrawerOpen: propIsStudyDrawerOpen,
-  onToggleStudyDrawer: propOnToggleStudyDrawer
+  onToggleStudyDrawer: propOnToggleStudyDrawer,
+  isSettingsOpen: propIsSettingsOpen,
+  onToggleSettings: propOnToggleSettings
 }) => {
   const [chapters, setChapters] = useState<ScriptureChapter[]>([]);
   const [loadingScripture, setLoadingScripture] = useState<boolean>(true);
@@ -120,7 +124,16 @@ export const Reader: React.FC<ReaderProps> = ({
     }
   };
 
-  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  const [internalShowSettingsDrawer, setInternalShowSettingsDrawer] = useState(false);
+  const showSettingsDrawer = propIsSettingsOpen !== undefined ? propIsSettingsOpen : internalShowSettingsDrawer;
+  const setShowSettingsDrawer = (val: boolean) => {
+    if (propOnToggleSettings) {
+      propOnToggleSettings();
+    } else {
+      setInternalShowSettingsDrawer(val);
+    }
+  };
+
   const [noteText, setNoteText] = useState(personalNote);
   const [isNoteSaved, setIsNoteSaved] = useState(false);
   const [isSecondTempleModalOpen, setIsSecondTempleModalOpen] = useState(false);
@@ -327,6 +340,11 @@ export const Reader: React.FC<ReaderProps> = ({
     setTimeout(() => setIsNoteSaved(false), 2000);
   };
 
+  const handleContainerClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, select, input, a, [role="button"], textarea, label, .no-focus-toggle')) return;
+    toggleFocusMode();
+  };
+
   // Font class resolver
   const getFontFamilyClass = () => {
     switch (settings.fontFamily) {
@@ -365,138 +383,7 @@ export const Reader: React.FC<ReaderProps> = ({
         </div>
       )}
 
-      {/* Sticky Reader Bar */}
-      <div className="sticky top-14 sm:top-16 z-30 border-b backdrop-blur-md px-2 sm:px-4 py-2 flex items-center justify-between gap-1 sm:gap-2 border-inherit bg-inherit/95 w-full">
-        {/* Left: Back & Day Navigation */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onBackToDashboard}
-            className="flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-medium bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
-            title="Voltar ao Painel"
-          >
-            <ArrowLeft className="w-4 h-4 shrink-0" />
-            <span className="hidden sm:inline">Painel</span>
-          </button>
-
-          <div className="flex items-center text-[11px] sm:text-xs">
-            <button
-              type="button"
-              disabled={dayReading.day <= 1}
-              onClick={onPrevDay}
-              className="p-1 sm:p-1.5 rounded-md hover:bg-zinc-800 disabled:opacity-30 transition-colors text-stone-300"
-              title="Dia Anterior"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-            </button>
-            <span className="font-semibold px-0.5 sm:px-1 whitespace-nowrap text-stone-200">
-              D{dayReading.day}<span className="text-zinc-500 font-normal hidden sm:inline">/365</span>
-            </span>
-            <button
-              type="button"
-              disabled={dayReading.day >= 365}
-              onClick={onNextDay}
-              className="p-1 sm:p-1.5 rounded-md hover:bg-zinc-800 disabled:opacity-30 transition-colors text-stone-300"
-              title="Próximo Dia"
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Center: Audio Player Quick Control & Bible Shortcut */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={toggleAudio}
-            className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold transition-all ${
-              isPlayingAudio
-                ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-400'
-                : 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-200'
-            }`}
-            title={isPlayingAudio ? 'Pausar Áudio' : 'Ouvir Narração Completa'}
-          >
-            {isPlayingAudio ? (
-              <>
-                <Pause className="w-3.5 h-3.5 fill-current animate-pulse shrink-0" />
-                <span className="hidden sm:inline">Pausar</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-                <span className="hidden sm:inline">Áudio</span>
-              </>
-            )}
-          </button>
-
-          {isPlayingAudio && (
-            <div className="hidden md:flex items-center gap-1 text-[11px] font-mono px-2 py-1 bg-stone-100 dark:bg-zinc-800 rounded-lg">
-              {[0.75, 1.0, 1.25, 1.5].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handleSpeedChange(s)}
-                  className={`px-1 rounded ${audioSpeed === s ? 'font-bold text-amber-600' : 'text-stone-400'}`}
-                >
-                  {s}x
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Quick jump to Bible Reader if onOpenBible exists */}
-          {onOpenBible && assignedTargets.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onOpenBible(assignedTargets[0].bookNumber, assignedTargets[0].chapter)}
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 transition-colors"
-              title="Abrir na Bíblia Completa"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-              <span>Bíblia de Estudo</span>
-            </button>
-          )}
-        </div>
-
-        {/* Right actions: Settings Drawer, Bookmark, Complete Button */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => onToggleBookmark(dayReading.day)}
-            className={`p-1.5 sm:p-2 rounded-lg transition-colors shrink-0 ${
-              isBookmarked 
-                ? 'text-amber-600 fill-amber-600 bg-amber-50 dark:bg-amber-950/30' 
-                : 'text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
-            }`}
-            title="Favoritar / Salvar Leitura"
-          >
-            <Bookmark className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
-            className="p-1.5 sm:p-2 rounded-lg text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
-            title="Ajustar Tipografia e Tamanho de Fonte"
-          >
-            <Settings2 className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCompleteClick}
-            className={`flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-              isCompleted
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-stone-800 hover:bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-            }`}
-          >
-            <CheckCircle className={`w-3.5 h-3.5 shrink-0 ${isCompleted ? 'fill-white text-emerald-600' : ''}`} />
-            <span className="whitespace-nowrap">{isCompleted ? 'Lido ✓' : 'Concluir'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Typography & Appearance Drawer */}
+      {/* Typography & Appearance Drawer (toggled via Navbar Definições) */}
       {showSettingsDrawer && (
         <div className="border-b px-3 sm:px-4 py-2.5 sm:py-3 bg-zinc-900/95 border-zinc-800 w-full">
           <ReaderSettingsComponent
@@ -537,11 +424,99 @@ export const Reader: React.FC<ReaderProps> = ({
         </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8 w-full overflow-hidden">
+      {/* Main Content Area: Touch/Click on reading area toggles Focus Mode, pb-36 protects from BottomNav */}
+      <main 
+        onClick={handleContainerClick}
+        className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 sm:space-y-8 w-full pb-36 sm:pb-44 cursor-default select-text"
+      >
         
-        {/* Title Header */}
-        <div className="text-center space-y-2 pb-4 border-b border-inherit">
+        {/* In-flow Reader Actions (Narration, Bookmarks, Conclude) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800/80 text-xs">
+          {/* Left: Audio Player Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleAudio}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                isPlayingAudio
+                  ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-400'
+                  : 'bg-zinc-900 text-amber-300 hover:bg-zinc-800 border border-zinc-800'
+              }`}
+              title={isPlayingAudio ? 'Pausar Áudio' : 'Ouvir Narração'}
+            >
+              {isPlayingAudio ? (
+                <>
+                  <Pause className="w-3.5 h-3.5 fill-current animate-pulse" />
+                  <span>Pausar Áudio</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Ouvir Narração</span>
+                </>
+              )}
+            </button>
+
+            {isPlayingAudio && (
+              <div className="flex items-center gap-1 font-mono px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-[11px]">
+                {[0.75, 1.0, 1.25, 1.5].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => handleSpeedChange(s)}
+                    className={`px-1 rounded ${audioSpeed === s ? 'font-bold text-amber-400' : 'text-zinc-400'}`}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {onOpenBible && assignedTargets.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onOpenBible(assignedTargets[0].bookNumber, assignedTargets[0].chapter)}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors"
+                title="Abrir texto na Bíblia de Estudo"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                <span>Bíblia de Estudo</span>
+              </button>
+            )}
+          </div>
+
+          {/* Right: Quick Bookmark & Conclude Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onToggleBookmark(dayReading.day)}
+              className={`p-2 rounded-xl transition-colors ${
+                isBookmarked 
+                  ? 'text-amber-500 fill-amber-500 bg-amber-950/40 border border-amber-800/60' 
+                  : 'text-zinc-400 hover:text-zinc-200 bg-zinc-900 border border-zinc-800'
+              }`}
+              title="Favoritar / Salvar Leitura"
+            >
+              <Bookmark className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCompleteClick}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                isCompleted
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700'
+              }`}
+            >
+              <CheckCircle className={`w-3.5 h-3.5 ${isCompleted ? 'fill-white text-emerald-600' : ''}`} />
+              <span>{isCompleted ? 'Lido ✓' : 'Marcar Lido'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Section Context (Period, Passages, Literary Genre) */}
+        <div className="text-center space-y-2 pb-4 border-b border-zinc-800/80">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300">
             <Compass className="w-3.5 h-3.5" />
             <span>{dayReading.periodName}</span>
@@ -552,14 +527,10 @@ export const Reader: React.FC<ReaderProps> = ({
             )}
           </div>
 
-          <h1 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight">
-            {dayReading.title}
-          </h1>
-
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-sm font-medium text-stone-500 dark:text-stone-400">
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-sm font-medium text-stone-400">
             <span>{dayReading.dateDefault}</span>
             <span>•</span>
-            <span className="font-serif text-amber-800 dark:text-amber-400 font-semibold">
+            <span className="font-serif text-amber-400 font-semibold">
               {dayReading.passages.map(p => `${p.book} ${p.reference}`).join(' | ')}
             </span>
             {assignedTargets.length > 0 && (

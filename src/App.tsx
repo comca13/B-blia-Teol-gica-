@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MainRoute, PlanType, ReaderSettings, ReminderSettings, UserProgress } from './types';
 import { CHRONOLOGICAL_PLAN } from './data/chronologicalPlan';
 import { CANONICAL_PLAN } from './data/canonicalPlan';
@@ -30,7 +30,40 @@ export default function App() {
   const [selectedDayNumber, setSelectedDayNumber] = useState<number>(1);
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [bibleReadingMode, setBibleReadingMode] = useState<'plan-day' | 'browse-books'>('browse-books');
+  const [bibleSectionInfo, setBibleSectionInfo] = useState<{ title: string; subtitle?: string }>({
+    title: 'Gênesis 1',
+    subtitle: 'Livro 1 de 66 • Antigo Testamento'
+  });
+
+  const handleToggleFocusMode = useCallback(() => {
+    setIsFocusMode(prev => {
+      const next = !prev;
+      if (next) {
+        setIsStudyDrawerOpen(false);
+        setIsSettingsOpen(false);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleStudyDrawer = useCallback(() => {
+    setIsStudyDrawerOpen(prev => !prev);
+  }, []);
+
+  const handleToggleSettings = useCallback(() => {
+    setIsSettingsOpen(prev => !prev);
+  }, []);
+
+  const handleSectionChange = useCallback((title: string, subtitle?: string) => {
+    setBibleSectionInfo(prev => {
+      if (prev.title === title && prev.subtitle === subtitle) {
+        return prev;
+      }
+      return { title, subtitle };
+    });
+  }, []);
 
   // Active plan dataset
   const currentPlanDays = progress.planType === 'chronological' ? CHRONOLOGICAL_PLAN : CANONICAL_PLAN;
@@ -136,6 +169,12 @@ export default function App() {
     const percent = Math.round((progress.completedDays.length / 365) * 100);
     switch (activeRoute) {
       case 'BIBLIA':
+        if (bibleReadingMode === 'browse-books' && bibleSectionInfo) {
+          return {
+            navTitle: bibleSectionInfo.title,
+            navSubtitle: bibleSectionInfo.subtitle || 'Bíblia Sagrada Completa'
+          };
+        }
         return {
           navTitle: currentReading.title,
           navSubtitle: `Dia ${selectedDayNumber} de 365 • ${currentReading.periodName}`
@@ -161,20 +200,21 @@ export default function App() {
           navSubtitle: 'Bíblia Teológica 365'
         };
     }
-  }, [activeRoute, currentReading, selectedDayNumber, progress, userName]);
+  }, [activeRoute, bibleReadingMode, bibleSectionInfo, currentReading, selectedDayNumber, progress, userName]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-stone-100 flex flex-col font-sans selection:bg-amber-900 selection:text-amber-100">
       
-      {/* 1. Header Simplificado (Navbar) */}
+      {/* 1. Header Simplificado (Navbar com Single Source of Truth) */}
       <Navbar
         activeRoute={activeRoute}
         dynamicTitle={navTitle}
         dynamicSubtitle={navSubtitle}
         isFocusMode={isFocusMode}
-        onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+        onToggleFocusMode={handleToggleFocusMode}
         isStudyDrawerOpen={isStudyDrawerOpen}
-        onToggleStudyDrawer={() => setIsStudyDrawerOpen(prev => !prev)}
+        onToggleStudyDrawer={handleToggleStudyDrawer}
+        onToggleSettings={handleToggleSettings}
         streak={progress.streak}
         onGoToHome={() => {
           setActiveRoute('BIBLIA');
@@ -183,8 +223,8 @@ export default function App() {
         }}
       />
 
-      {/* 2. Área Central de Visualização (Views dedicadas com pb-28 para a Bottom Dock) */}
-      <main className="flex-1 pb-24 sm:pb-28">
+      {/* 2. Área Central de Visualização */}
+      <main className="flex-1">
         {activeRoute === 'BIBLIA' && (
           <BibleView
             currentDayReading={currentReading}
@@ -200,11 +240,14 @@ export default function App() {
             personalNote={progress.notes[selectedDayNumber] || ''}
             onSaveNote={handleSaveNote}
             isFocusMode={isFocusMode}
-            onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+            onToggleFocusMode={handleToggleFocusMode}
             isStudyDrawerOpen={isStudyDrawerOpen}
-            onToggleStudyDrawer={() => setIsStudyDrawerOpen(prev => !prev)}
+            onToggleStudyDrawer={handleToggleStudyDrawer}
+            isSettingsOpen={isSettingsOpen}
+            onToggleSettings={handleToggleSettings}
             readingMode={bibleReadingMode}
             onReadingModeChange={setBibleReadingMode}
+            onSectionChange={handleSectionChange}
           />
         )}
 
@@ -243,20 +286,18 @@ export default function App() {
         )}
       </main>
 
-      {/* 3. Barra de Navegação Inferior Flutuante (Bottom Pill Dock) */}
-      {/* Oculta apenas quando o usuário entra voluntariamente no Modo Foco Total na Bíblia */}
-      {!isFocusMode && (
-        <BottomNav
-          activeRoute={activeRoute}
-          onRouteChange={(route) => {
-            if (route === 'BIBLIA') {
-              setBibleReadingMode('browse-books');
-            }
-            setActiveRoute(route);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
-      )}
+      {/* 3. Barra de Navegação Inferior Flutuante (animada suavemente via CSS translate em Focus Mode) */}
+      <BottomNav
+        isFocusMode={isFocusMode}
+        activeRoute={activeRoute}
+        onRouteChange={(route) => {
+          if (route === 'BIBLIA') {
+            setBibleReadingMode('browse-books');
+          }
+          setActiveRoute(route);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
 
       {/* Indicador de Conexão Offline */}
       <OfflineIndicator />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserTheologicalNote, TheologicalCategory } from '../types';
+import { UserTheologicalNote, TheologicalNoteCategory } from '../types';
 import { 
   loadTheologicalNotes, 
   saveTheologicalNotes, 
@@ -40,12 +40,12 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
-  const [category, setCategory] = useState<TheologicalCategory>('PRATICA_DEVOCIONAL');
+  const [category, setCategory] = useState<TheologicalNoteCategory>('PRATICA_DEVOCIONAL');
   const [tagInput, setTagInput] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   
   // Filtering & Feedback State
-  const [selectedLocusFilter, setSelectedLocusFilter] = useState<TheologicalCategory | 'ALL'>('ALL');
+  const [selectedLocusFilter, setSelectedLocusFilter] = useState<TheologicalNoteCategory | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedStatus, setCopiedStatus] = useState<boolean>(false);
   const [saveStatus, setSaveStatus] = useState<boolean>(false);
@@ -324,7 +324,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
                 Locus Teológico (Classificação Sistemática):
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {(Object.entries(THEOLOGICAL_CATEGORY_LABELS) as [TheologicalCategory, { label: string; locus: string; description: string }][]).map(([key, meta]) => {
+                {(Object.entries(THEOLOGICAL_CATEGORY_LABELS) as [TheologicalNoteCategory, { label: string; locus: string; description: string }][]).map(([key, meta]) => {
                   const isSelected = category === key;
                   return (
                     <button
@@ -547,7 +547,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
               Todos os Loci ({notes.length})
             </button>
 
-            {(Object.entries(THEOLOGICAL_CATEGORY_LABELS) as [TheologicalCategory, { label: string; locus: string; description: string }][]).map(([key, meta]) => {
+            {(Object.entries(THEOLOGICAL_CATEGORY_LABELS) as [TheologicalNoteCategory, { label: string; locus: string; description: string }][]).map(([key, meta]) => {
               const count = categoryCounts[key] || 0;
               const isSelected = selectedLocusFilter === key;
               return (

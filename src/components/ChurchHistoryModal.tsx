@@ -169,7 +169,7 @@ export const ChurchHistoryModal: React.FC<ChurchHistoryModalProps> = ({
               }`}
             >
               <Scale className="w-4 h-4" />
-              <span>Calvinismo vs. Arminianismo</span>
+              <span>Sistemas Teológicos (5 Eixos)</span>
             </button>
 
             <button
@@ -353,10 +353,10 @@ export const ChurchHistoryModal: React.FC<ChurchHistoryModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: MATRIZ COMPARATIVA SOTERIOLÓGICA (CALVINISMO VS. ARMINIANISMO) */}
+          {/* TAB 2: MATRIZ COMPARATIVA DE SISTEMAS TEOLÓGICOS (5 EIXOS) */}
           {activeTab === 'theological-systems' && (
             <div className="space-y-4">
-              <TheologicalSystemsCard defaultExpanded={true} />
+              <TheologicalSystemsCard defaultExpanded={true} showCategoryNav={true} />
             </div>
           )}
 

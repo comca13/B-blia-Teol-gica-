@@ -23,6 +23,9 @@ interface BibleViewProps {
   onToggleStudyDrawer: () => void;
   readingMode: 'plan-day' | 'browse-books';
   onReadingModeChange: (mode: 'plan-day' | 'browse-books') => void;
+  onSectionChange?: (title: string, subtitle?: string) => void;
+  isSettingsOpen?: boolean;
+  onToggleSettings?: () => void;
 }
 
 export const BibleView: React.FC<BibleViewProps> = ({
@@ -43,7 +46,10 @@ export const BibleView: React.FC<BibleViewProps> = ({
   isStudyDrawerOpen,
   onToggleStudyDrawer,
   readingMode,
-  onReadingModeChange
+  onReadingModeChange,
+  onSectionChange,
+  isSettingsOpen,
+  onToggleSettings
 }) => {
   const [initialBook, setInitialBook] = useState<number>(1);
   const [initialChapter, setInitialChapter] = useState<number>(1);
@@ -109,6 +115,8 @@ export const BibleView: React.FC<BibleViewProps> = ({
           onToggleFocusMode={onToggleFocusMode}
           isStudyDrawerOpen={isStudyDrawerOpen}
           onToggleStudyDrawer={onToggleStudyDrawer}
+          isSettingsOpen={isSettingsOpen}
+          onToggleSettings={onToggleSettings}
         />
       ) : (
         <div className="pt-2">
@@ -116,6 +124,9 @@ export const BibleView: React.FC<BibleViewProps> = ({
             initialBookNumber={initialBook}
             initialChapter={initialChapter}
             onBackToDashboard={() => onReadingModeChange('plan-day')}
+            onSectionChange={onSectionChange}
+            isFocusMode={isFocusMode}
+            onToggleFocusMode={onToggleFocusMode}
           />
         </div>
       )}

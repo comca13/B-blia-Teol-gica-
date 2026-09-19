@@ -1,4 +1,4 @@
-import { UserProgress, ReaderSettings, ReminderSettings, PlanType, UserTheologicalNote, TheologicalCategory } from '../types';
+import { UserProgress, ReaderSettings, ReminderSettings, PlanType, UserTheologicalNote, TheologicalNoteCategory } from '../types';
 
 const STORAGE_KEYS = {
   PROGRESS: 'cronos_canon_progress',
@@ -111,7 +111,7 @@ export const loadTheologicalNotes = (): UserTheologicalNote[] => {
             date: new Date().toISOString().split('T')[0],
             readingDay: d,
             passageRef: `Dia ${d}`,
-            category: 'PRATICA_DEVOCIONAL' as TheologicalCategory,
+            category: 'PRATICA_DEVOCIONAL' as TheologicalNoteCategory,
             tags: ['devocional', 'diário'],
             title: `Reflexão do Dia ${d}`,
             content: text,
@@ -140,7 +140,7 @@ export const saveTheologicalNotes = (notes: UserTheologicalNote[]): void => {
   }
 };
 
-export const THEOLOGICAL_CATEGORY_LABELS: Record<TheologicalCategory, { label: string; locus: string; color: string; description: string }> = {
+export const THEOLOGICAL_CATEGORY_LABELS: Record<TheologicalNoteCategory, { label: string; locus: string; color: string; description: string }> = {
   TEOLOGIA_PROPRIAMENTE_DITA: {
     label: 'Teologia Própria',
     locus: 'De Deo',
@@ -214,7 +214,7 @@ export const exportNotesAsMarkdown = (notes: UserTheologicalNote[]): string => {
   }
 
   for (const [categoryKey, categoryNotes] of Object.entries(grouped)) {
-    const meta = THEOLOGICAL_CATEGORY_LABELS[categoryKey as TheologicalCategory] || {
+    const meta = THEOLOGICAL_CATEGORY_LABELS[categoryKey as TheologicalNoteCategory] || {
       label: categoryKey,
       locus: '',
       description: ''

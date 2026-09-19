@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Flame, Eye, EyeOff, Layers } from 'lucide-react';
+import { BookOpen, Flame, Eye, EyeOff, Layers, Settings2 } from 'lucide-react';
 import { MainRoute } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -11,6 +11,8 @@ interface NavbarProps {
   onToggleFocusMode?: () => void;
   isStudyDrawerOpen?: boolean;
   onToggleStudyDrawer?: () => void;
+  isSettingsOpen?: boolean;
+  onToggleSettings?: () => void;
   streak: number;
   onGoToHome: () => void;
 }
@@ -23,11 +25,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleFocusMode,
   isStudyDrawerOpen = false,
   onToggleStudyDrawer,
+  isSettingsOpen = false,
+  onToggleSettings,
   streak,
   onGoToHome
 }) => {
   return (
-    <header className="sticky top-0 z-30 w-full border-b transition-colors backdrop-blur-md bg-zinc-950/90 dark:bg-zinc-950/90 border-zinc-800/80">
+    <header 
+      className={`fixed top-0 left-0 right-0 z-30 w-full border-b transition-transform duration-300 ease-in-out backdrop-blur-md bg-zinc-950/90 border-zinc-800/80 ${
+        isFocusMode ? '-translate-y-full pointer-events-none' : 'translate-y-0'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
         
         {/* Esquerda: Logo da Bíblia Teológica */}
@@ -61,9 +69,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Direita: Apenas ações contextuais da tela */}
+        {/* Direita: Ações contextuais da tela */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Se estiver na rota BÍBLIA: Botão Modo Foco e Painel de Estudo */}
+          {/* Se estiver na rota BÍBLIA: Botão Modo Foco, Definições e Painel de Estudo */}
           {activeRoute === 'BIBLIA' && onToggleFocusMode && (
             <button
               type="button"
@@ -86,6 +94,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span className="hidden sm:inline">Modo Foco</span>
                 </>
               )}
+            </button>
+          )}
+
+          {activeRoute === 'BIBLIA' && !isFocusMode && onToggleSettings && (
+            <button
+              type="button"
+              onClick={onToggleSettings}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                isSettingsOpen
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60'
+              }`}
+              title="Definições de Leitura (Fonte e Tipografia)"
+            >
+              <Settings2 className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Definições</span>
             </button>
           )}
 

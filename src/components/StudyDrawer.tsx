@@ -44,22 +44,34 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop with fade-in */}
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity" 
+        className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 transition-opacity animate-in fade-in duration-200" 
         onClick={onClose}
         aria-hidden="true"
       />
       
-      {/* Drawer Container (Right side on desktop, bottom sheet / drawer on mobile) */}
+      {/* Drawer Container:
+          - Mobile (< md): Bottom Sheet sliding from bottom (h-[82vh], rounded-t-3xl, border-t)
+          - Desktop (md:): Side Drawer sliding from right (h-full, inset-y-0 right-0, rounded-none, border-l)
+      */}
       <aside 
         aria-label="Painel de Estudo Acadêmico"
-        className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-lg lg:max-w-xl bg-zinc-950 text-stone-100 border-l border-zinc-800 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out"
+        className="fixed bottom-0 left-0 w-full h-[82vh] max-h-[85vh] rounded-t-3xl border-t border-zinc-700/80 shadow-2xl z-50 flex flex-col bg-zinc-950 text-stone-100 md:bottom-auto md:top-0 md:inset-y-0 md:right-0 md:left-auto md:w-full md:max-w-lg md:lg:max-w-xl md:h-full md:max-h-none md:rounded-none md:border-t-0 md:border-l md:border-zinc-800 animate-in slide-in-from-bottom-10 md:slide-in-from-right-10 duration-300 ease-out"
       >
+        {/* Mobile Drag Handle */}
+        <div 
+          className="md:hidden flex items-center justify-center pt-3 pb-1 cursor-pointer select-none"
+          onClick={onClose}
+          title="Deslizar para baixo para fechar"
+        >
+          <div className="w-12 h-1.5 rounded-full bg-zinc-600 hover:bg-zinc-500 transition-colors" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-zinc-800/80 bg-zinc-900/60">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-800/80 bg-zinc-900/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>

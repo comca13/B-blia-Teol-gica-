@@ -37,6 +37,9 @@ interface BibleReaderProps {
   currentPlan?: 'chronological' | 'canonical';
   currentDay?: number;
   onGoToDayReading?: (day: number) => void;
+  onSectionChange?: (title: string, subtitle?: string) => void;
+  isFocusMode?: boolean;
+  onToggleFocusMode?: () => void;
 }
 
 export const BibleReader: React.FC<BibleReaderProps> = ({
@@ -44,7 +47,10 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   initialChapter,
   currentPlan,
   currentDay,
-  onGoToDayReading
+  onGoToDayReading,
+  onSectionChange,
+  isFocusMode = false,
+  onToggleFocusMode
 }) => {
   const [language, setLanguage] = useState<'pt' | 'en'>('pt');
   const [bookNumber, setBookNumber] = useState<number>(initialBookNumber || 1); // 1 = Gênesis
@@ -62,7 +68,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       setChapter(initialChapter);
     }
   }, [initialBookNumber, initialChapter]);
-  
+
   // Reading preferences
   const [fontSize, setFontSize] = useState<number>(18); // 16, 18, 20, 22
   const [copiedVerse, setCopiedVerse] = useState<number | null>(null);
@@ -75,6 +81,30 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const currentBook: BibleBookInfo = useMemo(() => {
     return ALL_BIBLE_BOOKS.find(b => b.number === bookNumber) || ALL_BIBLE_BOOKS[0];
   }, [bookNumber]);
+
+  // Bubble up dynamic section title to Navbar (Single Source of Truth)
+  const onSectionChangeRef = useRef(onSectionChange);
+  useEffect(() => {
+    onSectionChangeRef.current = onSectionChange;
+  }, [onSectionChange]);
+
+  const lastReportedSectionRef = useRef<{ title: string; subtitle: string } | null>(null);
+
+  useEffect(() => {
+    const bookName = language === 'pt' ? currentBook.namePt : currentBook.nameEn;
+    const title = `${bookName} ${chapter}`;
+    const subtitle = `Capítulo ${chapter} de ${currentBook.totalChapters} • ${currentBook.testament === 'AT' ? 'Antigo Testamento' : 'Novo Testamento'}`;
+
+    if (
+      lastReportedSectionRef.current?.title === title &&
+      lastReportedSectionRef.current?.subtitle === subtitle
+    ) {
+      return;
+    }
+
+    lastReportedSectionRef.current = { title, subtitle };
+    onSectionChangeRef.current?.(title, subtitle);
+  }, [currentBook.namePt, currentBook.nameEn, currentBook.totalChapters, currentBook.testament, chapter, language]);
 
   // Context resolvers for the current book and chapter
   const bookPassage = useMemo<BiblePassage[]>(() => [{
@@ -213,8 +243,17 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     });
   };
 
+  const handleReadingAreaClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, select, input, a, [role="button"], textarea, label')) return;
+    onToggleFocusMode?.();
+  };
+
   return (
-    <div ref={contentRef} className="pb-28 pt-2 px-3 sm:px-6 max-w-4xl mx-auto text-zinc-100 space-y-5">
+    <div 
+      ref={contentRef} 
+      onClick={handleReadingAreaClick}
+      className="pb-36 sm:pb-44 pt-2 px-3 sm:px-6 max-w-4xl mx-auto text-zinc-100 space-y-5"
+    >
       
       {/* Plan Shortcut Banner if available */}
       {currentDay && onGoToDayReading && (
@@ -243,26 +282,15 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
         </div>
       )}
 
-      {/* Top Header Card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
-        
-        {/* Title and Language Toggle */}
+      {/* Sleek Book & Translation Selector Bar */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4" />
-            </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-serif font-bold text-zinc-100 flex items-center gap-2">
-                Bíblia Sagrada Completa
-                <span className="text-[11px] font-sans font-normal px-2 py-0.5 rounded-full bg-zinc-800 text-amber-400 border border-zinc-700">
-                  66 Livros
-                </span>
-              </h1>
-              <p className="text-xs text-zinc-400">
-                Antigo Testamento (39) e Novo Testamento (27)
-              </p>
-            </div>
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <span className="font-semibold text-amber-400 font-serif text-sm">
+              {currentBook.number}. {language === 'pt' ? currentBook.namePt : currentBook.nameEn}
+            </span>
+            <span>•</span>
+            <span>{currentBook.testament === 'AT' ? 'Antigo Testamento' : 'Novo Testamento'} ({currentBook.group})</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -451,25 +479,21 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       {/* Main Scripture Card */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 sm:p-8 shadow-2xl space-y-6">
         
-        {/* Chapter Title & Header Navigation Bar */}
+        {/* Chapter Toolbar with Genre & Prev/Next navigation */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-zinc-800">
-          <div>
-            <div className="text-xs font-semibold text-amber-500 tracking-wider uppercase mb-0.5">
-              Livro {currentBook.number} de 66 • {currentBook.testament === 'AT' ? 'Antigo Testamento' : 'Novo Testamento'}
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold font-serif text-zinc-100 flex items-center gap-2">
-              {language === 'pt' ? currentBook.namePt : currentBook.nameEn} {chapter}
-            </h2>
-            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-              <div className="text-xs text-zinc-400">
-                Versão: <span className="text-zinc-300 font-semibold">{language === 'pt' ? 'Almeida Revista e Atualizada (ARA)' : 'World English Bible (WEB)'}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-amber-500 tracking-wider uppercase">
+              Capítulo {chapter} de {currentBook.totalChapters}
+            </span>
+            <span className="text-zinc-600">•</span>
+            <span className="text-xs text-zinc-400">
+              Versão {language === 'pt' ? 'ARA (Almeida)' : 'WEB'}
+            </span>
+            {genreGuide && (
+              <div className="ml-1">
+                <LiteraryGenreBadge guide={genreGuide} />
               </div>
-              {genreGuide && (
-                <div className="ml-1">
-                  <LiteraryGenreBadge guide={genreGuide} />
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Quick Prev / Next Buttons */}
@@ -478,7 +502,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               type="button"
               onClick={handlePrevChapter}
               disabled={bookNumber === 1 && chapter === 1}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700"
               title="Capítulo Anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -489,7 +513,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               type="button"
               onClick={handleNextChapter}
               disabled={bookNumber === 66 && chapter === currentBook.totalChapters}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700"
               title="Próximo Capítulo"
             >
               <span className="hidden sm:inline">Próximo</span>

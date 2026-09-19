@@ -22,7 +22,8 @@ import {
 } from '../data/churchHistoryData';
 import { HISTORICAL_PERIODS } from '../data/theologicalPeriods';
 import { TheologicalSystemsCard } from '../components/TheologicalSystemsCard';
-import { IntertestamentalSubPhase } from '../types';
+import { IntertestamentalSubPhase, TheologicalCategory } from '../types';
+import { THEOLOGICAL_DEBATES, THEOLOGICAL_CATEGORIES_META } from '../data/theologicalSystemsData';
 
 type HistorySubTab = 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline';
 
@@ -37,6 +38,12 @@ export const HistoryView: React.FC = () => {
   // Creeds State
   const [selectedCreedId, setSelectedCreedId] = useState<string>(ECUMENICAL_CREEDS[0].id);
   const [copiedCreed, setCopiedCreed] = useState(false);
+
+  // Theological Systems State
+  const [selectedTheologicalCategory, setSelectedTheologicalCategory] = useState<TheologicalCategory>('SOTERIOLOGIA');
+  const activeDebate = useMemo(() => {
+    return THEOLOGICAL_DEBATES.find(d => d.category === selectedTheologicalCategory) || THEOLOGICAL_DEBATES[0];
+  }, [selectedTheologicalCategory]);
 
   // Second Temple Phase State
   const intertestamentalPeriod = HISTORICAL_PERIODS.find(p => p.id === 'intertestamental');
@@ -249,8 +256,68 @@ export const HistoryView: React.FC = () => {
 
       {/* 2. SISTEMAS TEOLÓGICOS */}
       {activeTab === 'theology' && (
-        <div className="animate-in fade-in duration-200">
-          <TheologicalSystemsCard defaultExpanded={true} />
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {/* Menu Secundário de Eixos Teológicos */}
+          <div className="bg-zinc-900/70 border border-zinc-800 rounded-3xl p-3 sm:p-4 shadow-lg space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold flex items-center gap-1.5">
+                <Scale className="w-3.5 h-3.5" />
+                Os 5 Grandes Eixos da Teologia Histórica:
+              </span>
+              <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">
+                Selecione um eixo para explorar a matriz comparativa
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5">
+              {(Object.keys(THEOLOGICAL_CATEGORIES_META) as TheologicalCategory[]).map((catKey) => {
+                const meta = THEOLOGICAL_CATEGORIES_META[catKey];
+                const debateItem = THEOLOGICAL_DEBATES.find(d => d.category === catKey);
+                const isSelected = selectedTheologicalCategory === catKey;
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => setSelectedTheologicalCategory(catKey)}
+                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-amber-500 bg-amber-950/30 shadow-md ring-1 ring-amber-500/20'
+                        : 'border-zinc-800 bg-zinc-900/80 hover:border-zinc-700 hover:bg-zinc-850'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                          isSelected ? 'bg-amber-500/20 text-amber-300' : 'bg-zinc-800 text-zinc-400'
+                        }`}>
+                          {debateItem?.systems.length || 0} Sistemas
+                        </span>
+                        {isSelected && (
+                          <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        )}
+                      </div>
+                      <h4 className={`font-serif font-bold text-xs sm:text-sm leading-tight ${
+                        isSelected ? 'text-stone-100' : 'text-zinc-300'
+                      }`}>
+                        {meta.shortName}
+                      </h4>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 mt-2 line-clamp-1">
+                      {meta.subtitle}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Componente de Comparação Multi-Visão em Grid */}
+          <TheologicalSystemsCard 
+            category={selectedTheologicalCategory}
+            debate={activeDebate} 
+            defaultExpanded={true}
+            onSelectCategory={setSelectedTheologicalCategory}
+          />
         </div>
       )}
 

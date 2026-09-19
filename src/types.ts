@@ -159,7 +159,30 @@ export interface TextualVariant {
   significanceForTranslation: string; // Explicação de como diferentes traduções (ARC, ARA, NVI) vertem o texto
 }
 
-export type TheologicalCategory =
+export type TheologicalCategory = 
+  | 'SOTERIOLOGIA' 
+  | 'ESCATOLOGIA' 
+  | 'PACTOS_E_HISTORIA' 
+  | 'CRISTOLOGIA_PATRISTICA'
+  | 'TEOLOGIA_MODERNA';
+
+export interface TheologicalSystem {
+  id: string;
+  name: string; // Ex: "Amilenismo", "Calvinismo", "Dispensacionalismo"
+  proponents: string[]; // Ex: ["Agostinho", "Lutero", "Calvino"] ou ["Darby", "Scofield"]
+  coreBeliefs: string[]; // Lista de 3 a 5 crenças principais (bullet points)
+  historicalContext: string; // Quando e por que surgiu
+}
+
+export interface TheologicalDebate {
+  id: string;
+  category: TheologicalCategory;
+  title: string; // Ex: "O Debate do Milênio", "A Natureza da Salvação"
+  description: string; // Resumo do que está em jogo neste debate
+  systems: TheologicalSystem[]; // Array contendo as visões que concorrem entre si
+}
+
+export type TheologicalNoteCategory =
   | 'TEOLOGIA_PROPRIAMENTE_DITA' // Deus, Trindade, Decretos
   | 'CRISTOLOGIA'               // Pessoa e Obra de Cristo
   | 'PNEUMATOLOGIA'             // Espírito Santo
@@ -175,7 +198,7 @@ export interface UserTheologicalNote {
   date: string;
   readingDay: number;
   passageRef: string;
-  category: TheologicalCategory;
+  category: TheologicalNoteCategory;
   tags: string[];
   title: string;
   content: string; // Suporte a Markdown
