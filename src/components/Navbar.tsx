@@ -15,6 +15,7 @@ interface NavbarProps {
   onToggleSettings?: () => void;
   streak: number;
   onGoToHome: () => void;
+  isNavHidden?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -28,12 +29,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   isSettingsOpen = false,
   onToggleSettings,
   streak,
-  onGoToHome
+  onGoToHome,
+  isNavHidden = false
 }) => {
+  const isHidden = isFocusMode || isNavHidden;
+
   return (
     <header 
-      className={`fixed top-0 left-0 right-0 z-30 w-full border-b transition-transform duration-300 ease-in-out backdrop-blur-md bg-zinc-950/90 border-zinc-800/80 ${
-        isFocusMode ? '-translate-y-full pointer-events-none' : 'translate-y-0'
+      className={`fixed top-0 left-0 right-0 z-30 w-full border-b transition-transform duration-300 ease-in-out backdrop-blur-md bg-zinc-950/90 border-zinc-800/80 shadow-xs ${
+        isHidden ? '-translate-y-full pointer-events-none' : 'translate-y-0'
       }`}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">

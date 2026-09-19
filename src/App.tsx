@@ -168,6 +168,58 @@ export default function App() {
     saveUserName(newName);
   };
 
+  // Scroll direction state for auto-hiding top & bottom navigation on scroll down
+  const [isScrolledDown, setIsScrolledDown] = useState<boolean>(false);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+
+          // Always show navbar near top of page
+          if (currentScrollY <= 45) {
+            setIsScrolledDown(false);
+            lastScrollY = currentScrollY;
+            ticking = false;
+            return;
+          }
+
+          const deltaY = currentScrollY - lastScrollY;
+
+          // Only trigger if scroll delta exceeds threshold to avoid micro-movements
+          if (Math.abs(deltaY) > 8) {
+            if (deltaY > 0 && currentScrollY > 70) {
+              // Scrolling down: auto-hide bars
+              setIsScrolledDown(true);
+            } else if (deltaY < 0) {
+              // Scrolling up: reveal bars
+              setIsScrolledDown(false);
+            }
+            lastScrollY = currentScrollY;
+          }
+
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Reset scroll state whenever route, day, or reading mode changes
+  useEffect(() => {
+    setIsScrolledDown(false);
+  }, [activeRoute, selectedDayNumber, bibleReadingMode]);
+
+  // Keep navigation visible if study drawer or settings are open
+  const isNavHidden = isScrolledDown && !isStudyDrawerOpen && !isSettingsOpen;
+
   // Dynamic Navbar Title & Subtitle based on Route
   const { navTitle, navSubtitle } = useMemo(() => {
     const percent = Math.round((progress.completedDays.length / 365) * 100);
@@ -225,10 +277,11 @@ export default function App() {
           setBibleReadingMode('browse-books');
           setIsFocusMode(false);
         }}
+        isNavHidden={isNavHidden}
       />
 
-      {/* 2. Área Central de Visualização */}
-      <main className="flex-1">
+      {/* 2. Área Central de Visualização (pt-14 sm:pt-16 garante que a Navbar fixa não cubra as abas nem o conteúdo) */}
+      <main className={`flex-1 ${isFocusMode ? 'pt-2' : 'pt-14 sm:pt-16'} transition-[padding] duration-200`}>
         {activeRoute === 'BIBLIA' && (
           <BibleView
             currentDayReading={currentReading}
@@ -296,9 +349,10 @@ export default function App() {
         )}
       </main>
 
-      {/* 3. Barra de Navegação Inferior Flutuante (animada suavemente via CSS translate em Focus Mode) */}
+      {/* 3. Barra de Navegação Inferior Flutuante (animada suavemente via CSS translate em Focus Mode e auto-hide no scroll) */}
       <BottomNav
         isFocusMode={isFocusMode}
+        isNavHidden={isNavHidden}
         activeRoute={activeRoute}
         onRouteChange={(route) => {
           if (route === 'BIBLIA') {

@@ -1,21 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { GospelHarmonyEvent } from '../types';
 import { EVANGELISTS_META } from '../data/gospelHarmonyData';
 import { 
   Sparkles, 
   BookOpen, 
   Copy, 
-  Check, 
-  ExternalLink, 
-  Scroll, 
-  Compass, 
-  Info,
-  ChevronDown,
-  ChevronUp
+  Check 
 } from 'lucide-react';
 
 interface GospelHarmonyGridProps {
-  event: GospelHarmonyEvent;
+  event?: GospelHarmonyEvent | null;
   onNavigateToPassage?: (passageRef: string) => void;
   currentBook?: string;
   currentChapter?: number;
@@ -36,7 +30,7 @@ const EVANGELISTS_LIST: Array<'matthew' | 'mark' | 'luke' | 'john'> = [
   'john'
 ];
 
-export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
+export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = React.memo(({
   event,
   onNavigateToPassage,
   currentBook,
@@ -45,16 +39,25 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeMobileEvangelist, setActiveMobileEvangelist] = useState<'matthew' | 'mark' | 'luke' | 'john' | 'all'>('all');
 
-  const catInfo = CATEGORY_LABELS[event.category] || {
-    label: event.category,
+  // Defensive early check
+  if (!event) return null;
+
+  const eventCategory = event.category ?? 'MINISTERIO';
+  const catInfo = CATEGORY_LABELS[eventCategory] ?? {
+    label: eventCategory,
     color: 'bg-zinc-800 text-zinc-300 border-zinc-700'
   };
 
-  const handleCopy = (refText: string, key: string) => {
+  const title = event.title ?? 'Harmonia dos Evangelhos';
+  const theologicalEmphasis = event.theologicalEmphasis ?? '';
+  const references = event.references ?? { matthew: null, mark: null, luke: null, john: null };
+
+  const handleCopy = useCallback((refText: string, key: string) => {
+    if (!refText) return;
     navigator.clipboard.writeText(refText);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
-  };
+  }, []);
 
   return (
     <div className="rounded-3xl bg-gradient-to-br from-zinc-900/95 via-stone-900/90 to-zinc-950 border border-zinc-800 p-4 sm:p-6 shadow-xl space-y-5">
@@ -71,7 +74,7 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
             </span>
           </div>
           <h3 className="font-serif text-lg sm:text-xl font-bold text-stone-100">
-            {event.title}
+            {title}
           </h3>
         </div>
 
@@ -89,7 +92,7 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
             Todos (4)
           </button>
           {EVANGELISTS_LIST.map(k => {
-            const hasRef = !!event.references[k];
+            const hasRef = !!references?.[k];
             const meta = EVANGELISTS_META[k];
             return (
               <button
@@ -118,8 +121,8 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
       <div className="hidden md:grid md:grid-cols-4 gap-3.5">
         {EVANGELISTS_LIST.map(k => {
           const meta = EVANGELISTS_META[k];
-          const ref = event.references[k];
-          const isPresent = !!ref;
+          const ref = references?.[k];
+          const isPresent = Boolean(ref);
 
           return (
             <div
@@ -147,7 +150,7 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
                     </div>
                   </div>
 
-                  {isPresent && (
+                  {isPresent && ref && (
                     <button
                       type="button"
                       onClick={() => handleCopy(ref, k)}
@@ -164,7 +167,7 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
                 </div>
 
                 {/* Reference Box */}
-                {isPresent ? (
+                {isPresent && ref ? (
                   <div className="mt-2 space-y-2">
                     <div className="p-2.5 rounded-xl bg-zinc-950/90 border border-zinc-800 text-xs">
                       <span className="font-mono font-bold text-amber-300 block text-xs">
@@ -188,7 +191,7 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
               </div>
 
               {/* Action: Open in Reader if present */}
-              {isPresent && onNavigateToPassage && (
+              {isPresent && ref && onNavigateToPassage && (
                 <button
                   type="button"
                   onClick={() => onNavigateToPassage(ref)}
@@ -213,8 +216,8 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
           }
 
           const meta = EVANGELISTS_META[k];
-          const ref = event.references[k];
-          const isPresent = !!ref;
+          const ref = references?.[k];
+          const isPresent = Boolean(ref);
 
           return (
             <div
@@ -239,7 +242,7 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
                         ({meta.symbol})
                       </span>
                     </div>
-                    {isPresent ? (
+                    {isPresent && ref ? (
                       <span className="font-mono text-xs font-bold text-amber-300">
                         {ref}
                       </span>
@@ -251,7 +254,7 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
                   </div>
                 </div>
 
-                {isPresent && (
+                {isPresent && ref && (
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
@@ -294,22 +297,26 @@ export const GospelHarmonyGrid: React.FC<GospelHarmonyGridProps> = ({
       {/* ========================================================================= */}
       {/* THEOLOGICAL EMPHASIS CARD: Highlighted comparative exegesis box */}
       {/* ========================================================================= */}
-      <div className="rounded-2xl bg-amber-950/30 border border-amber-800/40 p-4 sm:p-5 space-y-2.5">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <span>Ênfases Teológicas Comparadas (Exegese Sinótica)</span>
-        </div>
+      {theologicalEmphasis && (
+        <div className="rounded-2xl bg-amber-950/30 border border-amber-800/40 p-4 sm:p-5 space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Ênfases Teológicas Comparadas (Exegese Sinótica)</span>
+          </div>
 
-        <p className="font-serif text-xs sm:text-sm text-stone-200 leading-relaxed">
-          {event.theologicalEmphasis}
-        </p>
+          <p className="font-serif text-xs sm:text-sm text-stone-200 leading-relaxed">
+            {theologicalEmphasis}
+          </p>
 
-        <div className="pt-2 border-t border-amber-900/40 flex items-center justify-between text-[11px] text-amber-400/80 font-mono">
-          <span>Perspectiva Redentiva-Histórica dos 4 Evangelhos</span>
-          <span className="hidden sm:inline">Tetramorfo Profético (Ez 1 / Ap 4)</span>
+          <div className="pt-2 border-t border-amber-900/40 flex items-center justify-between text-[11px] text-amber-400/80 font-mono">
+            <span>Perspectiva Redentiva-Histórica dos 4 Evangelhos</span>
+            <span className="hidden sm:inline">Tetramorfo Profético (Ez 1 / Ap 4)</span>
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );
-};
+});
+
+GospelHarmonyGrid.displayName = 'GospelHarmonyGrid';

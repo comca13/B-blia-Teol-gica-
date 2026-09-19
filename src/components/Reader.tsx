@@ -156,15 +156,35 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
     }
   }, [onCloseStudyDrawer, propOnToggleStudyDrawer, isStudyDrawerOpen]);
 
+  const handleNavigateToPassage = useCallback((ref: string) => {
+    if (onOpenBible) {
+      const match = ref.match(/^([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+)/);
+      if (match) {
+        const rawBook = match[1].trim().toLowerCase();
+        const targetChapter = parseInt(match[2], 10);
+        const foundBook = ALL_BIBLE_BOOKS.find(b => {
+          const bPt = b.namePt.toLowerCase();
+          const bEn = b.nameEn.toLowerCase();
+          const bAb = b.abbrevPt.toLowerCase();
+          return bPt.includes(rawBook) || rawBook.includes(bPt) || bEn.includes(rawBook) || bAb === rawBook;
+        });
+        if (foundBook) {
+          onOpenBible(foundBook.number, targetChapter);
+          handleCloseStudyDrawer();
+        }
+      }
+    }
+  }, [onOpenBible, handleCloseStudyDrawer]);
+
   const [internalShowSettingsDrawer, setInternalShowSettingsDrawer] = useState(false);
   const showSettingsDrawer = propIsSettingsOpen !== undefined ? propIsSettingsOpen : internalShowSettingsDrawer;
-  const setShowSettingsDrawer = (val: boolean) => {
+  const setShowSettingsDrawer = useCallback((val: boolean) => {
     if (propOnToggleSettings) {
       propOnToggleSettings();
     } else {
       setInternalShowSettingsDrawer(val);
     }
-  };
+  }, [propOnToggleSettings]);
 
   const [noteText, setNoteText] = useState(personalNote);
   const [isNoteSaved, setIsNoteSaved] = useState(false);
@@ -305,7 +325,7 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
   }, []);
 
   // Handle Complete with Confetti
-  const handleCompleteClick = () => {
+  const handleCompleteClick = useCallback(() => {
     const willBeCompleted = !isCompleted;
     onToggleComplete(dayReading.day);
     if (willBeCompleted) {
@@ -315,17 +335,17 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
         origin: { y: 0.6 }
       });
     }
-  };
+  }, [isCompleted, onToggleComplete, dayReading.day]);
 
   // Web Speech API for Audio Narration
-  const stopAudio = () => {
+  const stopAudio = useCallback(() => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
     setIsPlayingAudio(false);
-  };
+  }, []);
 
-  const toggleAudio = () => {
+  const toggleAudio = useCallback(() => {
     if (!('speechSynthesis' in window)) {
       alert('Seu navegador não possui suporte a síntese de voz.');
       return;
@@ -368,28 +388,28 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
     setIsPlayingAudio(true);
-  };
+  }, [isPlayingAudio, stopAudio, dayReading, chapters, scriptureTranslation, audioSpeed]);
 
-  const handleSpeedChange = (speed: number) => {
+  const handleSpeedChange = useCallback((speed: number) => {
     setAudioSpeed(speed);
     onUpdateSettings({ ...settings, audioSpeed: speed });
     if (isPlayingAudio) {
       stopAudio();
       setTimeout(toggleAudio, 100);
     }
-  };
+  }, [settings, onUpdateSettings, isPlayingAudio, stopAudio, toggleAudio]);
 
-  const handleSaveNoteChange = (val: string) => {
+  const handleSaveNoteChange = useCallback((val: string) => {
     setNoteText(val);
     onSaveNote(dayReading.day, val);
     setIsNoteSaved(true);
     setTimeout(() => setIsNoteSaved(false), 2000);
-  };
+  }, [dayReading.day, onSaveNote]);
 
-  const handleContainerClick = (e: React.MouseEvent) => {
+  const handleContainerClick = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, select, input, a, [role="button"], textarea, label, .no-focus-toggle')) return;
     toggleFocusMode();
-  };
+  }, [toggleFocusMode]);
 
   // Font class resolver (memoized)
   const fontFamilyClass = useMemo(() => {
@@ -1101,25 +1121,7 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
         currentPassageRef={currentPassageRef}
         initialTab={studyDrawerTab}
         initialDifficultyId={studyDrawerDifficultyId}
-        onNavigateToPassage={(ref) => {
-          if (onOpenBible) {
-            const match = ref.match(/^([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+)/);
-            if (match) {
-              const rawBook = match[1].trim().toLowerCase();
-              const targetChapter = parseInt(match[2], 10);
-              const foundBook = ALL_BIBLE_BOOKS.find(b => {
-                const bPt = b.namePt.toLowerCase();
-                const bEn = b.nameEn.toLowerCase();
-                const bAb = b.abbrevPt.toLowerCase();
-                return bPt.includes(rawBook) || rawBook.includes(bPt) || bEn.includes(rawBook) || bAb === rawBook;
-              });
-              if (foundBook) {
-                onOpenBible(foundBook.number, targetChapter);
-                handleCloseStudyDrawer();
-              }
-            }
-          }
-        }}
+        onNavigateToPassage={handleNavigateToPassage}
       />
     </div>
   );

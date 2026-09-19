@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { X, Map, Book, BookOpen, Scale, Sparkles, Compass, Landmark, Search, Layers, ShieldQuestion, Filter } from 'lucide-react';
 import { CulturalContext, HistoricalCommentary, GospelHarmonyEvent, BiblicalDifficulty, ApologeticsCategory } from '../types';
 import { CulturalContextCard } from './CulturalContextCard';
@@ -185,32 +185,96 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = React.memo(({
     };
   }, [isOpen]);
 
-  // Close on Escape key
+  const drawerRef = useRef<HTMLElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+
+  // Focus trap and keyboard navigation for A11y
   useEffect(() => {
+    if (!isOpen) return;
+
+    // Store previous active element to restore focus on close
+    previousActiveElementRef.current = document.activeElement as HTMLElement | null;
+
+    // Focus first focusable element inside drawer or the drawer itself
+    const timer = setTimeout(() => {
+      if (!drawerRef.current) return;
+      const rawElements = drawerRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const focusableElements = (Array.from(rawElements) as HTMLElement[]).filter(
+        el => el.offsetParent !== null
+      );
+
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      } else {
+        drawerRef.current.focus();
+      }
+    }, 50);
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
         onClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        if (!drawerRef.current) return;
+        const rawElements = drawerRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        const focusable = (Array.from(rawElements) as HTMLElement[]).filter(
+          el => el.offsetParent !== null
+        );
+
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const firstElement = focusable[0];
+        const lastElement = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement || document.activeElement === drawerRef.current) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
       }
     };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleKeyDown);
+      // Restore focus to previous element
+      if (previousActiveElementRef.current && typeof previousActiveElementRef.current.focus === 'function') {
+        previousActiveElementRef.current.focus();
+      }
+    };
   }, [isOpen, onClose]);
 
   // Touch gesture to drag down and close on mobile bottom sheet
   const touchStartY = useRef<number | null>(null);
   const touchCurrentY = useRef<number | null>(null);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
-  };
+  }, []);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
     touchCurrentY.current = e.touches[0].clientY;
-  };
+  }, []);
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     if (touchStartY.current !== null && touchCurrentY.current !== null) {
       const deltaY = touchCurrentY.current - touchStartY.current;
       // If user swiped down by 50px or more, close drawer
@@ -220,7 +284,7 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = React.memo(({
     }
     touchStartY.current = null;
     touchCurrentY.current = null;
-  };
+  }, [onClose]);
 
   const tabs = [
     { id: 'context' as const, label: 'Contexto & História', shortLabel: 'Contexto', icon: Map },
@@ -236,22 +300,25 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = React.memo(({
 
   return (
     <>
-      {/* Backdrop with fade-in and touch containment */}
+      {/* Backdrop with fade-in, opacity transition and touch containment */}
       <div 
-        className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 transition-opacity animate-in fade-in duration-200" 
+        className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 transition-opacity duration-300 ease-in-out animate-in fade-in" 
         onClick={onClose}
         onTouchMove={(e) => e.preventDefault()}
         aria-hidden="true"
       />
       
       {/* Drawer Container:
-          - Mobile (< md): Bottom Sheet sliding from bottom (h-[82vh], rounded-t-3xl, border-t)
-          - Desktop (md:): Side Drawer sliding from right (h-full, inset-y-0 right-0, rounded-none, border-l)
+          - Hardware accelerated via GPU composition: transform, will-change-transform, transition-transform
+          - Mobile (< md): Bottom Sheet sliding from bottom (translate-y)
+          - Desktop (md:): Side Drawer sliding from right (translate-x)
       */}
       <aside 
+        ref={drawerRef}
+        tabIndex={-1}
         aria-label="Painel de Estudo Acadêmico"
         style={{ overscrollBehaviorY: 'contain' }}
-        className="fixed bottom-0 left-0 w-full h-[85vh] max-h-[88vh] rounded-t-3xl border-t border-zinc-700/80 shadow-2xl z-50 flex flex-col bg-zinc-950 text-stone-100 overscroll-contain md:bottom-auto md:top-0 md:inset-y-0 md:right-0 md:left-auto md:w-full md:max-w-xl md:lg:max-w-2xl md:h-full md:max-h-none md:rounded-none md:border-t-0 md:border-l md:border-zinc-800 animate-in slide-in-from-bottom-10 md:slide-in-from-right-10 duration-300 ease-out"
+        className="fixed bottom-0 left-0 w-full h-[85vh] max-h-[88vh] rounded-t-3xl border-t border-zinc-700/80 shadow-2xl z-50 flex flex-col bg-zinc-950 text-stone-100 overscroll-contain md:bottom-auto md:top-0 md:inset-y-0 md:right-0 md:left-auto md:w-full md:max-w-xl md:lg:max-w-2xl md:h-full md:max-h-none md:rounded-none md:border-t-0 md:border-l md:border-zinc-800 transform will-change-transform transition-transform duration-300 ease-in-out animate-in slide-in-from-bottom md:slide-in-from-right outline-hidden"
       >
         {/* Mobile Drag Handle with swipe-to-close */}
         <div 

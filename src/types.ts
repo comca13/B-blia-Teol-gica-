@@ -140,6 +140,8 @@ export interface ScriptureVerse {
   text: string;
 }
 
+export type Verse = ScriptureVerse;
+
 export interface ScriptureChapter {
   book: string;
   chapter: number;

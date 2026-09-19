@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ThematicPlan } from '../types';
 import { THEMATIC_CATEGORIES_META } from '../data/thematicPlansData';
 import { getCategoryIcon } from './ThematicPlanCard';
@@ -22,7 +22,7 @@ interface ThematicPlanDetailsModalProps {
   onSelectPassage?: (passageRef: string) => void;
 }
 
-export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> = ({
+export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> = React.memo(({
   plan,
   isOpen,
   onClose,
@@ -31,9 +31,23 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
   const [completedDays, setCompletedDays] = useState<number[]>([]);
   const [copiedDay, setCopiedDay] = useState<number | null>(null);
 
+  // Keyboard accessibility: Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Load completed days from localStorage whenever plan changes
   useEffect(() => {
-    if (!plan) return;
+    if (!plan?.id) {
+      setCompletedDays([]);
+      return;
+    }
     try {
       const stored = localStorage.getItem(`thematic_plan_progress_${plan.id}`);
       if (stored) {
@@ -44,33 +58,45 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
     } catch {
       setCompletedDays([]);
     }
-  }, [plan]);
+  }, [plan?.id]);
 
+  // Defensive early return if modal is closed or plan is not available
   if (!isOpen || !plan) return null;
 
-  const meta = THEMATIC_CATEGORIES_META[plan.themeCategory] || {
-    label: plan.themeCategory,
+  // Defensive normalization with nullish coalescing
+  const readings = plan.readings ?? [];
+  const estimatedDays = plan.estimatedDays ?? (readings.length > 0 ? readings.length : 1);
+  const planTitle = plan.title ?? 'Jornada Temática';
+  const fullDescription = plan.fullDescription ?? '';
+  const themeCategory = plan.themeCategory ?? 'CRONOLOGIA_MESSIANICA';
+
+  const meta = THEMATIC_CATEGORIES_META[themeCategory] ?? {
+    label: themeCategory,
     badgeColor: 'bg-zinc-800 text-zinc-300 border-zinc-700',
     borderColor: 'border-zinc-700',
     iconName: 'Compass'
   };
 
-  const handleToggleDay = (day: number) => {
-    const isDone = completedDays.includes(day);
-    const newCompleted = isDone 
-      ? completedDays.filter(d => d !== day)
-      : [...completedDays, day].sort((a, b) => a - b);
+  const handleToggleDay = useCallback((day: number) => {
+    if (!plan?.id) return;
+    setCompletedDays(prev => {
+      const isDone = prev.includes(day);
+      const newCompleted = isDone 
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort((a, b) => a - b);
 
-    setCompletedDays(newCompleted);
-    try {
-      localStorage.setItem(`thematic_plan_progress_${plan.id}`, JSON.stringify(newCompleted));
-    } catch {
-      // ignore
-    }
-  };
+      try {
+        localStorage.setItem(`thematic_plan_progress_${plan.id}`, JSON.stringify(newCompleted));
+      } catch {
+        // ignore
+      }
+      return newCompleted;
+    });
+  }, [plan?.id]);
 
-  const handleResetProgress = () => {
-    if (window.confirm(`Deseja reiniciar o progresso da jornada "${plan.title}"?`)) {
+  const handleResetProgress = useCallback(() => {
+    if (!plan?.id) return;
+    if (window.confirm(`Deseja reiniciar o progresso da jornada "${planTitle}"?`)) {
       setCompletedDays([]);
       try {
         localStorage.removeItem(`thematic_plan_progress_${plan.id}`);
@@ -78,15 +104,15 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
         // ignore
       }
     }
-  };
+  }, [plan?.id, planTitle]);
 
-  const handleCopyPassage = (day: number, ref: string) => {
-    navigator.clipboard.writeText(`${plan.title} - Dia ${day}: ${ref}`);
+  const handleCopyPassage = useCallback((day: number, ref: string) => {
+    navigator.clipboard.writeText(`${planTitle} - Dia ${day}: ${ref}`);
     setCopiedDay(day);
     setTimeout(() => setCopiedDay(null), 2000);
-  };
+  }, [planTitle]);
 
-  const progressPercent = Math.min(100, Math.round((completedDays.length / plan.estimatedDays) * 100));
+  const progressPercent = Math.min(100, Math.round((completedDays.length / estimatedDays) * 100));
 
   return (
     <div 
@@ -103,24 +129,24 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
           <div className="space-y-1.5 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${meta.badgeColor}`}>
-                {getCategoryIcon(plan.themeCategory)}
+                {getCategoryIcon(themeCategory)}
                 <span>{meta.label}</span>
               </span>
 
               <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700/60">
                 <Calendar className="w-3 h-3 text-amber-400" />
-                <span>{plan.estimatedDays} Dias</span>
+                <span>{estimatedDays} Dias</span>
               </span>
 
               {completedDays.length > 0 && (
                 <span className="text-xs font-bold text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-full">
-                  {completedDays.length}/{plan.estimatedDays} concluídos ({progressPercent}%)
+                  {completedDays.length}/{estimatedDays} concluídos ({progressPercent}%)
                 </span>
               )}
             </div>
 
             <h2 id="thematic-plan-title" className="font-serif text-xl sm:text-2xl font-bold text-stone-100 leading-snug">
-              {plan.title}
+              {planTitle}
             </h2>
           </div>
 
@@ -170,7 +196,7 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
               <span>Visão Panorâmica da História da Redenção</span>
             </h4>
             <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-sans">
-              {plan.fullDescription}
+              {fullDescription}
             </p>
           </div>
 
@@ -179,20 +205,23 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
             <div className="flex items-center justify-between">
               <h3 className="font-serif text-base sm:text-lg font-bold text-stone-200 flex items-center gap-2">
                 <span>Roteiro de Leitura Diária</span>
-                <span className="text-xs font-mono font-normal text-zinc-400">({plan.readings.length} etapas)</span>
+                <span className="text-xs font-mono font-normal text-zinc-400">({readings.length} etapas)</span>
               </h3>
             </div>
 
             <div className="relative pl-6 sm:pl-8 border-l-2 border-zinc-800 space-y-6">
-              {plan.readings.map((reading) => {
-                const isDayCompleted = completedDays.includes(reading.day);
+              {readings.map((reading, idx) => {
+                const readingDay = reading?.day ?? idx + 1;
+                const passageRef = reading?.passageRef ?? '';
+                const thematicConnection = reading?.thematicConnection ?? '';
+                const isDayCompleted = completedDays.includes(readingDay);
 
                 return (
-                  <div key={reading.day} className="relative group">
+                  <div key={readingDay} className="relative group">
                     {/* Node Bullet on the timeline */}
                     <button
                       type="button"
-                      onClick={() => handleToggleDay(reading.day)}
+                      onClick={() => handleToggleDay(readingDay)}
                       className={`absolute -left-[31px] sm:-left-[39px] top-1.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all ${
                         isDayCompleted
                           ? 'bg-amber-600 text-white ring-4 ring-zinc-900 shadow-md'
@@ -203,7 +232,7 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
                       {isDayCompleted ? (
                         <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                       ) : (
-                        <span className="text-[10px] sm:text-xs font-bold font-mono">{reading.day}</span>
+                        <span className="text-[10px] sm:text-xs font-bold font-mono">{readingDay}</span>
                       )}
                     </button>
 
@@ -223,7 +252,7 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
                               ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/40' 
                               : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                           }`}>
-                            Dia {reading.day} de {plan.estimatedDays}
+                            Dia {readingDay} de {estimatedDays}
                           </span>
                           <span className="text-xs text-zinc-400">
                             {isDayCompleted ? '✓ Concluído' : 'Pendente'}
@@ -233,23 +262,23 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
                         {/* Passage Reference Actions */}
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono text-xs sm:text-sm font-bold text-amber-200 bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800">
-                            {reading.passageRef}
+                            {passageRef}
                           </span>
 
                           <button
                             type="button"
-                            onClick={() => handleCopyPassage(reading.day, reading.passageRef)}
+                            onClick={() => handleCopyPassage(readingDay, passageRef)}
                             className="p-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 transition-colors"
                             title="Copiar referência bíblica"
                           >
-                            {copiedDay === reading.day ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+                            {copiedDay === readingDay ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
                           </button>
 
-                          {onSelectPassage && (
+                          {onSelectPassage && passageRef && (
                             <button
                               type="button"
                               onClick={() => {
-                                onSelectPassage(reading.passageRef);
+                                onSelectPassage(passageRef);
                                 onClose();
                               }}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold shadow-xs transition-colors"
@@ -262,21 +291,23 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
                       </div>
 
                       {/* Thematic Connection: Theological Comment Embedded */}
-                      <div className="rounded-xl border-l-4 border-amber-500 bg-amber-950/20 border-t border-r border-b border-amber-800/30 p-3.5 sm:p-4 space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold uppercase tracking-wider">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>Fio Condutor da Teologia Bíblica</span>
+                      {thematicConnection && (
+                        <div className="rounded-xl border-l-4 border-amber-500 bg-amber-950/20 border-t border-r border-b border-amber-800/30 p-3.5 sm:p-4 space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>Fio Condutor da Teologia Bíblica</span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-amber-100/90 leading-relaxed font-serif">
+                            {thematicConnection}
+                          </p>
                         </div>
-                        <p className="text-xs sm:text-sm text-amber-100/90 leading-relaxed font-serif">
-                          {reading.thematicConnection}
-                        </p>
-                      </div>
+                      )}
 
                       {/* Day completion toggle button */}
                       <div className="flex justify-end pt-1">
                         <button
                           type="button"
-                          onClick={() => handleToggleDay(reading.day)}
+                          onClick={() => handleToggleDay(readingDay)}
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
                             isDayCompleted
                               ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
@@ -307,9 +338,9 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
         {/* Footer */}
         <div className="p-4 sm:p-5 border-t border-zinc-800 bg-zinc-950 flex items-center justify-between gap-3">
           <p className="text-xs text-zinc-400">
-            {completedDays.length === plan.estimatedDays 
+            {completedDays.length === estimatedDays 
               ? 'Parabéns! Você completou toda esta jornada temática.' 
-              : `${plan.estimatedDays - completedDays.length} leituras restantes nesta jornada.`}
+              : `${Math.max(0, estimatedDays - completedDays.length)} leituras restantes nesta jornada.`}
           </p>
 
           <button
@@ -323,4 +354,6 @@ export const ThematicPlanDetailsModal: React.FC<ThematicPlanDetailsModalProps> =
       </div>
     </div>
   );
-};
+});
+
+ThematicPlanDetailsModal.displayName = 'ThematicPlanDetailsModal';

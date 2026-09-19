@@ -6,13 +6,17 @@ interface BottomNavProps {
   activeRoute: MainRoute;
   onRouteChange: (route: MainRoute) => void;
   isFocusMode?: boolean;
+  isNavHidden?: boolean;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
   activeRoute,
   onRouteChange,
-  isFocusMode = false
+  isFocusMode = false,
+  isNavHidden = false
 }) => {
+  const isHidden = isFocusMode || isNavHidden;
+
   const navItems: Array<{
     route: MainRoute;
     label: string;
@@ -44,7 +48,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     <nav 
       aria-label="Navegação Principal"
       className={`fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md sm:max-w-lg transition-transform duration-300 ease-in-out ${
-        isFocusMode ? 'translate-y-[200%] pointer-events-none' : 'translate-y-0'
+        isHidden ? 'translate-y-[200%] pointer-events-none' : 'translate-y-0'
       }`}
     >
       <div className="relative flex items-center justify-between p-1.5 sm:p-2 rounded-full bg-zinc-900/90 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-750/80 dark:border-zinc-800 shadow-[0_12px_40px_rgba(0,0,0,0.5)] transition-all duration-300">

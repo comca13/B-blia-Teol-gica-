@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { HistoricalDocument } from '../types';
 import { DOCUMENT_CATEGORY_META } from '../data/confessionalDocumentsData';
 import { 
@@ -9,7 +9,6 @@ import {
   Info, 
   ChevronDown, 
   ChevronUp, 
-  Type, 
   Scroll, 
   Sparkles,
   BookOpen
@@ -21,7 +20,110 @@ interface DocumentReaderModalProps {
   onClose: () => void;
 }
 
-export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
+/**
+ * Helper to parse bold (**text**) and italic (*text*) inside text strings
+ */
+const renderInlineStyles = (text: string) => {
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={index} className="font-bold text-stone-100">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return (
+        <em key={index} className="italic text-amber-200/90">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+    return part;
+  });
+};
+
+/**
+ * Helper function to render text with Markdown-style bold, headers, blockquotes and lists
+ */
+const renderFormattedContent = (content: string) => {
+  if (!content) return null;
+  const lines = content.split('\n');
+
+  return (
+    <div className="space-y-4">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+
+        // Horizontal rule
+        if (trimmed === '---') {
+          return <hr key={idx} className="my-6 border-zinc-800" />;
+        }
+
+        // Header 2 / 3
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h3 key={idx} className="font-serif text-xl sm:text-2xl font-bold text-amber-400 mt-6 mb-2 tracking-wide">
+              {trimmed.replace('### ', '')}
+            </h3>
+          );
+        }
+        if (trimmed.startsWith('#### ')) {
+          return (
+            <h4 key={idx} className="font-serif text-lg sm:text-xl font-semibold text-stone-200 mt-5 mb-2 border-b border-zinc-800/80 pb-1">
+              {trimmed.replace('#### ', '')}
+            </h4>
+          );
+        }
+        if (trimmed.startsWith('## ')) {
+          return (
+            <h2 key={idx} className="font-serif text-2xl sm:text-3xl font-bold text-stone-100 mt-7 mb-3 text-center">
+              {trimmed.replace('## ', '')}
+            </h2>
+          );
+        }
+
+        // Blockquote
+        if (trimmed.startsWith('> ')) {
+          const quoteContent = trimmed.replace(/^>\s*/, '');
+          return (
+            <blockquote key={idx} className="border-l-3 border-amber-500/70 bg-amber-950/20 px-4 py-2 rounded-r-xl italic text-stone-300 my-2">
+              {renderInlineStyles(quoteContent)}
+            </blockquote>
+          );
+        }
+
+        // List item
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+          const listContent = trimmed.replace(/^(\*|-)\s+/, '');
+          return (
+            <div key={idx} className="flex items-start gap-2 ml-3 my-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2.5 shrink-0" />
+              <span className="text-zinc-200 leading-relaxed">
+                {renderInlineStyles(listContent)}
+              </span>
+            </div>
+          );
+        }
+
+        // Empty line (paragraph break)
+        if (!trimmed) {
+          return <div key={idx} className="h-2" />;
+        }
+
+        // Standard paragraph
+        return (
+          <p key={idx} className="leading-relaxed text-zinc-200">
+            {renderInlineStyles(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
+export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = React.memo(({
   document,
   isOpen,
   onClose
@@ -30,7 +132,7 @@ export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
   const [isContextExpanded, setIsContextExpanded] = useState(true);
   const [fontSize, setFontSize] = useState<number>(18); // 16, 18, 20, 22
 
-  // Close on Escape key
+  // Close on Escape key (A11y)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -46,119 +148,32 @@ export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
     setIsContextExpanded(true);
   }, [document?.id]);
 
+  // Defensive check
   if (!isOpen || !document) return null;
 
-  const categoryMeta = DOCUMENT_CATEGORY_META[document.category];
+  const docCategory = document.category ?? 'CREDO_ECUMENICO';
+  const categoryMeta = DOCUMENT_CATEGORY_META[docCategory] ?? {
+    label: 'Documento Confessional',
+    color: 'from-amber-600/30 to-zinc-900 border-amber-500/30'
+  };
 
-  const handleCopy = () => {
-    const fullText = `${document.title} (${document.year})\n\nContexto Histórico:\n${document.historicalContext}\n\n---\n\n${document.content}`;
+  const title = document.title ?? 'Documento Histórico';
+  const year = document.year ?? '';
+  const historicalContext = document.historicalContext ?? '';
+  const keyTheologicalThemes = document.keyTheologicalThemes ?? [];
+  const content = document.content ?? '';
+
+  const handleCopy = useCallback(() => {
+    const fullText = `${title} (${year})\n\nContexto Histórico:\n${historicalContext}\n\n---\n\n${content}`;
     navigator.clipboard.writeText(fullText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2200);
-  };
+  }, [title, year, historicalContext, content]);
 
-  /**
-   * Helper function to render text with Markdown-style bold, headers, blockquotes and lists
-   */
-  const renderFormattedContent = (content: string) => {
-    const lines = content.split('\n');
-
-    return (
-      <div className="space-y-4">
-        {lines.map((line, idx) => {
-          const trimmed = line.trim();
-
-          // Horizontal rule
-          if (trimmed === '---') {
-            return <hr key={idx} className="my-6 border-zinc-800" />;
-          }
-
-          // Header 2 / 3
-          if (trimmed.startsWith('### ')) {
-            return (
-              <h3 key={idx} className="font-serif text-xl sm:text-2xl font-bold text-amber-400 mt-6 mb-2 tracking-wide">
-                {trimmed.replace('### ', '')}
-              </h3>
-            );
-          }
-          if (trimmed.startsWith('#### ')) {
-            return (
-              <h4 key={idx} className="font-serif text-lg sm:text-xl font-semibold text-stone-200 mt-5 mb-2 border-b border-zinc-800/80 pb-1">
-                {trimmed.replace('#### ', '')}
-              </h4>
-            );
-          }
-          if (trimmed.startsWith('## ')) {
-            return (
-              <h2 key={idx} className="font-serif text-2xl sm:text-3xl font-bold text-stone-100 mt-7 mb-3 text-center">
-                {trimmed.replace('## ', '')}
-              </h2>
-            );
-          }
-
-          // Blockquote
-          if (trimmed.startsWith('> ')) {
-            const quoteContent = trimmed.replace(/^>\s*/, '');
-            return (
-              <blockquote key={idx} className="border-l-3 border-amber-500/70 bg-amber-950/20 px-4 py-2 rounded-r-xl italic text-stone-300 my-2">
-                {renderInlineStyles(quoteContent)}
-              </blockquote>
-            );
-          }
-
-          // List item
-          if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
-            const listContent = trimmed.replace(/^(\*|-)\s+/, '');
-            return (
-              <div key={idx} className="flex items-start gap-2 ml-3 my-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2.5 shrink-0" />
-                <span className="text-zinc-200 leading-relaxed">
-                  {renderInlineStyles(listContent)}
-                </span>
-              </div>
-            );
-          }
-
-          // Empty line (paragraph break)
-          if (!trimmed) {
-            return <div key={idx} className="h-2" />;
-          }
-
-          // Standard paragraph
-          return (
-            <p key={idx} className="leading-relaxed text-zinc-200">
-              {renderInlineStyles(line)}
-            </p>
-          );
-        })}
-      </div>
-    );
-  };
-
-  /**
-   * Helper to parse bold (**text**) and italic (*text*) inside text strings
-   */
-  const renderInlineStyles = (text: string) => {
-    // Basic regex parser for **bold** and *italic*
-    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return (
-          <strong key={index} className="font-bold text-stone-100">
-            {part.slice(2, -2)}
-          </strong>
-        );
-      }
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return (
-          <em key={index} className="italic text-amber-200/90">
-            {part.slice(1, -1)}
-          </em>
-        );
-      }
-      return part;
-    });
-  };
+  // Heavy markdown parsing memoized so font-size adjustments and copy state changes do not re-parse
+  const memoizedRenderedContent = useMemo(() => {
+    return renderFormattedContent(content);
+  }, [content]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -175,10 +190,12 @@ export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
               <Scroll className="w-3.5 h-3.5" />
               <span>{categoryMeta.label}</span>
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-800 text-amber-300 font-mono text-xs border border-zinc-700">
-              <Calendar className="w-3 h-3 text-amber-400" />
-              <span>{document.year}</span>
-            </span>
+            {year && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-800 text-amber-300 font-mono text-xs border border-zinc-700">
+                <Calendar className="w-3 h-3 text-amber-400" />
+                <span>{year}</span>
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -237,16 +254,18 @@ export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
               id="document-modal-title"
               className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-stone-100 leading-tight"
             >
-              {document.title}
+              {title}
             </h1>
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="sm:hidden inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-800 text-amber-300 font-mono text-xs border border-zinc-700">
-                <Calendar className="w-3 h-3 text-amber-400" />
-                <span>{document.year}</span>
-              </span>
+              {year && (
+                <span className="sm:hidden inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-800 text-amber-300 font-mono text-xs border border-zinc-700">
+                  <Calendar className="w-3 h-3 text-amber-400" />
+                  <span>{year}</span>
+                </span>
+              )}
 
-              {document.keyTheologicalThemes.map((theme, idx) => (
+              {keyTheologicalThemes.map((theme, idx) => (
                 <span
                   key={idx}
                   className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700/60 text-xs text-zinc-300 font-medium"
@@ -259,45 +278,47 @@ export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
           </div>
 
           {/* Collapsible Historical & Theological Context Header */}
-          <div className="rounded-2xl bg-amber-950/20 border border-amber-500/30 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setIsContextExpanded(!isContextExpanded)}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-amber-950/30 transition-colors"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                  <Info className="w-4 h-4" />
+          {historicalContext && (
+            <div className="rounded-2xl bg-amber-950/20 border border-amber-500/30 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setIsContextExpanded(!isContextExpanded)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-amber-950/30 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-sm font-bold text-amber-300">
+                      Por que este documento foi escrito? (Contexto Histórico & Teológico)
+                    </h4>
+                    <span className="text-[11px] text-zinc-400">
+                      Compreenda a ocasião histórica e os desvios doutrinários combatidos
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-serif text-sm font-bold text-amber-300">
-                    Por que este documento foi escrito? (Contexto Histórico & Teológico)
-                  </h4>
-                  <span className="text-[11px] text-zinc-400">
-                    Compreenda a ocasião histórica e os desvios doutrinários combatidos
-                  </span>
-                </div>
-              </div>
-              {isContextExpanded ? (
-                <ChevronUp className="w-4 h-4 text-amber-400 shrink-0 ml-2" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-amber-400 shrink-0 ml-2" />
-              )}
-            </button>
+                {isContextExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-amber-400 shrink-0 ml-2" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-amber-400 shrink-0 ml-2" />
+                )}
+              </button>
 
-            {isContextExpanded && (
-              <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-zinc-300 leading-relaxed border-t border-amber-500/20 space-y-2">
-                <p>{document.historicalContext}</p>
-              </div>
-            )}
-          </div>
+              {isContextExpanded && (
+                <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-zinc-300 leading-relaxed border-t border-amber-500/20 space-y-2">
+                  <p>{historicalContext}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Full Document Content Body (Optimized for Reading) */}
           <div 
             className="font-serif text-zinc-200 leading-relaxed max-w-3xl mx-auto py-2"
             style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
           >
-            {renderFormattedContent(document.content)}
+            {memoizedRenderedContent}
           </div>
 
           {/* End of Document Footer Note */}
@@ -317,4 +338,6 @@ export const DocumentReaderModal: React.FC<DocumentReaderModalProps> = ({
       </div>
     </div>
   );
-};
+});
+
+DocumentReaderModal.displayName = 'DocumentReaderModal';
