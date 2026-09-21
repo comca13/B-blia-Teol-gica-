@@ -903,10 +903,17 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
           </div>
         </div>
 
-        {/* Leitor de Áudio Teológico com Persistência Grave / Barítono */}
+        {/* Cabeçalho do Capítulo */}
+        <header className="mb-4">
+          <h1 className="text-2xl font-bold text-stone-100 font-serif">
+            {language === 'pt' ? currentBook.namePt : currentBook.nameEn} {chapter}
+          </h1>
+        </header>
+
+        {/* Barra de Narração Integrada */}
         {!loading && !error && verses.length > 0 && (
           <AudioReaderBar
-            chapterTitle={`${language === 'pt' ? currentBook.namePt : currentBook.nameEn} ${chapter}`}
+            chapterTitle={`${language === 'pt' ? currentBook.namePt : currentBook.nameEn} capítulo ${chapter}`}
             chapterContent={verses.map(v => v.text).join(' ')}
           />
         )}

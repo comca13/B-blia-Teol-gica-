@@ -3,6 +3,7 @@ import { ScriptureChapter, BiblicalDifficulty, Verse } from '../types';
 import { BookOpen, Sparkles, Highlighter, Copy } from 'lucide-react';
 import { TextualVariantIndicator } from './TextualVariantIndicator';
 import { ApologeticsBadge } from './ApologeticsBadge';
+import { AudioReaderBar } from './AudioReaderBar';
 import { getTextualVariantsForPassage } from '../data/textualVariantsData';
 import { getDifficultiesForVerse } from '../data/apologeticsData';
 
@@ -196,6 +197,12 @@ export const ScriptureBody = React.memo<ScriptureBodyProps>(({
                 <span>Foco do Plano: Versículos {chap.startVerse} ao {chap.endVerse}</span>
               </div>
             )}
+
+            {/* Barra de Narração Integrada do Capítulo */}
+            <AudioReaderBar 
+              chapterTitle={`${bookName} capítulo ${chapterNum}`}
+              chapterContent={versesList.map(v => v.text).join(' ')}
+            />
 
             {/* Verses List */}
             <div className="space-y-3">
