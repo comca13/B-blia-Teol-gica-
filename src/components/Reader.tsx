@@ -3,9 +3,10 @@ import { DayReading, ReaderSettings, ScriptureChapter } from '../types';
 import { getScriptureForPlanDay, parseDayPassagesToTargets } from '../lib/biblePlanService';
 import { getScriptureForDay } from '../data/biblicalTexts';
 import { getReadingContent, ReadingContent } from '../lib/dataService';
-import { speechEngine, SpeechPlaybackStatus, AvailableVoiceOption } from '../utils/speech';
+import { speechEngine, SpeechPlaybackStatus, AvailableVoiceOption, VoiceTone } from '../utils/speech';
 import confetti from 'canvas-confetti';
 import { ReaderSettings as ReaderSettingsComponent } from './ReaderSettings';
+import { AudioReaderBar } from './AudioReaderBar';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -128,7 +129,10 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
     snippet: ''
   });
   const [audioSpeed, setAudioSpeed] = useState<number>(settings.audioSpeed || 1.0);
-  const [audioTone, setAudioTone] = useState<number>(0.78); // Tom Grave Solene (0.78 barítono humanizado)
+  const [audioTone, setAudioTone] = useState<number>(() => {
+    const saved = localStorage.getItem('theological_tts_tone') as VoiceTone;
+    return saved === 'grave' ? 0.78 : 0.89;
+  });
   const [activeVoiceName, setActiveVoiceName] = useState<string>('');
   const [availableVoices, setAvailableVoices] = useState<AvailableVoiceOption[]>([]);
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
@@ -425,6 +429,8 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
 
   const handleToneChange = useCallback((pitch: number) => {
     setAudioTone(pitch);
+    const toneName: VoiceTone = pitch <= 0.80 ? 'grave' : 'baritono';
+    localStorage.setItem('theological_tts_tone', toneName);
     speechEngine.setPitch(pitch);
   }, []);
 
@@ -872,6 +878,18 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
             </div>
           )}
         </div>
+
+        {/* Leitor de Áudio Teológico com Persistência Grave / Barítono */}
+        <AudioReaderBar
+          chapterTitle={`Leitura do Dia ${dayReading.day}: ${dayReading.title}`}
+          chapterContent={[
+            dayReading.theologicalContext || '',
+            ...chapters.flatMap(ch => [
+              `${ch.book}, capítulo ${ch.chapter}.`,
+              ...ch.verses.map(v => v.text)
+            ])
+          ].filter(Boolean).join(' ')}
+        />
 
         {/* Contexto Teológico Diário - Pilar Principal */}
         <section 

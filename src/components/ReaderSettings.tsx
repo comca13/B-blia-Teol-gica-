@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StudyDepthMode } from '../types';
-import { Heart, GraduationCap, Sparkles, Layers, Sliders, Check } from 'lucide-react';
+import { Heart, GraduationCap, Sparkles, Layers, Sliders, Check, Mic } from 'lucide-react';
+import { speechEngine, VoiceTone } from '../utils/speech';
 
 interface ReaderSettingsProps {
   isFocusMode: boolean;
@@ -39,6 +40,15 @@ export const ReaderSettings: React.FC<ReaderSettingsProps> = ({
   },
   onTogglePanel
 }) => {
+  const [tone, setTone] = useState<VoiceTone>(() => {
+    return (localStorage.getItem('theological_tts_tone') as VoiceTone) || 'baritono';
+  });
+
+  const handleToneChange = (newTone: VoiceTone) => {
+    setTone(newTone);
+    localStorage.setItem('theological_tts_tone', newTone);
+    speechEngine.setTone(newTone);
+  };
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-3.5 text-zinc-300">
       
@@ -149,6 +159,40 @@ export const ReaderSettings: React.FC<ReaderSettingsProps> = ({
           </div>
         </div>
 
+      </div>
+
+      {/* 3. TOM DA NARRAÇÃO TEOLÓGICA (GRAVE VS BARÍTONO) */}
+      <div className="flex items-center justify-between gap-3 pt-3 border-t border-zinc-800 text-xs">
+        <div className="flex items-center gap-2">
+          <Mic className="w-3.5 h-3.5 text-amber-500" />
+          <span className="text-zinc-300 font-medium">Tom da Narração (Áudio):</span>
+        </div>
+
+        <div className="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+          <button
+            type="button"
+            onClick={() => handleToneChange('grave')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              tone === 'grave'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+            }`}
+          >
+            Grave (0.78)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleToneChange('baritono')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              tone === 'baritono'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+            }`}
+          >
+            Barítono (0.89)
+          </button>
+        </div>
       </div>
 
       {/* 3. FILTROS RÁPIDOS DE PAINÉIS VISÍVEIS (SE DISPONÍVEL) */}

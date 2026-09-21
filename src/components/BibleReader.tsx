@@ -22,7 +22,8 @@ import {
   Sliders,
   ChevronDown
 } from 'lucide-react';
-import { speechEngine, SpeechPlaybackStatus, AvailableVoiceOption } from '../utils/speech';
+import { speechEngine, SpeechPlaybackStatus, AvailableVoiceOption, VoiceTone } from '../utils/speech';
+import { AudioReaderBar } from './AudioReaderBar';
 import { LiteraryGenreBadge } from './LiteraryGenreBadge';
 import { SitzImLebenCard } from './SitzImLebenCard';
 import { OriginalLexiconCard } from './OriginalLexiconCard';
@@ -98,7 +99,10 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isAudioPaused, setIsAudioPaused] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState<number>(1.0);
-  const [audioTone, setAudioTone] = useState<number>(0.78); // Tom Grave Solene
+  const [audioTone, setAudioTone] = useState<number>(() => {
+    const saved = localStorage.getItem('theological_tts_tone') as VoiceTone;
+    return saved === 'grave' ? 0.78 : 0.89;
+  });
   const [activeVoiceName, setActiveVoiceName] = useState<string>('');
   const [availableVoices, setAvailableVoices] = useState<AvailableVoiceOption[]>([]);
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
@@ -168,6 +172,8 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
 
   const handleToneChange = (pitch: number) => {
     setAudioTone(pitch);
+    const toneName: VoiceTone = pitch <= 0.80 ? 'grave' : 'baritono';
+    localStorage.setItem('theological_tts_tone', toneName);
     speechEngine.setPitch(pitch);
   };
 
@@ -896,6 +902,14 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Leitor de Áudio Teológico com Persistência Grave / Barítono */}
+        {!loading && !error && verses.length > 0 && (
+          <AudioReaderBar
+            chapterTitle={`${language === 'pt' ? currentBook.namePt : currentBook.nameEn} ${chapter}`}
+            chapterContent={verses.map(v => v.text).join(' ')}
+          />
+        )}
 
         {/* Verses Content View */}
         {loading ? (
