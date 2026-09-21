@@ -1,11 +1,84 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /readings/{document=**} {
-      allow read, write: if true; 
+    
+    // ====================================================================
+    // 1. COLEÇÕES DE CONTEÚDO PÚBLICO (Leitura irrestrita, escrita restrita a admins/backend)
+    // ====================================================================
+    
+    // Planos de Leitura e Conteúdo Teológico Diário
+    match /readings/{readingId} {
+      allow read: if true;
+      allow write: if false;
     }
-    match /readingPlans/{document=**} {
-      allow read, write: if true; 
+
+    match /readingPlans/{planId} {
+      allow read: if true;
+      allow write: if false;
+      
+      match /days/{dayId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // Dados Apologéticos e Dificuldades Bíblicas
+    match /apologetics/{apologeticsId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // História da Igreja e Linha do Tempo Patrística
+    match /churchHistory/{historyId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Harmonia dos Evangelhos
+    match /gospelHarmonies/{harmonyId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ====================================================================
+    // 2. COLEÇÕES PRIVADAS DE USUÁRIO (Apenas o próprio usuário autenticado)
+    // ====================================================================
+
+    // Arquitetura Aninhada (/users/{userId}/...)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Configurações do Leitor (tema, fontes, velocidades, etc.)
+      match /readerSettings/{settingId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Notas e Anotações Pessoais
+      match /personalNotes/{noteId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Progresso de Leitura Anual e Conclusões
+      match /readingProgress/{progressId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Arquitetura de Coleções Raiz com chave userId ou campo userId
+    match /readerSettings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /personalNotes/{noteId} {
+      allow read, write: if request.auth != null && (
+        (resource == null && request.resource.data.userId == request.auth.uid) ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+    }
+
+    match /readingProgress/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
+
