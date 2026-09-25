@@ -239,7 +239,7 @@ export interface ReaderSettings {
   fontSize: number; // in px, e.g., 18
   lineHeight: number; // e.g., 1.7
   fontFamily: FontFamily;
-  audioSpeed: number; // 0.75, 1, 1.25, 1.5
+  audioSpeed?: number;
   depthMode?: StudyDepthMode;
   visiblePanels?: {
     archaeology: boolean;

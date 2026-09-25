@@ -14,16 +14,8 @@ import {
   Check, 
   RotateCcw,
   Sparkles,
-  Scroll,
-  Volume2,
-  VolumeX,
-  Play,
-  Pause,
-  Sliders,
-  ChevronDown
+  Scroll
 } from 'lucide-react';
-import { speechEngine, SpeechPlaybackStatus, AvailableVoiceOption, VoiceTone } from '../utils/speech';
-import { AudioReaderBar } from './AudioReaderBar';
 import { LiteraryGenreBadge } from './LiteraryGenreBadge';
 import { SitzImLebenCard } from './SitzImLebenCard';
 import { OriginalLexiconCard } from './OriginalLexiconCard';
@@ -94,93 +86,6 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const [copiedVerse, setCopiedVerse] = useState<number | null>(null);
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [testamentFilter, setTestamentFilter] = useState<'ALL' | 'AT' | 'NT'>('ALL');
-
-  // Audio Narration States for BibleReader
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [isAudioPaused, setIsAudioPaused] = useState(false);
-  const [audioSpeed, setAudioSpeed] = useState<number>(1.0);
-  const [audioTone, setAudioTone] = useState<number>(() => {
-    const saved = localStorage.getItem('theological_tts_tone') as VoiceTone;
-    return saved === 'grave' ? 0.78 : 0.89;
-  });
-  const [activeVoiceName, setActiveVoiceName] = useState<string>('');
-  const [availableVoices, setAvailableVoices] = useState<AvailableVoiceOption[]>([]);
-  const [showVoiceSelector, setShowVoiceSelector] = useState(false);
-
-  // Subscribe to speech engine
-  useEffect(() => {
-    const unsubscribe = speechEngine.subscribe((status: SpeechPlaybackStatus) => {
-      setIsPlayingAudio(status.isPlaying);
-      setIsAudioPaused(status.isPaused);
-      setActiveVoiceName(status.currentVoiceName);
-      setAudioTone(status.pitch);
-    });
-
-    setAvailableVoices(speechEngine.getAvailableVoices(language === 'pt' ? 'pt' : 'en'));
-
-    return () => {
-      unsubscribe();
-      speechEngine.stop();
-    };
-  }, [language]);
-
-  // Stop audio on chapter/book switch
-  useEffect(() => {
-    speechEngine.stop();
-    setIsPlayingAudio(false);
-    setIsAudioPaused(false);
-  }, [bookNumber, chapter, language]);
-
-  const toggleChapterAudio = () => {
-    if (!speechEngine.isSupported()) {
-      alert('Seu navegador não possui suporte à síntese de voz (Web Speech API).');
-      return;
-    }
-
-    if (isPlayingAudio) {
-      if (isAudioPaused) {
-        speechEngine.resume();
-      } else {
-        speechEngine.pause();
-      }
-      return;
-    }
-
-    if (!verses || verses.length === 0) {
-      alert('Aguarde o carregamento dos versículos para iniciar a narração.');
-      return;
-    }
-
-    const bookTitle = language === 'pt' ? currentBook.namePt : currentBook.nameEn;
-    // Humanized continuous reading of biblical chapter (without robotic "Versículo X" repetitions)
-    const textToRead = [
-      `${bookTitle}, capítulo ${chapter}.`,
-      ...verses.map(v => v.text)
-    ].join(' ');
-
-    speechEngine.speak(textToRead, {
-      lang: language === 'pt' ? 'pt-BR' : 'en-US',
-      speed: audioSpeed,
-      pitch: audioTone
-    });
-  };
-
-  const handleSpeedChange = (speed: number) => {
-    setAudioSpeed(speed);
-    speechEngine.setSpeed(speed);
-  };
-
-  const handleToneChange = (pitch: number) => {
-    setAudioTone(pitch);
-    const toneName: VoiceTone = pitch <= 0.80 ? 'grave' : 'baritono';
-    localStorage.setItem('theological_tts_tone', toneName);
-    speechEngine.setPitch(pitch);
-  };
-
-  const handleVoiceSelect = (voiceName: string) => {
-    setActiveVoiceName(voiceName);
-    speechEngine.setVoice(voiceName);
-  };
 
   // Gospel Harmony States
   const [isHarmonyModalOpen, setIsHarmonyModalOpen] = useState<boolean>(false);
@@ -717,173 +622,13 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             )}
           </div>
 
-          {/* Quick Prev / Next Buttons & Narration */}
+          {/* Quick Prev / Next Buttons */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Chapter Narration Button */}
-            <button
-              type="button"
-              onClick={toggleChapterAudio}
-              disabled={loading || !!error || verses.length === 0}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer ${
-                isPlayingAudio
-                  ? isAudioPaused
-                    ? 'bg-amber-700/80 text-amber-100 ring-2 ring-amber-500/50'
-                    : 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-400'
-                  : 'bg-zinc-800 text-amber-300 hover:bg-zinc-750 border border-zinc-700'
-              }`}
-              title={isPlayingAudio ? (isAudioPaused ? 'Retomar Narração' : 'Pausar Narração') : 'Ouvir Capítulo'}
-            >
-              {isPlayingAudio ? (
-                isAudioPaused ? (
-                  <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Continuar</span>
-                  </>
-                ) : (
-                  <>
-                    <Pause className="w-3.5 h-3.5 fill-current animate-pulse" />
-                    <span>Pausar</span>
-                  </>
-                )
-              ) : (
-                <>
-                  <Volume2 className="w-3.5 h-3.5" />
-                  <span>Ouvir Capítulo</span>
-                </>
-              )}
-            </button>
-
-            {isPlayingAudio && (
-              <button
-                type="button"
-                onClick={() => {
-                  speechEngine.stop();
-                  setIsPlayingAudio(false);
-                  setIsAudioPaused(false);
-                }}
-                className="p-1.5 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white"
-                title="Parar narração"
-              >
-                <VolumeX className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {isPlayingAudio && (
-              <div className="flex items-center gap-1 font-mono px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-[11px]">
-                {[0.75, 1.0, 1.25, 1.5].map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => handleSpeedChange(s)}
-                    className={`px-1 rounded ${audioSpeed === s ? 'font-bold text-amber-400' : 'text-zinc-400'}`}
-                  >
-                    {s}x
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Tone and Voice selector button */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowVoiceSelector(!showVoiceSelector)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  audioTone <= 0.85
-                    ? 'bg-amber-950/60 border-amber-800 text-amber-300 hover:bg-amber-900/60'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-750'
-                }`}
-                title="Configurações de Voz Humanizada e Tom Grave"
-              >
-                <Sliders className="w-3.5 h-3.5 text-amber-400" />
-                <span>
-                  {audioTone === 0.78
-                    ? 'Grave Solene'
-                    : audioTone === 0.70
-                    ? 'Grave Profundo'
-                    : audioTone === 0.85
-                    ? 'Grave Suave'
-                    : 'Tom Padrão'}
-                </span>
-                <ChevronDown className="w-3 h-3 text-zinc-400" />
-              </button>
-
-              {showVoiceSelector && (
-                <div 
-                  className="absolute left-0 top-full mt-2 w-72 p-3 bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl z-50 space-y-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-xs font-bold text-zinc-200">Narração Humanizada</span>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setShowVoiceSelector(false)}
-                      className="text-[10px] text-zinc-400 hover:text-white px-1.5 py-0.5 rounded bg-zinc-900"
-                    >
-                      Fechar
-                    </button>
-                  </div>
-
-                  {/* Tom de Voz (Pitch) */}
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block mb-1.5">
-                      Tom de Voz (Frequência Barítono)
-                    </label>
-                    <div className="grid grid-cols-2 gap-1.5 text-xs">
-                      {[
-                        { label: 'Grave Solene', val: 0.78, desc: 'Barítono bíblico ideal' },
-                        { label: 'Grave Profundo', val: 0.70, desc: 'Voz baixa e solene' },
-                        { label: 'Grave Suave', val: 0.85, desc: 'Aveludado e natural' },
-                        { label: 'Tom Padrão', val: 1.00, desc: 'Tom original' },
-                      ].map(t => (
-                        <button
-                          key={t.val}
-                          type="button"
-                          onClick={() => handleToneChange(t.val)}
-                          className={`p-1.5 rounded-xl border text-left transition-all ${
-                            Math.abs(audioTone - t.val) < 0.03
-                              ? 'bg-amber-600/30 border-amber-500 text-amber-200 font-bold'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-850'
-                          }`}
-                        >
-                          <div className="text-[11px] leading-tight">{t.label}</div>
-                          <div className="text-[9px] text-zinc-400">{t.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Vozes Instaladas no Dispositivo */}
-                  {availableVoices.length > 0 && (
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                        Voz Detectada no Sistema
-                      </label>
-                      <select
-                        value={activeVoiceName}
-                        onChange={(e) => handleVoiceSelect(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2 text-xs text-zinc-200 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                      >
-                        {availableVoices.map(v => (
-                          <option key={v.name} value={v.name}>
-                            {v.name} {v.isNatural ? '★ Natural' : ''} {v.isMaleOrDeep ? '♂ Barítono' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
             <button
               type="button"
               onClick={handlePrevChapter}
               disabled={bookNumber === 1 && chapter === 1}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700 cursor-pointer"
               title="Capítulo Anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -894,7 +639,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               type="button"
               onClick={handleNextChapter}
               disabled={bookNumber === 66 && chapter === currentBook.totalChapters}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700 cursor-pointer"
               title="Próximo Capítulo"
             >
               <span className="hidden sm:inline">Próximo</span>
@@ -909,14 +654,6 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             {language === 'pt' ? currentBook.namePt : currentBook.nameEn} {chapter}
           </h1>
         </header>
-
-        {/* Barra de Narração Integrada */}
-        {!loading && !error && verses.length > 0 && (
-          <AudioReaderBar
-            chapterTitle={`${language === 'pt' ? currentBook.namePt : currentBook.nameEn} capítulo ${chapter}`}
-            chapterContent={verses.map(v => v.text).join(' ')}
-          />
-        )}
 
         {/* Verses Content View */}
         {loading ? (

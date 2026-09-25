@@ -3,20 +3,13 @@ import { DayReading, ReaderSettings, ScriptureChapter } from '../types';
 import { getScriptureForPlanDay, parseDayPassagesToTargets } from '../lib/biblePlanService';
 import { getScriptureForDay } from '../data/biblicalTexts';
 import { getReadingContent, ReadingContent } from '../lib/dataService';
-import { speechEngine, SpeechPlaybackStatus, AvailableVoiceOption, VoiceTone } from '../utils/speech';
 import confetti from 'canvas-confetti';
 import { ReaderSettings as ReaderSettingsComponent } from './ReaderSettings';
-import { AudioReaderBar } from './AudioReaderBar';
 import { 
   ArrowLeft, 
   ArrowRight, 
   CheckCircle, 
   Bookmark, 
-  Volume2, 
-  VolumeX, 
-  Play, 
-  Pause, 
-  RotateCcw, 
   Sparkles, 
   Settings2, 
   FileText, 
@@ -30,9 +23,7 @@ import {
   Copy,
   Layers,
   RefreshCw,
-  Highlighter,
-  Sliders,
-  ChevronDown
+  Highlighter
 } from 'lucide-react';
 
 import { StudyDrawer, StudyDrawerTab } from './StudyDrawer';
@@ -121,21 +112,6 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
   const [copiedVerseKey, setCopiedVerseKey] = useState<string | null>(null);
   const [highlightedVerses, setHighlightedVerses] = useState<Record<string, boolean>>({});
 
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [isAudioPaused, setIsAudioPaused] = useState(false);
-  const [audioProgress, setAudioProgress] = useState<{ current: number; total: number; snippet: string }>({
-    current: 0,
-    total: 0,
-    snippet: ''
-  });
-  const [audioSpeed, setAudioSpeed] = useState<number>(settings.audioSpeed || 1.0);
-  const [audioTone, setAudioTone] = useState<number>(() => {
-    const saved = localStorage.getItem('theological_tts_tone') as VoiceTone;
-    return saved === 'grave' ? 0.78 : 0.89;
-  });
-  const [activeVoiceName, setActiveVoiceName] = useState<string>('');
-  const [availableVoices, setAvailableVoices] = useState<AvailableVoiceOption[]>([]);
-  const [showVoiceSelector, setShowVoiceSelector] = useState(false);
   const [internalIsFocusMode, setInternalIsFocusMode] = useState(false);
   const [internalIsStudyDrawerOpen, setInternalIsStudyDrawerOpen] = useState(false);
   const [studyDrawerTab, setStudyDrawerTab] = useState<StudyDrawerTab>('context');
@@ -312,7 +288,6 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
     if (prevDayRef.current !== dayReading.day) {
       prevDayRef.current = dayReading.day;
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      stopAudio();
     }
   }, [dayReading.day]);
 
@@ -353,91 +328,6 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
       });
     }
   }, [isCompleted, onToggleComplete, dayReading.day]);
-
-  // Subscribe to speechEngine for accurate real-time state & cleanup
-  useEffect(() => {
-    const unsubscribe = speechEngine.subscribe((status: SpeechPlaybackStatus) => {
-      setIsPlayingAudio(status.isPlaying);
-      setIsAudioPaused(status.isPaused);
-      setActiveVoiceName(status.currentVoiceName);
-      setAudioTone(status.pitch);
-      setAudioProgress({
-        current: status.currentSegmentIndex + 1,
-        total: status.totalSegments,
-        snippet: status.currentTextSnippet
-      });
-    });
-
-    // Populate available voices
-    setAvailableVoices(speechEngine.getAvailableVoices(scriptureTranslation === 'ARA' ? 'pt' : 'en'));
-
-    return () => {
-      unsubscribe();
-      speechEngine.stop();
-    };
-  }, [scriptureTranslation]);
-
-  // Web Speech API for Audio Narration with resilient speechEngine
-  const stopAudio = useCallback(() => {
-    speechEngine.stop();
-    setIsPlayingAudio(false);
-    setIsAudioPaused(false);
-  }, []);
-
-  const toggleAudio = useCallback(() => {
-    if (!speechEngine.isSupported()) {
-      alert('Seu navegador não possui suporte a síntese de voz (Web Speech API).');
-      return;
-    }
-
-    if (isPlayingAudio) {
-      if (isAudioPaused) {
-        speechEngine.resume();
-      } else {
-        speechEngine.pause();
-      }
-      return;
-    }
-
-    // Build humanized narrative text from loaded chapters (no robotic repeated "Versículo X" prefixes)
-    const segmentsToNarrate = [
-      `Leitura do Dia ${dayReading.day}: ${dayReading.title}.`,
-      dayReading.theologicalContext ? `Contexto Teológico: ${dayReading.theologicalContext}` : '',
-      ...chapters.flatMap(ch => [
-        `${ch.book}, capítulo ${ch.chapter}.`,
-        ...ch.verses.map(v => v.text) // Fluid, solemn humanized biblical narration
-      ])
-    ].filter(Boolean).join(' ');
-
-    if (!segmentsToNarrate.trim()) {
-      alert('Aguarde o carregamento do texto bíblico para iniciar a narração.');
-      return;
-    }
-
-    speechEngine.speak(segmentsToNarrate, {
-      lang: scriptureTranslation === 'ARA' ? 'pt-BR' : 'en-US',
-      speed: audioSpeed,
-      pitch: audioTone
-    });
-  }, [isPlayingAudio, isAudioPaused, dayReading, chapters, scriptureTranslation, audioSpeed, audioTone]);
-
-  const handleSpeedChange = useCallback((speed: number) => {
-    setAudioSpeed(speed);
-    onUpdateSettings({ ...settings, audioSpeed: speed });
-    speechEngine.setSpeed(speed);
-  }, [settings, onUpdateSettings]);
-
-  const handleToneChange = useCallback((pitch: number) => {
-    setAudioTone(pitch);
-    const toneName: VoiceTone = pitch <= 0.80 ? 'grave' : 'baritono';
-    localStorage.setItem('theological_tts_tone', toneName);
-    speechEngine.setPitch(pitch);
-  }, []);
-
-  const handleVoiceSelect = useCallback((voiceName: string) => {
-    setActiveVoiceName(voiceName);
-    speechEngine.setVoice(voiceName);
-  }, []);
 
   const handleSaveNoteChange = useCallback((val: string) => {
     setNoteText(val);
@@ -643,171 +533,15 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
         className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 sm:space-y-8 w-full pb-36 sm:pb-44 cursor-default select-text"
       >
         
-        {/* In-flow Reader Actions (Narration, Bookmarks, Conclude) */}
+        {/* In-flow Reader Actions (Bookmarks, Conclude, Bible Shortcut) */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800/80 text-xs">
-          {/* Left: Audio Player Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={toggleAudio}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all ${
-                isPlayingAudio
-                  ? isAudioPaused
-                    ? 'bg-amber-700/80 text-amber-100 ring-2 ring-amber-500/50'
-                    : 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-400'
-                  : 'bg-zinc-900 text-amber-300 hover:bg-zinc-800 border border-zinc-800'
-              }`}
-              title={isPlayingAudio ? (isAudioPaused ? 'Retomar Áudio' : 'Pausar Áudio') : 'Ouvir Narração'}
-            >
-              {isPlayingAudio ? (
-                isAudioPaused ? (
-                  <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Continuar</span>
-                  </>
-                ) : (
-                  <>
-                    <Pause className="w-3.5 h-3.5 fill-current animate-pulse" />
-                    <span>Pausar</span>
-                  </>
-                )
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Ouvir Narração</span>
-                </>
-              )}
-            </button>
-
-            {isPlayingAudio && (
-              <button
-                type="button"
-                onClick={stopAudio}
-                className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
-                title="Parar narração"
-              >
-                <VolumeX className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {/* Tone selector button */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowVoiceSelector(!showVoiceSelector)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all border ${
-                  audioTone <= 0.85
-                    ? 'bg-amber-950/60 border-amber-800 text-amber-300 hover:bg-amber-900/60'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800'
-                }`}
-                title="Configurações de Voz Humanizada e Tom Grave"
-              >
-                <Sliders className="w-3 h-3 text-amber-400" />
-                <span>
-                  {audioTone === 0.78
-                    ? 'Grave Solene'
-                    : audioTone === 0.70
-                    ? 'Grave Profundo'
-                    : audioTone === 0.85
-                    ? 'Grave Suave'
-                    : 'Tom Padrão'}
-                </span>
-                <ChevronDown className="w-3 h-3 text-zinc-400" />
-              </button>
-
-              {showVoiceSelector && (
-                <div 
-                  className="absolute left-0 top-full mt-2 w-72 p-3 bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl z-50 space-y-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-xs font-bold text-zinc-200">Narração Humanizada</span>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setShowVoiceSelector(false)}
-                      className="text-[10px] text-zinc-400 hover:text-white px-1.5 py-0.5 rounded bg-zinc-900"
-                    >
-                      Fechar
-                    </button>
-                  </div>
-
-                  {/* Tom de Voz (Pitch) */}
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block mb-1.5">
-                      Tom de Voz (Frequência Barítono)
-                    </label>
-                    <div className="grid grid-cols-2 gap-1.5 text-xs">
-                      {[
-                        { label: 'Grave Solene', val: 0.78, desc: 'Barítono bíblico ideal' },
-                        { label: 'Grave Profundo', val: 0.70, desc: 'Voz baixa e solene' },
-                        { label: 'Grave Suave', val: 0.85, desc: 'Aveludado e natural' },
-                        { label: 'Tom Padrão', val: 1.00, desc: 'Tom original' },
-                      ].map(t => (
-                        <button
-                          key={t.val}
-                          type="button"
-                          onClick={() => {
-                            handleToneChange(t.val);
-                          }}
-                          className={`p-1.5 rounded-xl border text-left transition-all ${
-                            Math.abs(audioTone - t.val) < 0.03
-                              ? 'bg-amber-600/30 border-amber-500 text-amber-200 font-bold'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-850'
-                          }`}
-                        >
-                          <div className="text-[11px] leading-tight">{t.label}</div>
-                          <div className="text-[9px] text-zinc-400">{t.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Vozes Instaladas no Dispositivo */}
-                  {availableVoices.length > 0 && (
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                        Voz do Sistema Detectada
-                      </label>
-                      <select
-                        value={activeVoiceName}
-                        onChange={(e) => handleVoiceSelect(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2 text-xs text-zinc-200 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                      >
-                        {availableVoices.map(v => (
-                          <option key={v.name} value={v.name}>
-                            {v.name} {v.isNatural ? '★ Natural' : ''} {v.isMaleOrDeep ? '♂ Barítono' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {isPlayingAudio && (
-              <div className="flex items-center gap-1 font-mono px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-[11px]">
-                {[0.75, 1.0, 1.25, 1.5].map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => handleSpeedChange(s)}
-                    className={`px-1 rounded ${audioSpeed === s ? 'font-bold text-amber-400' : 'text-zinc-400'}`}
-                  >
-                    {s}x
-                  </button>
-                ))}
-              </div>
-            )}
-
+          {/* Left: Study Bible Shortcut if available */}
+          <div className="flex items-center gap-2">
             {onOpenBible && assignedTargets.length > 0 && (
               <button
                 type="button"
                 onClick={() => onOpenBible(assignedTargets[0].bookNumber, assignedTargets[0].chapter)}
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors cursor-pointer"
                 title="Abrir texto na Bíblia de Estudo"
               >
                 <BookOpen className="w-3.5 h-3.5 text-amber-400" />
@@ -821,7 +555,7 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
             <button
               type="button"
               onClick={() => onToggleBookmark(dayReading.day)}
-              className={`p-2 rounded-xl transition-colors ${
+              className={`p-2 rounded-xl transition-colors cursor-pointer ${
                 isBookmarked 
                   ? 'text-amber-500 fill-amber-500 bg-amber-950/40 border border-amber-800/60' 
                   : 'text-zinc-400 hover:text-zinc-200 bg-zinc-900 border border-zinc-800'
@@ -834,7 +568,7 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
             <button
               type="button"
               onClick={handleCompleteClick}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
                 isCompleted
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700'
@@ -878,18 +612,6 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
             </div>
           )}
         </div>
-
-        {/* Leitor de Áudio Teológico com Persistência Grave / Barítono */}
-        <AudioReaderBar
-          chapterTitle={`Leitura do Dia ${dayReading.day}: ${dayReading.title}`}
-          chapterContent={[
-            dayReading.theologicalContext || '',
-            ...chapters.flatMap(ch => [
-              `${ch.book}, capítulo ${ch.chapter}.`,
-              ...ch.verses.map(v => v.text)
-            ])
-          ].filter(Boolean).join(' ')}
-        />
 
         {/* Contexto Teológico Diário - Pilar Principal */}
         <section 
@@ -1022,95 +744,6 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
                 </li>
               ))}
             </ul>
-          </div>
-        </section>
-
-        {/* Audio Player Card with Progress */}
-        <section 
-          aria-label="Áudio da Leitura"
-          className="p-3.5 sm:p-4 rounded-xl border border-inherit bg-stone-50/60 dark:bg-zinc-900/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4"
-        >
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-700 text-white flex items-center justify-center shrink-0">
-              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate">
-                  Áudio Narração da Leitura Completa
-                </h4>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-950/70 border border-amber-800/80 text-[10px] text-amber-300 font-semibold">
-                  <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                  <span>
-                    {audioTone === 0.78
-                      ? 'Voz Grave Solene'
-                      : audioTone === 0.70
-                      ? 'Voz Grave Profundo'
-                      : audioTone === 0.85
-                      ? 'Voz Grave Suave'
-                      : 'Tom Natural'}
-                  </span>
-                </span>
-                {activeVoiceName && (
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 hidden md:inline truncate">
-                    ({activeVoiceName})
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate mt-0.5">
-                {isPlayingAudio 
-                  ? isAudioPaused
-                    ? 'Narração pausada. Clique em Continuar para retomar.'
-                    : audioProgress.total > 0
-                      ? `Reproduzindo trecho ${audioProgress.current} de ${audioProgress.total}...`
-                      : 'Reproduzindo narração dos capítulos de hoje...' 
-                  : `Ouça os ${chapters.length} capítulos do dia com narração humanizada e tom solene`}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={toggleAudio}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                isPlayingAudio 
-                  ? isAudioPaused
-                    ? 'bg-amber-700 text-white shadow-xs'
-                    : 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-stone-800 hover:bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-              }`}
-            >
-              {isPlayingAudio ? (
-                isAudioPaused ? (
-                  <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Continuar</span>
-                  </>
-                ) : (
-                  <>
-                    <Pause className="w-3.5 h-3.5 fill-current" />
-                    <span>Pausar</span>
-                  </>
-                )
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Ouvir Tudo</span>
-                </>
-              )}
-            </button>
-
-            {isPlayingAudio && (
-              <button
-                type="button"
-                onClick={stopAudio}
-                className="p-2 rounded-xl border border-stone-200 dark:border-zinc-700 text-stone-500 hover:text-stone-900 dark:hover:text-white shrink-0"
-                title="Parar áudio"
-              >
-                <VolumeX className="w-4 h-4" />
-              </button>
-            )}
           </div>
         </section>
 
