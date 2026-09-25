@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GenreHermeneuticsGuide } from '../types';
-import { BookMarked, HelpCircle, X, CheckCircle2, AlertTriangle, Sparkles, BookOpen } from 'lucide-react';
+import { BookMarked, HelpCircle, X, CheckCircle2, AlertTriangle, BookOpen, Check } from 'lucide-react';
 
 interface LiteraryGenreBadgeProps {
   guide: GenreHermeneuticsGuide;
@@ -8,98 +8,117 @@ interface LiteraryGenreBadgeProps {
 
 export const LiteraryGenreBadge: React.FC<LiteraryGenreBadgeProps> = ({ guide }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
 
-  // Close when clicking outside
+  // Close on Escape key press
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
         setIsOpen(false);
       }
-    }
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
     };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
   if (!guide) return null;
 
   return (
-    <div className="relative inline-block text-left" ref={popoverRef}>
+    <>
       {/* Pill Badge Trigger */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-950/40 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-600/30 hover:border-amber-500 hover:bg-amber-900/40 transition-all shadow-xs group"
+        onClick={() => setIsOpen(true)}
+        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-600/40 hover:border-amber-500 transition-all duration-150 shadow-xs group cursor-pointer active:scale-95 select-none"
         title="Clique para ver as Diretrizes Hermenêuticas deste gênero literário"
         aria-expanded={isOpen}
       >
-        <BookMarked className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
-        <span className="font-serif font-semibold">{guide.label}</span>
-        <HelpCircle className="w-3 h-3 text-amber-700/70 dark:text-amber-400/60" />
+        <BookMarked className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+        <span className="font-serif font-bold text-amber-200">{guide.label}</span>
+        <HelpCircle className="w-3 h-3 text-amber-400/80" />
       </button>
 
-      {/* Hermeneutical Rules Popover */}
+      {/* Hermeneutical Rules Centered Modal Dialog (Perfect alignment, no edge clipping) */}
       {isOpen && (
-        <div className="absolute left-0 mt-2 z-50 w-80 sm:w-96 rounded-2xl bg-stone-900 dark:bg-stone-950 text-stone-100 border border-amber-500/40 shadow-2xl p-4 sm:p-5 space-y-3.5 animate-in fade-in zoom-in-95 duration-150">
-          
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2 border-b border-stone-800 pb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
-                <BookOpen className="w-3.5 h-3.5" />
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-5 bg-black/75 backdrop-blur-md animate-in fade-in duration-150"
+          onClick={() => setIsOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="genre-dialog-title"
+        >
+          <div 
+            className="relative w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl bg-zinc-950 border border-amber-500/40 shadow-2xl p-5 sm:p-6 space-y-4 text-zinc-100 ring-1 ring-white/10 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-amber-400 font-bold block">
+                    Gênero Literário • Formgeschichte
+                  </span>
+                  <h3 id="genre-dialog-title" className="font-cinzel text-lg sm:text-xl font-bold text-amber-100 tracking-wide">
+                    {guide.label}
+                  </h3>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] uppercase font-mono tracking-wider text-amber-400 block font-bold">
-                  Gênero Literário • Formgeschichte
-                </span>
-                <h4 className="font-serif text-sm font-bold text-amber-200">
-                  {guide.label}
-                </h4>
+
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 text-zinc-400 hover:text-zinc-100 rounded-xl hover:bg-zinc-800 transition-colors cursor-pointer"
+                aria-label="Fechar popover hermenêutico"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Theological Description */}
+            <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-serif">
+              {guide.description}
+            </p>
+
+            {/* Hermeneutical Golden Rule */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 space-y-1.5">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-400">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>Regra de Ouro Hermenêutica:</span>
               </div>
+              <p className="text-xs sm:text-sm text-emerald-100/90 font-serif leading-relaxed pl-6">
+                {guide.hermeneuticalRule}
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="p-1 text-stone-400 hover:text-white rounded-lg hover:bg-stone-800 transition-colors"
-              aria-label="Fechar popover hermenêutico"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
 
-          {/* Description */}
-          <p className="text-xs text-stone-300 leading-relaxed font-serif">
-            {guide.description}
-          </p>
-
-          {/* Hermeneutical Golden Rule */}
-          <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-600/30 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              <span>Regra de Ouro Hermenêutica:</span>
+            {/* Common Pitfall Warning */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-rose-950/30 border border-rose-500/40 space-y-1.5">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-rose-400">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>Erro Frequente / Armadilha a Evitar:</span>
+              </div>
+              <p className="text-xs sm:text-sm text-rose-100/90 font-serif leading-relaxed pl-6">
+                {guide.commonPitfall}
+              </p>
             </div>
-            <p className="text-xs text-stone-200 font-serif leading-relaxed">
-              {guide.hermeneuticalRule}
-            </p>
-          </div>
 
-          {/* Common Pitfall Warning */}
-          <div className="p-3 rounded-xl bg-red-950/20 border border-red-600/30 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-red-400">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              <span>Erro Frequente / Armadilha a Evitar:</span>
+            {/* Modal Footer with Dismiss button */}
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-amber-300 hover:text-amber-200 border border-zinc-700 font-semibold text-xs sm:text-sm transition-all cursor-pointer shadow-xs active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-4 h-4 text-amber-400" />
+                <span>Entendido / Fechar</span>
+              </button>
             </div>
-            <p className="text-xs text-stone-200 font-serif leading-relaxed">
-              {guide.commonPitfall}
-            </p>
           </div>
-
         </div>
       )}
-    </div>
+    </>
   );
 };

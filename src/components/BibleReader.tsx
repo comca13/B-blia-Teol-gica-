@@ -52,6 +52,8 @@ interface BibleReaderProps {
   onSectionChange?: (title: string, subtitle?: string) => void;
   isFocusMode?: boolean;
   onToggleFocusMode?: () => void;
+  searchFilter?: string;
+  onBookChapterChange?: (book: number, chapter: number) => void;
 }
 
 export const BibleReader: React.FC<BibleReaderProps> = ({
@@ -62,7 +64,9 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   onGoToDayReading,
   onSectionChange,
   isFocusMode = false,
-  onToggleFocusMode
+  onToggleFocusMode,
+  searchFilter: propSearchFilter,
+  onBookChapterChange
 }) => {
   const [language, setLanguage] = useState<'pt' | 'en'>('pt');
   const [bookNumber, setBookNumber] = useState<number>(initialBookNumber || 1); // 1 = Gênesis
@@ -81,10 +85,15 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     }
   }, [initialBookNumber, initialChapter]);
 
+  // Notify parent of book and chapter changes
+  useEffect(() => {
+    onBookChapterChange?.(bookNumber, chapter);
+  }, [bookNumber, chapter, onBookChapterChange]);
+
   // Reading preferences
   const [fontSize, setFontSize] = useState<number>(18); // 16, 18, 20, 22
   const [copiedVerse, setCopiedVerse] = useState<number | null>(null);
-  const [searchFilter, setSearchFilter] = useState<string>('');
+  const searchFilter = propSearchFilter || '';
   const [testamentFilter, setTestamentFilter] = useState<'ALL' | 'AT' | 'NT'>('ALL');
 
   // Gospel Harmony States
@@ -340,36 +349,37 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       )}
 
       {/* Sleek Book & Translation Selector Bar */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <span className="font-semibold text-amber-400 font-serif text-sm">
+      <div className="bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 border border-zinc-800/80 rounded-3xl p-4 sm:p-6 shadow-xl ring-1 ring-white/5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2.5 text-xs text-zinc-400">
+            <span className="font-cinzel text-sm sm:text-base font-bold text-amber-300">
               {currentBook.number}. {language === 'pt' ? currentBook.namePt : currentBook.nameEn}
             </span>
-            <span>•</span>
-            <span>{currentBook.testament === 'AT' ? 'Antigo Testamento' : 'Novo Testamento'} ({currentBook.group})</span>
+            <span className="text-zinc-600">•</span>
+            <span className="text-zinc-300 font-medium">{currentBook.testament === 'AT' ? '📜 Antigo Testamento' : '✝️ Novo Testamento'}</span>
+            <span className="text-zinc-500">({currentBook.group})</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {/* Font Size Adjusters */}
-            <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded-lg p-0.5">
+            <div className="flex items-center bg-zinc-950 border border-zinc-700/80 rounded-xl p-0.5 shadow-inner">
               <button
                 type="button"
                 onClick={() => setFontSize(s => Math.max(14, s - 2))}
                 disabled={fontSize <= 14}
-                className="px-2 py-1 text-xs text-zinc-300 hover:text-white disabled:opacity-30 transition-colors"
+                className="px-2.5 py-1 text-xs text-zinc-300 hover:text-white disabled:opacity-30 transition-colors font-bold cursor-pointer"
                 title="Diminuir tamanho da fonte"
               >
                 A-
               </button>
-              <span className="text-[11px] font-mono text-zinc-400 px-1 border-x border-zinc-700">
+              <span className="text-[11px] font-mono text-amber-400 px-1.5 border-x border-zinc-700/80 font-bold">
                 {fontSize}px
               </span>
               <button
                 type="button"
                 onClick={() => setFontSize(s => Math.min(26, s + 2))}
                 disabled={fontSize >= 26}
-                className="px-2 py-1 text-xs text-zinc-300 hover:text-white disabled:opacity-30 transition-colors"
+                className="px-2.5 py-1 text-xs text-zinc-300 hover:text-white disabled:opacity-30 transition-colors font-bold cursor-pointer"
                 title="Aumentar tamanho da fonte"
               >
                 A+
@@ -377,12 +387,12 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             </div>
 
             {/* Translation Language */}
-            <div className="flex bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+            <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-700/80 shadow-inner">
               <button
                 type="button"
                 onClick={() => setLanguage('pt')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                  language === 'pt' ? 'bg-amber-500 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer ${
+                  language === 'pt' ? 'bg-amber-600 text-white font-bold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'
                 }`}
                 title="Português: Almeida Revista e Atualizada"
               >
@@ -391,8 +401,8 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               <button
                 type="button"
                 onClick={() => setLanguage('en')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                  language === 'en' ? 'bg-amber-500 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer ${
+                  language === 'en' ? 'bg-amber-600 text-white font-bold shadow-xs' : 'text-zinc-400 hover:text-zinc-200'
                 }`}
                 title="English: World English Bible"
               >
@@ -407,7 +417,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
           
           {/* Complete 66 Books Selector (Spans 7 cols on desktop) */}
           <div className="sm:col-span-7">
-            <label className="block text-[11px] uppercase tracking-wider font-semibold text-zinc-400 mb-1">
+            <label className="block text-[11px] uppercase tracking-wider font-semibold text-zinc-400 mb-1.5">
               Livro da Bíblia (1 a 66)
             </label>
             <div className="relative">
@@ -417,7 +427,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                   setBookNumber(Number(e.target.value));
                   setChapter(1);
                 }}
-                className="w-full bg-zinc-950 border border-zinc-700 hover:border-amber-500/80 text-zinc-100 text-sm rounded-xl px-3.5 py-2.5 appearance-none focus:outline-hidden focus:ring-2 focus:ring-amber-500 transition-colors font-medium cursor-pointer"
+                className="w-full bg-zinc-950/90 border border-zinc-700/80 hover:border-amber-500/80 text-zinc-100 text-sm rounded-2xl px-4 py-2.5 sm:py-3 appearance-none focus:outline-hidden focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all font-semibold cursor-pointer shadow-inner"
               >
                 <optgroup label="--- ANTIGO TESTAMENTO (39 Livros) ---">
                   {OLD_TESTAMENT_BOOKS.map((b) => (
@@ -603,16 +613,16 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       )}
 
       {/* Main Scripture Card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 sm:p-8 shadow-2xl space-y-6">
+      <div className="bg-gradient-to-b from-zinc-900 to-zinc-950/90 border border-zinc-800/90 rounded-3xl p-5 sm:p-8 sm:p-10 shadow-2xl ring-1 ring-white/5 space-y-6">
         
         {/* Chapter Toolbar with Genre & Prev/Next navigation */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-zinc-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-zinc-800/80">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-amber-500 tracking-wider uppercase">
+            <span className="text-xs font-bold text-amber-400 tracking-wider uppercase">
               Capítulo {chapter} de {currentBook.totalChapters}
             </span>
             <span className="text-zinc-600">•</span>
-            <span className="text-xs text-zinc-400">
+            <span className="text-xs text-zinc-400 font-medium">
               Versão {language === 'pt' ? 'ARA (Almeida)' : 'WEB'}
             </span>
             {genreGuide && (
@@ -628,7 +638,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               type="button"
               onClick={handlePrevChapter}
               disabled={bookNumber === 1 && chapter === 1}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-all border border-zinc-700/60 cursor-pointer hover:border-amber-500/40 active:scale-95 shadow-xs"
               title="Capítulo Anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -639,7 +649,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               type="button"
               onClick={handleNextChapter}
               disabled={bookNumber === 66 && chapter === currentBook.totalChapters}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-all border border-zinc-700/60 cursor-pointer hover:border-amber-500/40 active:scale-95 shadow-xs"
               title="Próximo Capítulo"
             >
               <span className="hidden sm:inline">Próximo</span>
@@ -648,30 +658,35 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
           </div>
         </div>
 
-        {/* Cabeçalho do Capítulo */}
-        <header className="mb-4">
-          <h1 className="text-2xl font-bold text-stone-100 font-serif">
+        {/* Cabeçalho do Capítulo com Cinzel & Acento Dourado */}
+        <header className="mb-6 pb-2 border-b border-amber-500/20">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-amber-500 font-mono font-semibold mb-1">
+            <span>{currentBook.testament === 'AT' ? '📜 Antigo Testamento' : '✝️ Novo Testamento'}</span>
+            <span>•</span>
+            <span>{currentBook.group}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-amber-100 font-cinzel tracking-wide">
             {language === 'pt' ? currentBook.namePt : currentBook.nameEn} {chapter}
           </h1>
         </header>
 
         {/* Verses Content View */}
         {loading ? (
-          <div className="py-16 text-center space-y-3">
-            <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-zinc-400 text-sm">
+          <div className="py-20 text-center space-y-3">
+            <div className="w-9 h-9 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto shadow-md" />
+            <p className="text-zinc-400 text-sm font-medium">
               Carregando {language === 'pt' ? currentBook.namePt : currentBook.nameEn} {chapter}...
             </p>
           </div>
         ) : error ? (
-          <div className="py-10 text-center space-y-4 max-w-md mx-auto">
+          <div className="py-12 text-center space-y-4 max-w-md mx-auto">
             <p className="text-red-400 text-sm leading-relaxed">
               {error}
             </p>
             <button
               type="button"
               onClick={fetchChapter}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-colors"
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer shadow-md"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Tentar Novamente
@@ -680,7 +695,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
         ) : (
           <div 
             className="space-y-4 font-serif text-zinc-200 leading-relaxed"
-            style={{ fontSize: `${fontSize}px`, lineHeight: 1.75 }}
+            style={{ fontSize: `${fontSize}px`, lineHeight: 1.85 }}
           >
             {verses.map((v) => {
               const isCopied = copiedVerse === v.number;
@@ -690,10 +705,10 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               return (
                 <div
                   key={v.number}
-                  className="group relative rounded-xl p-2 sm:p-2.5 transition-colors hover:bg-zinc-800/60 flex items-start gap-2.5"
+                  className="group relative rounded-2xl p-2.5 sm:p-3 transition-all duration-150 hover:bg-zinc-800/50 flex items-start gap-3"
                 >
                   <div className="shrink-0 flex items-center gap-1.5 pt-0.5 select-none">
-                    <span className="text-amber-500 font-sans text-xs sm:text-sm font-bold w-6 text-right">
+                    <span className="text-amber-400 font-sans text-xs sm:text-sm font-bold w-6 text-right">
                       {v.number}
                     </span>
                     {verseVariants.length > 0 && (
@@ -707,14 +722,14 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                     )}
                   </div>
                   
-                  <p className="flex-1 text-zinc-200 text-justify break-words">
+                  <p className="flex-1 text-zinc-100 text-justify break-words tracking-normal">
                     {v.text}
                   </p>
 
                   <button
                     type="button"
                     onClick={() => handleCopyVerse(v.number, v.text)}
-                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-lg bg-zinc-800 hover:bg-amber-600 hover:text-white text-zinc-400 transition-all shrink-0 ml-1"
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-xl bg-zinc-800 hover:bg-amber-500 hover:text-zinc-950 text-zinc-400 transition-all shrink-0 ml-1 cursor-pointer active:scale-95 shadow-xs"
                     title="Copiar versículo"
                   >
                     {isCopied ? (
@@ -731,9 +746,9 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
 
         {/* Bottom Navigation between Chapters */}
         {!loading && !error && verses.length > 0 && (
-          <div className="pt-6 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="pt-6 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs text-zinc-400">
-              Total de versículos: <span className="font-semibold text-zinc-200">{verses.length}</span>
+              Total de versículos: <span className="font-bold text-amber-400">{verses.length}</span>
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -741,7 +756,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                 type="button"
                 onClick={handlePrevChapter}
                 disabled={bookNumber === 1 && chapter === 1}
-                className="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-colors border border-zinc-700 flex items-center gap-1.5"
+                className="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 disabled:opacity-30 text-xs font-semibold text-zinc-200 transition-all border border-zinc-700/60 flex items-center gap-1.5 cursor-pointer hover:border-amber-500/40 active:scale-95"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Capítulo Anterior</span>
@@ -751,7 +766,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                 type="button"
                 onClick={handleNextChapter}
                 disabled={bookNumber === 66 && chapter === currentBook.totalChapters}
-                className="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-30 text-xs font-semibold text-white transition-colors border border-amber-500 flex items-center gap-1.5 shadow-sm"
+                className="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 disabled:opacity-30 text-xs font-bold text-zinc-950 transition-all border border-amber-400 flex items-center gap-1.5 shadow-md shadow-amber-950/40 cursor-pointer active:scale-95"
               >
                 <span>Próximo Capítulo</span>
                 <ChevronRight className="w-4 h-4" />
