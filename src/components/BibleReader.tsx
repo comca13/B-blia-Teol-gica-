@@ -432,14 +432,14 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                 <optgroup label="--- ANTIGO TESTAMENTO (39 Livros) ---">
                   {OLD_TESTAMENT_BOOKS.map((b) => (
                     <option key={b.number} value={b.number}>
-                      {b.number}. {language === 'pt' ? b.namePt : b.nameEn} ({b.totalChapters} caps) - {b.group}
+                      {language === 'pt' ? b.namePt : b.nameEn}
                     </option>
                   ))}
                 </optgroup>
                 <optgroup label="--- NOVO TESTAMENTO (27 Livros) ---">
                   {NEW_TESTAMENT_BOOKS.map((b) => (
                     <option key={b.number} value={b.number}>
-                      {b.number}. {language === 'pt' ? b.namePt : b.nameEn} ({b.totalChapters} caps) - {b.group}
+                      {language === 'pt' ? b.namePt : b.nameEn}
                     </option>
                   ))}
                 </optgroup>
