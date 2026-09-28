@@ -146,6 +146,37 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     return getTheologicalVerseMarkersForChapter(currentBook.namePt, chapter);
   }, [currentBook.namePt, chapter]);
 
+  // Pre-indexed chapter maps for O(1) verse lookups (eliminates O(N) linear array filtering per verse)
+  const chapterVariantsMap = useMemo(() => {
+    const chapterVariants = getTextualVariantsForPassage(currentBook.namePt, chapter);
+    const map = new Map<number, typeof chapterVariants>();
+    chapterVariants.forEach(variant => {
+      const match = variant.verseReference.match(/:(\d+)(?:[–-](\d+))?/);
+      if (match) {
+        const start = parseInt(match[1], 10);
+        const end = match[2] ? parseInt(match[2], 10) : start;
+        for (let v = start; v <= end; v++) {
+          const list = map.get(v) || [];
+          list.push(variant);
+          map.set(v, list);
+        }
+      }
+    });
+    return map;
+  }, [currentBook.namePt, chapter]);
+
+  const chapterDifficultiesByVerseMap = useMemo(() => {
+    const map = new Map<number, BiblicalDifficulty[]>();
+    currentChapterDifficulties.forEach(diff => {
+      if (diff.verse !== undefined) {
+        const list = map.get(diff.verse) || [];
+        list.push(diff);
+        map.set(diff.verse, list);
+      }
+    });
+    return map;
+  }, [currentChapterDifficulties]);
+
   const handleCloseStudyDrawer = useCallback(() => {
     if (propOnCloseStudyDrawer) {
       propOnCloseStudyDrawer();
@@ -810,8 +841,8 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
           >
             {verses.map((v) => {
               const isCopied = copiedVerse === v.number;
-              const verseVariants = getTextualVariantsForPassage(currentBook.namePt, chapter, v.number);
-              const verseDifficulties = getDifficultiesForVerse(currentBook.namePt, chapter, v.number);
+              const verseVariants = chapterVariantsMap.get(v.number) || [];
+              const verseDifficulties = chapterDifficultiesByVerseMap.get(v.number) || [];
               const verseDivergence = verseDivergenceMap.get(v.number);
 
               return (

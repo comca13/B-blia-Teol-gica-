@@ -95,5 +95,35 @@ export default defineConfig(() => {
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
+    build: {
+      chunkSizeWarningLimit: 800,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+                return 'vendor-react';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+              return 'vendor-libs';
+            }
+            if (id.includes('src/data/readings_') || id.includes('src/data/allReadings')) {
+              return 'data-readings';
+            }
+            if (id.includes('src/data/theologicalComparisonData') || id.includes('src/data/theologicalSystemsData') || id.includes('src/data/confessionalDocumentsData')) {
+              return 'data-theology';
+            }
+            if (id.includes('src/data/churchHistoryData') || id.includes('src/data/catholicTraditionData') || id.includes('src/data/reformationHistoryData') || id.includes('src/data/theologicalPeriods')) {
+              return 'data-history';
+            }
+            if (id.includes('src/data/biblicalTexts') || id.includes('src/data/bibleBooks') || id.includes('src/data/chronologicalPlan') || id.includes('src/data/canonicalPlan')) {
+              return 'data-plans-biblical';
+            }
+          },
+        },
+      },
+    },
   };
 });

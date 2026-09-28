@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { MainRoute, PlanType, ReaderSettings, ReminderSettings, UserProgress } from './types';
 import { CHRONOLOGICAL_PLAN } from './data/chronologicalPlan';
 import { CANONICAL_PLAN } from './data/canonicalPlan';
@@ -15,10 +15,15 @@ import {
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { ViewLoadingSkeleton } from './components/ViewLoadingSkeleton';
 import { BibleView } from './views/BibleView';
-import { PlansView } from './views/PlansView';
-import { HistoryView } from './views/HistoryView';
-import { ProfileView } from './views/ProfileView';
+
+// Lazy loading views for instant initial paint and reduced bundle footprint
+const PlansView = lazy(() => import('./views/PlansView').then(m => ({ default: m.PlansView })));
+const HistoryView = lazy(() => import('./views/HistoryView').then(m => ({ default: m.HistoryView })));
+const ReformationView = lazy(() => import('./views/ReformationView').then(m => ({ default: m.ReformationView })));
+const CatholicTraditionView = lazy(() => import('./views/CatholicTraditionView').then(m => ({ default: m.CatholicTraditionView })));
+const ProfileView = lazy(() => import('./views/ProfileView').then(m => ({ default: m.ProfileView })));
 
 export default function App() {
   const [activeRoute, setActiveRoute] = useState<MainRoute>('BIBLIA');
@@ -245,6 +250,16 @@ export default function App() {
           navTitle: 'História da Igreja & Teologia',
           navSubtitle: 'Eras Patrística à Contemporânea, Credos e Sistemas'
         };
+      case 'REFORMA':
+        return {
+          navTitle: 'A Reforma Protestante',
+          navSubtitle: 'Pré-Reformadores, Martinho Lutero e Pós-Reformadores'
+        };
+      case 'CATOLICISMO':
+        return {
+          navTitle: 'A Tradição Católica',
+          navSubtitle: 'Patrística, Escolástica Medieval e Contra-Reforma'
+        };
       case 'PERFIL':
         return {
           navTitle: userName || 'Perfil & Caderno Teológico',
@@ -310,48 +325,66 @@ export default function App() {
         )}
 
         {activeRoute === 'PLANOS' && (
-          <PlansView
-            activePlan={progress.planType}
-            onSelectPlan={handleSelectPlan}
-            progress={progress}
-            days={currentPlanDays}
-            onToggleComplete={handleToggleComplete}
-            onSelectDay={(day) => {
-              setSelectedDayNumber(day);
-              setBibleReadingMode('plan-day');
-              setActiveRoute('BIBLIA');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            currentDayNumber={selectedDayNumber}
-            onSelectThematicPassage={(passageRef) => {
-              setBibleReadingMode('browse-books');
-              setActiveRoute('BIBLIA');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
+          <Suspense fallback={<ViewLoadingSkeleton label="Carregando Planos de Leitura..." />}>
+            <PlansView
+              activePlan={progress.planType}
+              onSelectPlan={handleSelectPlan}
+              progress={progress}
+              days={currentPlanDays}
+              onToggleComplete={handleToggleComplete}
+              onSelectDay={(day) => {
+                setSelectedDayNumber(day);
+                setBibleReadingMode('plan-day');
+                setActiveRoute('BIBLIA');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              currentDayNumber={selectedDayNumber}
+              onSelectThematicPassage={(passageRef) => {
+                setBibleReadingMode('browse-books');
+                setActiveRoute('BIBLIA');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </Suspense>
         )}
 
         {activeRoute === 'HISTORIA' && (
-          <HistoryView
-            onNavigateToPassage={(passageRef) => {
-              setBibleReadingMode('browse-books');
-              setActiveRoute('BIBLIA');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
+          <Suspense fallback={<ViewLoadingSkeleton label="Carregando História da Igreja e Teologia..." />}>
+            <HistoryView
+              onNavigateToPassage={(passageRef) => {
+                setBibleReadingMode('browse-books');
+                setActiveRoute('BIBLIA');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </Suspense>
+        )}
+
+        {activeRoute === 'REFORMA' && (
+          <Suspense fallback={<ViewLoadingSkeleton label="Carregando A Reforma Protestante..." />}>
+            <ReformationView />
+          </Suspense>
+        )}
+
+        {activeRoute === 'CATOLICISMO' && (
+          <Suspense fallback={<ViewLoadingSkeleton label="Carregando A Tradição Católica..." />}>
+            <CatholicTraditionView />
+          </Suspense>
         )}
 
         {activeRoute === 'PERFIL' && (
-          <ProfileView
-            userName={userName}
-            onUpdateUserName={handleUpdateUserName}
-            progress={progress}
-            settings={readerSettings}
-            onUpdateSettings={setReaderSettings}
-            reminderSettings={reminderSettings}
-            onUpdateReminderSettings={handleUpdateReminderSettings}
-            currentDayReading={currentReading}
-          />
+          <Suspense fallback={<ViewLoadingSkeleton label="Carregando Perfil e Caderno..." />}>
+            <ProfileView
+              userName={userName}
+              onUpdateUserName={handleUpdateUserName}
+              progress={progress}
+              settings={readerSettings}
+              onUpdateSettings={setReaderSettings}
+              reminderSettings={reminderSettings}
+              onUpdateReminderSettings={handleUpdateReminderSettings}
+              currentDayReading={currentReading}
+            />
+          </Suspense>
         )}
       </main>
 

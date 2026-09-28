@@ -1,6 +1,6 @@
 {
-  "summary":  "Plano de implementação detalhado para a expansão tripartite do módulo teológico (Catolicismo, Protestantismo e Ortodoxia Oriental), integração bidirecional no leitor bíblico com abertura direta no StudyDrawer, citações literais de documentos primários, seção de consensos e pontos de convergência, e filtros rápidos por sistema teológico.",
-  "updatedAt":  "2026-09-28T16:09:02.678896083Z",
+  "summary":  "Plano de implementação para análise e otimização completa do app: divisão de código (React lazy/Suspense), otimização de bundle e chunks manuais no Vite, memorização e renderização leve no BibleReader e navegação mobile otimizada.",
+  "updatedAt":  "2026-09-28T16:55:02.801908883Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

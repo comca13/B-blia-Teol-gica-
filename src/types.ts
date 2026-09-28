@@ -1,6 +1,6 @@
 export type PlanType = 'chronological' | 'canonical';
 
-export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'PERFIL';
+export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'REFORMA' | 'CATOLICISMO' | 'PERFIL';
 
 export type ReadingTheme = 'light' | 'sepia' | 'dark';
 
@@ -577,3 +577,44 @@ export interface TheologicalTimelineEvent {
   relatedScripturePassages?: string[];
 }
 
+// ----------------------------------------------------
+// A REFORMA PROTESTANTE (FIGURAS E PERÍODOS HISTÓRICOS)
+// ----------------------------------------------------
+
+export interface ReformerFigure {
+  id: string;
+  name: string;
+  period: string; // Ex: "c. 1328 – 1384"
+  title: string; // Ex: "A Estrela da Manhã da Reforma"
+  shortDescription: string;
+  biography: string;
+  coreThinking: string[];
+  theologicalEmphasis: string[];
+  keyDivergences: string[];
+  legacy: string;
+  famousQuote?: string;
+  keyWorks?: string[];
+}
+
+export type ReformationEra = 'pre-reformers' | 'luther' | 'post-reformers';
+
+// ----------------------------------------------------
+// A TRADIÇÃO E DOUTORES CATÓLICOS (FIGURAS E PERÍODOS)
+// ----------------------------------------------------
+
+export type CatholicEra = 'patristic' | 'scholastic' | 'counter-reformation';
+
+export interface CatholicTheologianFigure {
+  id: string;
+  name: string;
+  period: string; // Ex: "354 – 430 d.C."
+  title: string; // Ex: "Doutor da Graça"
+  shortDescription: string;
+  biography: string;
+  coreThinking: string[];
+  theologicalEmphasis: string[];
+  keyContributions: string[]; // Contribuições dogmáticas e eclesiais perenes
+  legacy: string;
+  famousQuote?: string;
+  keyWorks?: string[];
+}

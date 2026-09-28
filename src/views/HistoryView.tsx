@@ -14,8 +14,12 @@ import {
   Crown, 
   ChevronRight,
   ShieldAlert,
-  Coins
+  Coins,
+  Flame
 } from 'lucide-react';
+import { ReformationView } from './ReformationView';
+import { CatholicTraditionView } from './CatholicTraditionView';
+import { Church } from 'lucide-react';
 import { 
   CHURCH_HISTORY_ERAS_INFO, 
   CHURCH_HISTORY_EVENTS, 
@@ -32,7 +36,7 @@ import { THEOLOGICAL_DEBATES, THEOLOGICAL_CATEGORIES_META } from '../data/theolo
 import { confessionalDocumentsData, DOCUMENT_CATEGORY_META } from '../data/confessionalDocumentsData';
 import { TheologicalDivergenceView } from '../components/TheologicalDivergenceView';
 
-type HistorySubTab = 'confessional' | 'catholic-protestant' | 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline' | 'cultural-context';
+type HistorySubTab = 'confessional' | 'reformation' | 'catholic' | 'catholic-protestant' | 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline' | 'cultural-context';
 
 export interface HistoryViewProps {
   onNavigateToPassage?: (reference: string) => void;
@@ -137,6 +141,8 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
         {[
           { id: 'confessional', label: '📜 Biblioteca Confessional', icon: BookOpen },
+          { id: 'reformation', label: '🔥 A Reforma Protestante', icon: Flame },
+          { id: 'catholic', label: '⛪ Tradição Católica', icon: Church },
           { id: 'catholic-protestant', label: '⚖️ Catolicismo, Protestantismo & Ortodoxia', icon: Scale },
           { id: 'church', label: 'História da Igreja', icon: Landmark },
           { id: 'theology', label: 'Sistemas Teológicos', icon: Scale },
@@ -305,6 +311,20 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* A REFORMA PROTESTANTE: PRÉ-REFORMADORES, LUTERO E PÓS-REFORMADORES */}
+      {activeTab === 'reformation' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <ReformationView />
+        </div>
+      )}
+
+      {/* A TRADIÇÃO E DOUTORES CATÓLICOS: PATRÍSTICA, ESCOLÁSTICA E CONTRA-REFORMA */}
+      {activeTab === 'catholic' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <CatholicTraditionView />
         </div>
       )}
 
@@ -744,14 +764,16 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       )}
 
       {/* Modal Leitor de Documentos Históricos & Confessionais */}
-      <DocumentReaderModal
-        document={readingDocument}
-        isOpen={isReaderModalOpen}
-        onClose={() => {
-          setIsReaderModalOpen(false);
-          setReadingDocument(null);
-        }}
-      />
+      {isReaderModalOpen && readingDocument && (
+        <DocumentReaderModal
+          document={readingDocument}
+          isOpen={isReaderModalOpen}
+          onClose={() => {
+            setIsReaderModalOpen(false);
+            setReadingDocument(null);
+          }}
+        />
+      )}
 
     </div>
   );
