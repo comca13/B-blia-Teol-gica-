@@ -42,12 +42,12 @@ export const ReformationView: React.FC = () => {
               <h3 className="text-lg sm:text-xl font-bold font-serif text-stone-100">
                 {figure.name}
               </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-sans font-medium flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-amber-400" />
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-sans font-medium flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-blue-400" />
                 {figure.period}
               </span>
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-amber-400 mb-1">
+            <p className="text-xs sm:text-sm font-semibold text-blue-400 mb-1">
               {figure.title}
             </p>
             <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
@@ -55,8 +55,8 @@ export const ReformationView: React.FC = () => {
             </p>
           </div>
 
-          <div className="text-zinc-400 hover:text-amber-400 p-2 shrink-0 transition-colors">
-            {isExpanded ? <ChevronUp className="w-5 h-5 text-amber-400" /> : <ChevronDown className="w-5 h-5" />}
+          <div className="text-zinc-400 hover:text-blue-400 p-2 shrink-0 transition-colors">
+            {isExpanded ? <ChevronUp className="w-5 h-5 text-blue-400" /> : <ChevronDown className="w-5 h-5" />}
           </div>
         </button>
 
@@ -65,16 +65,16 @@ export const ReformationView: React.FC = () => {
           <div className="p-5 sm:p-7 border-t border-zinc-800/80 bg-zinc-950/50 space-y-6 animate-in fade-in duration-200">
             {/* Citação Famosa */}
             {figure.famousQuote && (
-              <div className="p-4 rounded-xl bg-amber-500/10 border-l-4 border-amber-500 text-stone-200 italic text-sm flex gap-3 shadow-inner">
-                <Quote className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="p-4 rounded-xl bg-blue-500/10 border-l-4 border-blue-500 text-stone-200 italic text-sm flex gap-3 shadow-inner">
+                <Quote className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                 <span className="font-serif">"{figure.famousQuote}"</span>
               </div>
             )}
 
             {/* Biografia Completa */}
             <div>
-              <h4 className="text-xs uppercase font-bold tracking-wider text-amber-400/90 mb-2 flex items-center gap-1.5 font-mono">
-                <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+              <h4 className="text-xs uppercase font-bold tracking-wider text-blue-400/90 mb-2 flex items-center gap-1.5 font-mono">
+                <BookOpen className="w-3.5 h-3.5 text-blue-400" />
                 Biografia e Contexto Histórico
               </h4>
               <p className="text-xs sm:text-sm text-stone-300 leading-relaxed text-justify font-sans">
@@ -84,14 +84,14 @@ export const ReformationView: React.FC = () => {
 
             {/* Linhas de Pensamento */}
             <div>
-              <h4 className="text-xs uppercase font-bold tracking-wider text-amber-400/90 mb-2 flex items-center gap-1.5 font-mono">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <h4 className="text-xs uppercase font-bold tracking-wider text-blue-400/90 mb-2 flex items-center gap-1.5 font-mono">
+                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                 Pensamento Teológico Central
               </h4>
               <ul className="space-y-2">
                 {figure.coreThinking.map((item, idx) => (
                   <li key={idx} className="text-xs sm:text-sm text-stone-300 flex items-start gap-2.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2 shrink-0" />
                     <span className="leading-relaxed">{item}</span>
                   </li>
                 ))}
@@ -131,8 +131,8 @@ export const ReformationView: React.FC = () => {
 
             {/* Legado Histórico */}
             <div>
-              <h4 className="text-xs uppercase font-bold tracking-wider text-amber-400/90 mb-2 flex items-center gap-1.5 font-mono">
-                <Cross className="w-3.5 h-3.5 text-amber-400" />
+              <h4 className="text-xs uppercase font-bold tracking-wider text-blue-400/90 mb-2 flex items-center gap-1.5 font-mono">
+                <Cross className="w-3.5 h-3.5 text-blue-400" />
                 Legado Histórico e Teológico
               </h4>
               <p className="text-xs sm:text-sm text-stone-300 leading-relaxed bg-zinc-900/90 p-4 rounded-xl border border-zinc-800">
@@ -143,13 +143,13 @@ export const ReformationView: React.FC = () => {
             {/* Obras Notáveis */}
             {figure.keyWorks && figure.keyWorks.length > 0 && (
               <div>
-                <h4 className="text-xs uppercase font-bold tracking-wider text-amber-400/90 mb-2.5 flex items-center gap-1.5 font-mono">
-                  <BookMarked className="w-3.5 h-3.5 text-amber-400" />
+                <h4 className="text-xs uppercase font-bold tracking-wider text-blue-400/90 mb-2.5 flex items-center gap-1.5 font-mono">
+                  <BookMarked className="w-3.5 h-3.5 text-blue-400" />
                   Obras e Escritos Notáveis
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {figure.keyWorks.map((work, idx) => (
-                    <span key={idx} className="text-xs px-3 py-1 rounded-lg bg-zinc-800 text-amber-200 border border-zinc-700/60 font-serif">
+                    <span key={idx} className="text-xs px-3 py-1 rounded-lg bg-zinc-800 text-blue-200 border border-zinc-700/60 font-serif">
                       {work}
                     </span>
                   ))}
@@ -166,7 +166,7 @@ export const ReformationView: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
       {/* Título da Aba Principal */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-lg">
+        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-500/15 border border-blue-500/30 text-blue-400 shadow-lg">
           <Flame className="w-7 h-7" />
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold font-cinzel text-stone-100 tracking-wide">
@@ -184,7 +184,7 @@ export const ReformationView: React.FC = () => {
           onClick={() => { setActiveEra('pre-reformers'); setExpandedFigureId(null); }}
           className={`flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeEra === 'pre-reformers'
-              ? 'border-amber-500 text-amber-400'
+              ? 'border-blue-500 text-blue-400'
               : 'border-transparent text-zinc-400 hover:text-zinc-200'
           }`}
         >
@@ -197,7 +197,7 @@ export const ReformationView: React.FC = () => {
           onClick={() => { setActiveEra('luther'); setExpandedFigureId('martin-luther'); }}
           className={`flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeEra === 'luther'
-              ? 'border-amber-500 text-amber-400'
+              ? 'border-blue-500 text-blue-400'
               : 'border-transparent text-zinc-400 hover:text-zinc-200'
           }`}
         >
@@ -210,7 +210,7 @@ export const ReformationView: React.FC = () => {
           onClick={() => { setActiveEra('post-reformers'); setExpandedFigureId(null); }}
           className={`flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeEra === 'post-reformers'
-              ? 'border-amber-500 text-amber-400'
+              ? 'border-blue-500 text-blue-400'
               : 'border-transparent text-zinc-400 hover:text-zinc-200'
           }`}
         >
@@ -232,7 +232,7 @@ export const ReformationView: React.FC = () => {
 
         {activeEra === 'luther' && (
           <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs sm:text-sm text-amber-300 font-serif leading-relaxed">
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-xs sm:text-sm text-blue-300 font-serif leading-relaxed">
               O ponto central de viragem: o monge agostiniano que desafiou o papado romano e recuperou a certeza da justificação pela graça mediante a fé (Sola Fide).
             </div>
             {renderFigureCard(lutherData)}
