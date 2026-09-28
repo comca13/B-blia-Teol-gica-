@@ -488,6 +488,9 @@ export const BibleView: React.FC<BibleViewProps> = React.memo(({
             onSectionChange={onSectionChange}
             isFocusMode={isFocusMode}
             onToggleFocusMode={onToggleFocusMode}
+            isStudyDrawerOpen={isStudyDrawerOpen}
+            onToggleStudyDrawer={onToggleStudyDrawer}
+            onCloseStudyDrawer={onCloseStudyDrawer}
           />
         </div>
       )}

@@ -36,7 +36,7 @@ interface DashboardProps {
   onOpenTimeline: () => void;
   onOpenPlanInfo: () => void;
   onOpenBibleReader: () => void;
-  onOpenChurchHistory?: (tab?: 'timeline' | 'theological-systems' | 'creeds') => void;
+  onOpenChurchHistory?: (tab?: 'timeline' | 'theological-systems' | 'creeds' | 'catolicismo-protestantismo') => void;
   userName: string;
   onUpdateUserName: (name: string) => void;
 }
@@ -355,14 +355,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto shrink-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 w-full lg:w-auto shrink-0">
               <button
                 type="button"
                 onClick={() => onOpenChurchHistory('timeline')}
                 className="px-3.5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 hover:border-amber-500/40 text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs"
               >
                 <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>Linha do Tempo (5 Eras)</span>
+                <span>Linha do Tempo</span>
               </button>
 
               <button
@@ -381,6 +381,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
               >
                 <Scroll className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span>Grandes Credos</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onOpenChurchHistory('catolicismo-protestantismo')}
+                className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-950/70 to-indigo-950/70 hover:from-amber-900/80 hover:to-indigo-900/80 text-amber-200 border border-amber-500/50 hover:border-amber-400 text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs"
+              >
+                <Scale className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Teologia Tripartite</span>
               </button>
             </div>
           </div>

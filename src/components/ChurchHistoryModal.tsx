@@ -26,19 +26,22 @@ import {
   ECUMENICAL_CREEDS 
 } from '../data/churchHistoryData';
 import { TheologicalSystemsCard } from './TheologicalSystemsCard';
+import { TheologicalDivergenceView } from './TheologicalDivergenceView';
 
 interface ChurchHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: 'timeline' | 'theological-systems' | 'creeds';
+  initialTab?: 'timeline' | 'theological-systems' | 'creeds' | 'catolicismo-protestantismo';
+  onNavigateToPassage?: (reference: string) => void;
 }
 
 export const ChurchHistoryModal: React.FC<ChurchHistoryModalProps> = ({
   isOpen,
   onClose,
-  initialTab = 'timeline'
+  initialTab = 'timeline',
+  onNavigateToPassage
 }) => {
-  const [activeTab, setActiveTab] = useState<'timeline' | 'theological-systems' | 'creeds'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'timeline' | 'theological-systems' | 'creeds' | 'catolicismo-protestantismo'>(initialTab);
   const [selectedEra, setSelectedEra] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,6 +186,19 @@ export const ChurchHistoryModal: React.FC<ChurchHistoryModalProps> = ({
             >
               <Scroll className="w-4 h-4" />
               <span>Grandes Credos Ecumênicos</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('catolicismo-protestantismo')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                activeTab === 'catolicismo-protestantismo'
+                  ? 'bg-amber-600 text-white shadow-md border border-amber-500'
+                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+              }`}
+            >
+              <span>⚖️</span>
+              <span>Catolicismo, Prot & Ortodoxia</span>
             </button>
           </div>
 
@@ -483,6 +499,13 @@ export const ChurchHistoryModal: React.FC<ChurchHistoryModalProps> = ({
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 4: CATOLICISMO VS. PROTESTANTISMO */}
+          {activeTab === 'catolicismo-protestantismo' && (
+            <div className="space-y-6">
+              <TheologicalDivergenceView onNavigateToPassage={(ref) => { onClose(); onNavigateToPassage?.(ref); }} />
             </div>
           )}
 

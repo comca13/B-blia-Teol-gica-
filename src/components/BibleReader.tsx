@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   ALL_BIBLE_BOOKS, 
   BibleBookInfo, 
@@ -36,12 +36,15 @@ import {
   getTypologyForReading 
 } from '../data/theologicalExegesisData';
 import { getTextualVariantsForPassage } from '../data/textualVariantsData';
-import { BiblePassage, GospelHarmonyEvent, BiblicalDifficulty } from '../types';
-import { Landmark, Layers, ShieldQuestion } from 'lucide-react';
+import { BiblePassage, GospelHarmonyEvent, BiblicalDifficulty, TheologicalComparisonItem } from '../types';
+import { Landmark, Layers, ShieldQuestion, Scale } from 'lucide-react';
 import { ApologeticsBadge } from './ApologeticsBadge';
 import { ApologeticsCard } from './ApologeticsCard';
+import { TheologicalDivergenceBadge } from './TheologicalDivergenceBadge';
+import { TheologicalDivergenceModal } from './TheologicalDivergenceModal';
 import { StudyDrawer, StudyDrawerTab } from './StudyDrawer';
 import { getDifficultiesForVerse, getDifficultiesForChapter } from '../data/apologeticsData';
+import { getTheologicalComparisonsByPassage, getTheologicalVerseMarkersForChapter } from '../data/theologicalComparisonData';
 
 interface BibleReaderProps {
   initialBookNumber?: number;
@@ -54,6 +57,9 @@ interface BibleReaderProps {
   onToggleFocusMode?: () => void;
   searchFilter?: string;
   onBookChapterChange?: (book: number, chapter: number) => void;
+  isStudyDrawerOpen?: boolean;
+  onToggleStudyDrawer?: () => void;
+  onCloseStudyDrawer?: () => void;
 }
 
 export const BibleReader: React.FC<BibleReaderProps> = ({
@@ -66,7 +72,10 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   isFocusMode = false,
   onToggleFocusMode,
   searchFilter: propSearchFilter,
-  onBookChapterChange
+  onBookChapterChange,
+  isStudyDrawerOpen: propIsStudyDrawerOpen,
+  onToggleStudyDrawer: propOnToggleStudyDrawer,
+  onCloseStudyDrawer: propOnCloseStudyDrawer
 }) => {
   const [language, setLanguage] = useState<'pt' | 'en'>('pt');
   const [bookNumber, setBookNumber] = useState<number>(initialBookNumber || 1); // 1 = Gênesis
@@ -101,9 +110,14 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const [selectedHarmonyEvent, setSelectedHarmonyEvent] = useState<GospelHarmonyEvent | undefined>(undefined);
 
   // Study Drawer & Apologetics States
-  const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState<boolean>(false);
+  const [internalIsStudyDrawerOpen, setInternalIsStudyDrawerOpen] = useState<boolean>(false);
+  const isStudyDrawerOpen = propIsStudyDrawerOpen !== undefined ? propIsStudyDrawerOpen : internalIsStudyDrawerOpen;
   const [studyDrawerTab, setStudyDrawerTab] = useState<StudyDrawerTab>('apologetics');
   const [selectedDifficultyId, setSelectedDifficultyId] = useState<string | undefined>(undefined);
+
+  // Theological Divergence States
+  const [isDivergenceModalOpen, setIsDivergenceModalOpen] = useState<boolean>(false);
+  const [selectedDivergenceTopicId, setSelectedDivergenceTopicId] = useState<string | undefined>(undefined);
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -122,11 +136,53 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     return getDifficultiesForChapter(currentBook.namePt, chapter);
   }, [currentBook.namePt, chapter]);
 
-  const handleOpenApologetics = (difficulty: BiblicalDifficulty) => {
+  // Matching Theological Divergences (Catholicism vs Protestantism vs Orthodoxy) for currently viewed book and chapter
+  const currentChapterDivergences = useMemo(() => {
+    return getTheologicalComparisonsByPassage(currentBook.namePt, chapter);
+  }, [currentBook.namePt, chapter]);
+
+  // Verse-level markers for specific perícopes with theological divergences
+  const verseDivergenceMap = useMemo(() => {
+    return getTheologicalVerseMarkersForChapter(currentBook.namePt, chapter);
+  }, [currentBook.namePt, chapter]);
+
+  const handleCloseStudyDrawer = useCallback(() => {
+    if (propOnCloseStudyDrawer) {
+      propOnCloseStudyDrawer();
+    } else if (propOnToggleStudyDrawer && isStudyDrawerOpen) {
+      propOnToggleStudyDrawer();
+    } else {
+      setInternalIsStudyDrawerOpen(false);
+    }
+  }, [propOnCloseStudyDrawer, propOnToggleStudyDrawer, isStudyDrawerOpen]);
+
+  const handleOpenApologetics = useCallback((difficulty: BiblicalDifficulty) => {
     setSelectedDifficultyId(difficulty.id);
     setStudyDrawerTab('apologetics');
-    setIsStudyDrawerOpen(true);
-  };
+    if (!isStudyDrawerOpen) {
+      if (propOnToggleStudyDrawer) {
+        propOnToggleStudyDrawer();
+      } else {
+        setInternalIsStudyDrawerOpen(true);
+      }
+    }
+  }, [isStudyDrawerOpen, propOnToggleStudyDrawer]);
+
+  const handleOpenDivergenceInDrawer = useCallback((topicId?: string) => {
+    if (topicId) {
+      setSelectedDivergenceTopicId(topicId);
+    } else if (currentChapterDivergences.length > 0) {
+      setSelectedDivergenceTopicId(currentChapterDivergences[0].id);
+    }
+    setStudyDrawerTab('divergence');
+    if (!isStudyDrawerOpen) {
+      if (propOnToggleStudyDrawer) {
+        propOnToggleStudyDrawer();
+      } else {
+        setInternalIsStudyDrawerOpen(true);
+      }
+    }
+  }, [currentChapterDivergences, isStudyDrawerOpen, propOnToggleStudyDrawer]);
 
   // Navigate to passage reference from Harmony Grid (e.g. "Lucas 9:10-17")
   const handleNavigateToPassage = (ref: string) => {
@@ -612,6 +668,52 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
         </div>
       )}
 
+      {/* Alerta Elegante Contextual de Divergência Teológica (Catolicismo vs. Protestantismo vs. Ortodoxia) */}
+      {currentChapterDivergences.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-950/70 via-zinc-900 to-emerald-950/60 border border-amber-500/40 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-xs">
+              <Scale className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Divergência Teológica Histórica
+                </span>
+                <span className="text-xs text-zinc-400 font-mono hidden sm:inline">
+                  Catolicismo • Protestantismo • Ortodoxia
+                </span>
+              </div>
+              <h3 className="font-serif text-sm sm:text-base font-bold text-stone-100 mt-0.5">
+                {currentChapterDivergences[0].topic}
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => handleOpenDivergenceInDrawer(currentChapterDivergences[0].id)}
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-zinc-950 font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 shrink-0 border border-amber-400 hover:shadow-amber-900/40 cursor-pointer"
+            >
+              <Scale className="w-4 h-4" />
+              <span>⚖️ Ver no Painel de Estudo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDivergenceTopicId(currentChapterDivergences[0].id);
+                setIsDivergenceModalOpen(true);
+              }}
+              className="px-3 py-2.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold transition-all border border-zinc-700/60 cursor-pointer"
+              title="Abrir em janela modal"
+            >
+              Tela Cheia
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Scripture Card */}
       <div className="bg-gradient-to-b from-zinc-900 to-zinc-950/90 border border-zinc-800/90 rounded-3xl p-5 sm:p-8 sm:p-10 shadow-2xl ring-1 ring-white/5 space-y-6">
         
@@ -628,6 +730,15 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             {genreGuide && (
               <div className="ml-1">
                 <LiteraryGenreBadge guide={genreGuide} />
+              </div>
+            )}
+            {currentChapterDivergences.length > 0 && (
+              <div className="ml-1">
+                <TheologicalDivergenceBadge
+                  item={currentChapterDivergences[0]}
+                  compact={true}
+                  onNavigateToPassage={handleNavigateToPassage}
+                />
               </div>
             )}
           </div>
@@ -701,11 +812,16 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               const isCopied = copiedVerse === v.number;
               const verseVariants = getTextualVariantsForPassage(currentBook.namePt, chapter, v.number);
               const verseDifficulties = getDifficultiesForVerse(currentBook.namePt, chapter, v.number);
+              const verseDivergence = verseDivergenceMap.get(v.number);
 
               return (
                 <div
                   key={v.number}
-                  className="group relative rounded-2xl p-2.5 sm:p-3 transition-all duration-150 hover:bg-zinc-800/50 flex items-start gap-3"
+                  className={`group relative rounded-2xl p-2.5 sm:p-3 transition-all duration-150 flex items-start gap-3 ${
+                    verseDivergence
+                      ? 'bg-amber-500/[0.04] hover:bg-amber-500/[0.09] border-l-2 border-amber-500/50 pl-2.5'
+                      : 'hover:bg-zinc-800/50'
+                  }`}
                 >
                   <div className="shrink-0 flex items-center gap-1.5 pt-0.5 select-none">
                     <span className="text-amber-400 font-sans text-xs sm:text-sm font-bold w-6 text-right">
@@ -718,6 +834,15 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                       <ApologeticsBadge
                         difficulty={verseDifficulties[0]}
                         onClick={handleOpenApologetics}
+                      />
+                    )}
+                    {verseDivergence && (
+                      <TheologicalDivergenceBadge
+                        item={verseDivergence.item}
+                        link={verseDivergence.link}
+                        pericopeRange={verseDivergence.pericopeRange}
+                        variant="discrete"
+                        onClick={() => handleOpenDivergenceInDrawer(verseDivergence.item.id)}
                       />
                     )}
                   </div>
@@ -910,13 +1035,22 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
         currentChapter={chapter}
       />
 
-      {/* Painel Lateral de Estudo (Drawer com Apologética, Contexto Histórico, etc.) */}
+      {/* Painel Lateral de Estudo (Drawer com Apologética, Contexto Histórico, Divergências, etc.) */}
       <StudyDrawer
         isOpen={isStudyDrawerOpen}
-        onClose={() => setIsStudyDrawerOpen(false)}
+        onClose={handleCloseStudyDrawer}
         currentPassageRef={`${currentBook.namePt} ${chapter}`}
         initialTab={studyDrawerTab}
         initialDifficultyId={selectedDifficultyId}
+        initialDivergenceId={selectedDivergenceTopicId}
+        onNavigateToPassage={handleNavigateToPassage}
+      />
+
+      {/* Modal de Divergências Teológicas (Catolicismo vs. Protestantismo) */}
+      <TheologicalDivergenceModal
+        isOpen={isDivergenceModalOpen}
+        onClose={() => setIsDivergenceModalOpen(false)}
+        initialTopicId={selectedDivergenceTopicId}
         onNavigateToPassage={handleNavigateToPassage}
       />
     </div>

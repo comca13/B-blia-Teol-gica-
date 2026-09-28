@@ -1,10 +1,12 @@
 import React, { useMemo, useCallback } from 'react';
 import { ScriptureChapter, BiblicalDifficulty, Verse } from '../types';
-import { BookOpen, Sparkles, Highlighter, Copy } from 'lucide-react';
+import { BookOpen, Sparkles, Highlighter, Copy, Scale } from 'lucide-react';
 import { TextualVariantIndicator } from './TextualVariantIndicator';
 import { ApologeticsBadge } from './ApologeticsBadge';
+import { TheologicalDivergenceBadge } from './TheologicalDivergenceBadge';
 import { getTextualVariantsForPassage } from '../data/textualVariantsData';
 import { getDifficultiesForVerse } from '../data/apologeticsData';
+import { getTheologicalVerseMarkersForChapter } from '../data/theologicalComparisonData';
 
 interface VerseItemProps {
   book: string;
@@ -15,6 +17,7 @@ interface VerseItemProps {
   onToggleHighlightVerse: (bookName: string, chapterNum: number, verseNum: number) => void;
   onCopyVerse: (bookName: string, chapterNum: number, verseNum: number, verseText: string) => void;
   onOpenDifficulty?: (difficulty: BiblicalDifficulty) => void;
+  onOpenDivergence?: (topicId?: string) => void;
 }
 
 /**
@@ -29,7 +32,8 @@ const VerseItem: React.FC<VerseItemProps> = React.memo(({
   isInTargetRange,
   onToggleHighlightVerse,
   onCopyVerse,
-  onOpenDifficulty
+  onOpenDifficulty,
+  onOpenDivergence
 }) => {
   // Heavy textual lookups memoized per specific verse
   const verseVariants = useMemo(
@@ -41,6 +45,12 @@ const VerseItem: React.FC<VerseItemProps> = React.memo(({
     () => getDifficultiesForVerse(book, chapter, verse.verse),
     [book, chapter, verse.verse]
   );
+
+  const verseDivergenceMap = useMemo(
+    () => getTheologicalVerseMarkersForChapter(book, chapter),
+    [book, chapter]
+  );
+  const verseDivergence = verseDivergenceMap.get(verse.verse);
 
   // Stabilized callbacks
   const handleToggle = useCallback(() => {
@@ -62,9 +72,11 @@ const VerseItem: React.FC<VerseItemProps> = React.memo(({
       className={`group relative transition-all rounded-xl p-2 sm:p-2.5 flex items-start gap-2 ${
         isHighlighted
           ? 'bg-amber-500/20 ring-1 ring-amber-500/40 text-amber-100'
-          : isInTargetRange
-            ? 'hover:bg-zinc-800/60'
-            : 'opacity-70 hover:opacity-100 hover:bg-zinc-800/40'
+          : verseDivergence
+            ? 'bg-amber-500/[0.04] hover:bg-amber-500/[0.09] border-l-2 border-amber-500/50 pl-2 sm:pl-2.5'
+            : isInTargetRange
+              ? 'hover:bg-zinc-800/60'
+              : 'opacity-70 hover:opacity-100 hover:bg-zinc-800/40'
       }`}
     >
       <div className="flex items-center gap-1.5 shrink-0 mt-0.5 select-none">
@@ -78,6 +90,15 @@ const VerseItem: React.FC<VerseItemProps> = React.memo(({
           <ApologeticsBadge
             difficulty={verseDifficulties[0]}
             onClick={handleDifficultyClick}
+          />
+        )}
+        {verseDivergence && (
+          <TheologicalDivergenceBadge
+            item={verseDivergence.item}
+            link={verseDivergence.link}
+            pericopeRange={verseDivergence.pericopeRange}
+            variant="discrete"
+            onClick={() => onOpenDivergence?.(verseDivergence.item.id)}
           />
         )}
       </div>
@@ -124,6 +145,7 @@ export interface ScriptureBodyProps {
   onCopyVerse: (bookName: string, chapterNum: number, verseNum: number, verseText: string) => void;
   onOpenBible?: (bookNumber: number, chapter: number) => void;
   onOpenDifficulty?: (difficulty: BiblicalDifficulty) => void;
+  onOpenDivergence?: (topicId?: string) => void;
 }
 
 export const ScriptureBody = React.memo<ScriptureBodyProps>(({
@@ -136,7 +158,8 @@ export const ScriptureBody = React.memo<ScriptureBodyProps>(({
   onToggleHighlightVerse,
   onCopyVerse,
   onOpenBible,
-  onOpenDifficulty
+  onOpenDifficulty,
+  onOpenDivergence
 }) => {
   if (!chapters || chapters.length === 0) {
     return null;
@@ -215,6 +238,7 @@ export const ScriptureBody = React.memo<ScriptureBodyProps>(({
                     onToggleHighlightVerse={onToggleHighlightVerse}
                     onCopyVerse={onCopyVerse}
                     onOpenDifficulty={onOpenDifficulty}
+                    onOpenDivergence={onOpenDivergence}
                   />
                 );
               })}

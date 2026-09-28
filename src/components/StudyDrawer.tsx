@@ -8,8 +8,10 @@ import { ApologeticsCard } from './ApologeticsCard';
 import { getHistoricalCommentariesForPassage, historicalCommentaries as allHistoricalCommentaries } from '../data/historicalCommentaryData';
 import { getHarmonyEventsForBookChapter, gospelHarmonyData } from '../data/gospelHarmonyData';
 import { getDifficultiesForPassageRef, apologeticsData, APOLOGETICS_CATEGORY_META } from '../data/apologeticsData';
+import { getTheologicalComparisonsByPassage } from '../data/theologicalComparisonData';
+import { TheologicalDivergenceView } from './TheologicalDivergenceView';
 
-export type StudyDrawerTab = 'context' | 'archaeology' | 'linguistics' | 'theology' | 'tradition' | 'harmony' | 'apologetics';
+export type StudyDrawerTab = 'context' | 'archaeology' | 'linguistics' | 'theology' | 'tradition' | 'harmony' | 'apologetics' | 'divergence';
 
 interface StudyDrawerProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ interface StudyDrawerProps {
   currentPassageRef?: string;
   initialTab?: StudyDrawerTab;
   initialDifficultyId?: string;
+  initialDivergenceId?: string;
   onNavigateToPassage?: (passageRef: string) => void;
 }
 
@@ -42,6 +45,7 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = React.memo(({
   currentPassageRef,
   initialTab = 'context',
   initialDifficultyId,
+  initialDivergenceId,
   onNavigateToPassage
 }) => {
   const [activeTab, setActiveTab] = useState<StudyDrawerTab>(initialTab);
@@ -55,8 +59,9 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = React.memo(({
   const [apologeticsCategory, setApologeticsCategory] = useState<'ALL' | ApologeticsCategory>('ALL');
   const [apologeticsSearch, setApologeticsSearch] = useState('');
   const [focusedDifficultyId, setFocusedDifficultyId] = useState<string | undefined>(initialDifficultyId);
+  const [focusedDivergenceId, setFocusedDivergenceId] = useState<string | undefined>(initialDivergenceId);
 
-  // Synchronize initialTab and initialDifficultyId if provided externally
+  // Synchronize initialTab and initialDifficultyId / initialDivergenceId if provided externally
   useEffect(() => {
     if (initialTab) {
       setActiveTab(initialTab);
@@ -71,6 +76,41 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = React.memo(({
       setApologeticsFilter('all');
     }
   }, [initialDifficultyId]);
+
+  useEffect(() => {
+    if (initialDivergenceId) {
+      setFocusedDivergenceId(initialDivergenceId);
+      setActiveTab('divergence');
+    }
+  }, [initialDivergenceId]);
+
+  // When drawer opens, re-synchronize active tab and target IDs
+  useEffect(() => {
+    if (isOpen) {
+      if (initialTab) {
+        setActiveTab(initialTab);
+      }
+      if (initialDivergenceId) {
+        setFocusedDivergenceId(initialDivergenceId);
+      }
+      if (initialDifficultyId) {
+        setFocusedDifficultyId(initialDifficultyId);
+      }
+    }
+  }, [isOpen, initialTab, initialDivergenceId, initialDifficultyId]);
+
+  // Resolve matching theological divergences based on current passage
+  const matchingDivergences = useMemo(() => {
+    if (!currentPassageRef) return [];
+    const parts = currentPassageRef.trim().split(' ');
+    if (parts.length >= 2) {
+      const book = parts.slice(0, -1).join(' ');
+      const chapterStr = parts[parts.length - 1].split(':')[0];
+      const chapter = parseInt(chapterStr, 10);
+      return getTheologicalComparisonsByPassage(book, isNaN(chapter) ? undefined : chapter);
+    }
+    return getTheologicalComparisonsByPassage(currentPassageRef);
+  }, [currentPassageRef]);
 
   // Resolve matching commentaries based on current passage
   const matchingCommentaries = useMemo(() => {
@@ -294,6 +334,7 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = React.memo(({
     { id: 'tradition' as const, label: '🏛️ Tradição & Pais da Igreja', shortLabel: 'Tradição', icon: Landmark, badge: matchingCommentaries.length > 0 ? matchingCommentaries.length : undefined },
     { id: 'harmony' as const, label: '⚡ Harmonia dos Evangelhos', shortLabel: 'Harmonia', icon: Layers, badge: matchingHarmonyEvents.length > 0 ? matchingHarmonyEvents.length : undefined },
     { id: 'apologetics' as const, label: '🛡️ Apologética & Dificuldades', shortLabel: 'Apologética', icon: ShieldQuestion, badge: matchingDifficulties.length > 0 ? matchingDifficulties.length : undefined },
+    { id: 'divergence' as const, label: '⚖️ Divergências Teológicas', shortLabel: 'Divergências', icon: Scale, badge: matchingDivergences.length > 0 ? matchingDivergences.length : undefined },
   ];
 
   if (!isOpen) return null;
@@ -781,6 +822,16 @@ export const StudyDrawer: React.FC<StudyDrawerProps> = React.memo(({
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB 8: DIVERGÊNCIAS TEOLÓGICAS (TRIPARTITE) */}
+          {activeTab === 'divergence' && (
+            <div className="space-y-4 animate-in fade-in duration-150">
+              <TheologicalDivergenceView
+                onNavigateToPassage={onNavigateToPassage}
+                initialTopicId={focusedDivergenceId || (matchingDivergences.length > 0 ? matchingDivergences[0].id : undefined)}
+              />
             </div>
           )}
         </div>

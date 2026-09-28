@@ -30,11 +30,20 @@ import { CULTURAL_CONTEXTS } from '../data/culturalContextData';
 import { IntertestamentalSubPhase, TheologicalCategory, DocumentCategory, HistoricalDocument } from '../types';
 import { THEOLOGICAL_DEBATES, THEOLOGICAL_CATEGORIES_META } from '../data/theologicalSystemsData';
 import { confessionalDocumentsData, DOCUMENT_CATEGORY_META } from '../data/confessionalDocumentsData';
+import { TheologicalDivergenceView } from '../components/TheologicalDivergenceView';
 
-type HistorySubTab = 'confessional' | 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline' | 'cultural-context';
+type HistorySubTab = 'confessional' | 'catholic-protestant' | 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline' | 'cultural-context';
 
-export const HistoryView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<HistorySubTab>('confessional');
+export interface HistoryViewProps {
+  onNavigateToPassage?: (reference: string) => void;
+  initialTab?: HistorySubTab;
+}
+
+export const HistoryView: React.FC<HistoryViewProps> = ({
+  onNavigateToPassage,
+  initialTab = 'confessional'
+}) => {
+  const [activeTab, setActiveTab] = useState<HistorySubTab>(initialTab);
   
   // Confessional Library State
   const [confessionalCategory, setConfessionalCategory] = useState<DocumentCategory | 'all'>('all');
@@ -128,6 +137,7 @@ export const HistoryView: React.FC = () => {
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
         {[
           { id: 'confessional', label: '📜 Biblioteca Confessional', icon: BookOpen },
+          { id: 'catholic-protestant', label: '⚖️ Catolicismo, Protestantismo & Ortodoxia', icon: Scale },
           { id: 'church', label: 'História da Igreja', icon: Landmark },
           { id: 'theology', label: 'Sistemas Teológicos', icon: Scale },
           { id: 'creeds', label: 'Grandes Credos', icon: Scroll },
@@ -295,6 +305,13 @@ export const HistoryView: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* COMPARADOR: CATOLICISMO VS. PROTESTANTISMO */}
+      {activeTab === 'catholic-protestant' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <TheologicalDivergenceView onNavigateToPassage={onNavigateToPassage} />
         </div>
       )}
 

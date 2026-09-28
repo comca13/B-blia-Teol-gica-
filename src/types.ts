@@ -456,5 +456,124 @@ export interface BiblicalDifficulty {
   }[];
 }
 
+// ----------------------------------------------------
+// COMPARADOR TEOLÓGICO: TRIPARTITE (CATOLICISMO, PROTESTANTISMO, ORTODOXIA ORIENTAL)
+// ----------------------------------------------------
 
+export type ComparisonCategory = 
+  | 'Autoridade' 
+  | 'Salvação' 
+  | 'Eclesiologia e Santos' 
+  | 'Sacramentos e Liturgia';
+
+export type TheologicalTraditionId = 'catholic' | 'protestant' | 'orthodox';
+
+export interface PrimarySourceQuote {
+  source: string;
+  authorOrDocument: string;
+  yearOrEra?: string;
+  excerpt: string;
+  citationRef?: string;
+}
+
+export interface TheologicalTraditionPosition {
+  title: string;
+  summary: string;
+  biblicalBases: string[]; // Ex: ["Mt 16:18-19", "Tg 2:24", "2Ts 2:15"]
+  historicalSources: string[]; // Ex: ["Concílio de Trento, Sessão VI", "Catecismo da Igreja Católica §85"]
+  primaryQuotes?: PrimarySourceQuote[];
+}
+
+export interface TheologicalVerseLink {
+  book: string;
+  chapter: number;
+  verse?: number;
+  verseEnd?: number;
+  referenceSnippet: string;
+  exegeticalFocus?: string;
+}
+
+export interface TheologicalConsensus {
+  title: string;
+  summary: string;
+  sharedCreeds?: string[];
+  ecumenicalMilestones?: string[];
+}
+
+export interface TheologicalComparisonItem {
+  id: string;
+  category: ComparisonCategory;
+  topic: string;
+  catholicPosition: TheologicalTraditionPosition;
+  protestantPosition: TheologicalTraditionPosition;
+  orthodoxPosition: TheologicalTraditionPosition;
+  theologicalConsensus?: TheologicalConsensus;
+  linkedPassages?: TheologicalVerseLink[];
+}
+
+export interface TheologicalVerseMarker {
+  item: TheologicalComparisonItem;
+  link: TheologicalVerseLink;
+  isRangeStart: boolean;
+  pericopeRange?: string;
+}
+
+// ----------------------------------------------------
+// GLOSSÁRIO DE VOCABULÁRIO DIFERENCIADO
+// ----------------------------------------------------
+
+export interface TheologicalGlossaryTerm {
+  id: string;
+  term: string;
+  originalLanguage?: {
+    word: string;
+    language: 'Grego' | 'Hebraico' | 'Latim';
+    transliteration: string;
+    literalMeaning: string;
+  };
+  overview: string;
+  category?: ComparisonCategory | 'Geral';
+  catholicPerspective: {
+    definition: string;
+    primarySource: string;
+  };
+  protestantPerspective: {
+    definition: string;
+    primarySource: string;
+  };
+  orthodoxPerspective?: {
+    definition: string;
+    primarySource: string;
+  };
+  relatedVerses?: string[];
+}
+
+// ----------------------------------------------------
+// LINHA DO TEMPO DOS CISMAS E DEFINIÇÕES DOGMÁTICAS
+// ----------------------------------------------------
+
+export type TimelineEventCategory = 'concilio' | 'cisma' | 'confissao' | 'dialogo_ecumenico';
+
+export interface TheologicalTimelineEvent {
+  id: string;
+  year: number;
+  yearDisplay: string;
+  title: string;
+  category: TimelineEventCategory;
+  traditionImpact: ('catholic' | 'protestant' | 'orthodox')[];
+  summary: string;
+  historicalContext: string;
+  theologicalSignificance: {
+    catholicPerspective?: string;
+    protestantPerspective?: string;
+    orthodoxPerspective?: string;
+  };
+  primaryDocumentOrCanon?: {
+    title: string;
+    excerpt: string;
+    citationRef: string;
+  };
+  keyFigures: string[];
+  relatedScripturePassages?: string[];
+}
 

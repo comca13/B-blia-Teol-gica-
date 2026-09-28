@@ -332,7 +332,13 @@ export default function App() {
         )}
 
         {activeRoute === 'HISTORIA' && (
-          <HistoryView />
+          <HistoryView
+            onNavigateToPassage={(passageRef) => {
+              setBibleReadingMode('browse-books');
+              setActiveRoute('BIBLIA');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         )}
 
         {activeRoute === 'PERFIL' && (

@@ -57,8 +57,10 @@ import {
 } from '../data/textualVariantsData';
 import { getHistoricalCommentariesForPassage } from '../data/historicalCommentaryData';
 import { getHarmonyEventsForBookChapter } from '../data/gospelHarmonyData';
-import { HistoricalCommentary, GospelHarmonyEvent, BiblicalDifficulty } from '../types';
-import { Scroll } from 'lucide-react';
+import { getTheologicalComparisonsByPassage } from '../data/theologicalComparisonData';
+import { TheologicalDivergenceBadge } from './TheologicalDivergenceBadge';
+import { HistoricalCommentary, GospelHarmonyEvent, BiblicalDifficulty, TheologicalComparisonItem } from '../types';
+import { Scroll, Scale } from 'lucide-react';
 
 interface ReaderProps {
   dayReading: DayReading;
@@ -116,6 +118,7 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
   const [internalIsStudyDrawerOpen, setInternalIsStudyDrawerOpen] = useState(false);
   const [studyDrawerTab, setStudyDrawerTab] = useState<StudyDrawerTab>('context');
   const [studyDrawerDifficultyId, setStudyDrawerDifficultyId] = useState<string | undefined>(undefined);
+  const [studyDrawerDivergenceId, setStudyDrawerDivergenceId] = useState<string | undefined>(undefined);
 
   const isFocusMode = propIsFocusMode !== undefined ? propIsFocusMode : internalIsFocusMode;
   const toggleFocusMode = propOnToggleFocusMode || (() => setInternalIsFocusMode(prev => !prev));
@@ -132,6 +135,16 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
   const handleOpenDifficulty = useCallback((diff: BiblicalDifficulty) => {
     setStudyDrawerDifficultyId(diff.id);
     setStudyDrawerTab('apologetics');
+    if (propOnToggleStudyDrawer && !isStudyDrawerOpen) {
+      propOnToggleStudyDrawer();
+    } else {
+      setInternalIsStudyDrawerOpen(true);
+    }
+  }, [propOnToggleStudyDrawer, isStudyDrawerOpen]);
+
+  const handleOpenDivergence = useCallback((topicId?: string) => {
+    setStudyDrawerDivergenceId(topicId);
+    setStudyDrawerTab('divergence');
     if (propOnToggleStudyDrawer && !isStudyDrawerOpen) {
       propOnToggleStudyDrawer();
     } else {
@@ -471,6 +484,31 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
     return dayReading.targetBook || '';
   }, [dayReading.passages, dayReading.targetBook]);
 
+  const currentDivergences = useMemo(() => {
+    const allMatches: TheologicalComparisonItem[] = [];
+    const seenIds = new Set<string>();
+
+    for (const p of dayReading.passages) {
+      const matches = getTheologicalComparisonsByPassage(p.book, p.chapter);
+      for (const m of matches) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          allMatches.push(m);
+        }
+      }
+    }
+    if (allMatches.length === 0 && dayReading.targetBook) {
+      const matches = getTheologicalComparisonsByPassage(dayReading.targetBook);
+      for (const m of matches) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          allMatches.push(m);
+        }
+      }
+    }
+    return allMatches;
+  }, [dayReading.passages, dayReading.targetBook]);
+
   const totalVersesCount = useMemo(() => {
     return chapters.reduce((sum, ch) => sum + ch.verses.length, 0);
   }, [chapters]);
@@ -605,12 +643,19 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
             )}
           </div>
 
-          {/* Literary Genre & Hermeneutics Badge */}
-          {effectiveGenreGuide && (
-            <div className="pt-1 flex justify-center">
+          {/* Literary Genre & Hermeneutics Badge & Theological Divergence */}
+          <div className="pt-1 flex flex-wrap items-center justify-center gap-2">
+            {effectiveGenreGuide && (
               <LiteraryGenreBadge guide={effectiveGenreGuide} />
-            </div>
-          )}
+            )}
+            {currentDivergences.length > 0 && (
+              <TheologicalDivergenceBadge
+                item={currentDivergences[0]}
+                compact={false}
+                onNavigateToPassage={handleNavigateToPassage}
+              />
+            )}
+          </div>
         </div>
 
         {/* Contexto Teológico Diário - Pilar Principal */}
@@ -894,6 +939,7 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
             onCopyVerse={handleCopyVerse}
             onOpenBible={onOpenBible}
             onOpenDifficulty={handleOpenDifficulty}
+            onOpenDivergence={handleOpenDivergence}
           />
         )}
 
@@ -965,6 +1011,7 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
         currentPassageRef={currentPassageRef}
         initialTab={studyDrawerTab}
         initialDifficultyId={studyDrawerDifficultyId}
+        initialDivergenceId={studyDrawerDivergenceId}
         onNavigateToPassage={handleNavigateToPassage}
       />
     </div>
