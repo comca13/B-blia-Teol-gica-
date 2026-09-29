@@ -113,6 +113,11 @@ export default function App() {
         setHistoryTargetTopicId(fav.id);
         setActiveRoute('HISTORIA');
         break;
+      case 'church-history-event':
+        setHistorySubTab('church');
+        setHistoryTargetFigureId(fav.id);
+        setActiveRoute('HISTORIA');
+        break;
       case 'glossary':
         setHistorySubTab('catholic-protestant');
         setActiveRoute('HISTORIA');

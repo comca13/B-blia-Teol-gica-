@@ -27,6 +27,7 @@ import {
 } from '../data/churchHistoryData';
 import { TheologicalSystemsCard } from './TheologicalSystemsCard';
 import { TheologicalDivergenceView } from './TheologicalDivergenceView';
+import { ChurchHistoryCard } from './ChurchHistoryCard';
 
 interface ChurchHistoryModalProps {
   isOpen: boolean;
@@ -47,6 +48,7 @@ export const ChurchHistoryModal: React.FC<ChurchHistoryModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCreedId, setSelectedCreedId] = useState<string>(ECUMENICAL_CREEDS[0].id);
   const [copiedCreed, setCopiedCreed] = useState(false);
+  const [expandedEventIds, setExpandedEventIds] = useState<Set<string>>(new Set());
 
   // Sync tab if initialTab changes
   useEffect(() => {
@@ -309,61 +311,27 @@ export const ChurchHistoryModal: React.FC<ChurchHistoryModalProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="relative pl-6 sm:pl-8 border-l-2 border-amber-900/40 space-y-6">
-                  {filteredEvents.map((evt) => {
-                    const eraInfo = CHURCH_HISTORY_ERAS_INFO[evt.era];
-                    return (
-                      <div key={evt.id} className="relative group">
-                        {/* Timeline Node Dot */}
-                        <div className="absolute -left-[31px] sm:-left-[39px] top-4 w-4 h-4 rounded-full bg-stone-950 border-2 border-amber-500 flex items-center justify-center group-hover:scale-125 transition-transform shadow-xs">
-                          <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                        </div>
-
-                        {/* Event Card */}
-                        <div className="p-4 sm:p-5 rounded-2xl border border-stone-800 bg-stone-900/70 hover:bg-stone-900/90 hover:border-amber-700/50 transition-all shadow-md space-y-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-800 pb-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                                {evt.year}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${eraInfo.badgeBg}`}>
-                                {eraInfo.name}
-                              </span>
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-stone-800 text-stone-300 border border-stone-700">
-                                {evt.category}
-                              </span>
-                            </div>
-
-                            {evt.keyFigures && evt.keyFigures.length > 0 && (
-                              <div className="flex items-center gap-1.5 text-[11px] text-stone-400">
-                                <Users className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span className="font-semibold text-stone-300">
-                                  {evt.keyFigures.join(', ')}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          <h4 className="text-base sm:text-lg font-serif font-bold text-stone-100 group-hover:text-amber-300 transition-colors">
-                            {evt.title}
-                          </h4>
-
-                          <p className="text-xs sm:text-sm text-stone-300 leading-relaxed text-justify">
-                            {evt.description}
-                          </p>
-
-                          <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-900/30 text-xs text-amber-200/90 space-y-1">
-                            <span className="font-bold uppercase tracking-wider text-[10px] text-amber-400 block">
-                              Significado Histórico & Impacto Teológico:
-                            </span>
-                            <p className="leading-relaxed">
-                              {evt.historicalSignificance}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="space-y-4">
+                  {filteredEvents.map((evt) => (
+                    <ChurchHistoryCard
+                      key={evt.id}
+                      event={evt}
+                      isExpanded={expandedEventIds.has(evt.id)}
+                      onToggleExpand={() => {
+                        setExpandedEventIds(prev => {
+                          const next = new Set(prev);
+                          if (next.has(evt.id)) next.delete(evt.id);
+                          else next.add(evt.id);
+                          return next;
+                        });
+                      }}
+                      onNavigateToPassage={onNavigateToPassage}
+                      onNavigateToCreed={(creedId) => {
+                        setActiveTab('creeds');
+                        setSelectedCreedId(creedId);
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>

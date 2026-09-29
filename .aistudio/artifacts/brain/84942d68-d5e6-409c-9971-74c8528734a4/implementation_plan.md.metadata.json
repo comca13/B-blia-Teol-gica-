@@ -1,6 +1,6 @@
 {
-  "summary":  "Plano de implementação para análise e otimização completa do app: divisão de código (React lazy/Suspense), otimização de bundle e chunks manuais no Vite, memorização e renderização leve no BibleReader e navegação mobile otimizada.",
-  "updatedAt":  "2026-09-28T16:55:02.801908883Z",
-  "requestFeedback":  true,
-  "userFacing":  true
+  "summary": "Plano de implementação para o dicionário e popover interativo de todos os 132 termos dogmáticos e teológicos formulados na História da Igreja, com definição concisa, tradução original, sentido teológico e integração com a busca global (Cmd+K).",
+  "updatedAt": "2026-09-29T22:08:33.525707889Z",
+  "requestFeedback": true,
+  "userFacing": true
 }

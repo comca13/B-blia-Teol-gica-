@@ -13,7 +13,8 @@ import {
   Command, 
   ArrowUp, 
   ArrowDown, 
-  CornerDownLeft 
+  CornerDownLeft,
+  Sparkles
 } from 'lucide-react';
 import { MainRoute } from '../types';
 import { theologicalGlossaryData } from '../data/theologicalVocabularyData';
@@ -23,9 +24,11 @@ import { goldenAgeData, byzantineSynthesisData, hesychasmData } from '../data/or
 import { ecumenicalCouncilsData } from '../data/ecumenicalCouncilsData';
 import { manuscriptsTranslationsData } from '../data/manuscriptsTranslationsData';
 import { THEOLOGICAL_COMPARISONS } from '../data/theologicalComparisonData';
+import { getAllDogmaticTerms } from '../data/dogmaticTermsDictionary';
 
 export type SearchCategoryName = 
   | 'Termo do Glossário' 
+  | 'Termo Dogmático'
   | 'A Reforma Protestante' 
   | 'Tradição Católica' 
   | 'Tradição Ortodoxa' 
@@ -234,6 +237,24 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       });
     });
 
+    // 8. Termos Dogmáticos e Teológicos da História da Igreja
+    getAllDogmaticTerms().forEach((dt, idx) => {
+      items.push({
+        id: `dogmatic-${idx}-${dt.term.toLowerCase().replace(/\s+/g, '-')}`,
+        category: 'Termo Dogmático',
+        title: dt.term,
+        subtitle: `${dt.originalLanguage || 'Termo Teológico'} • "${dt.literalMeaning}"`,
+        badge: dt.category || 'Doutrina',
+        snippet: dt.theologicalSense,
+        searchText: `${dt.term} ${dt.originalLanguage || ''} ${dt.literalMeaning} ${dt.theologicalSense} ${dt.historicalOrigin} ${dt.keyScripture || ''}`,
+        target: {
+          route: 'HISTORIA',
+          historySubTab: 'church',
+          targetId: dt.term
+        }
+      });
+    });
+
     return items;
   }, []);
 
@@ -254,6 +275,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   const groupedResults = useMemo(() => {
     const groups: Record<SearchCategoryName, SearchItem[]> = {
       'Termo do Glossário': [],
+      'Termo Dogmático': [],
       'A Reforma Protestante': [],
       'Tradição Católica': [],
       'Tradição Ortodoxa': [],
@@ -311,6 +333,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   const getCategoryIcon = (category: SearchCategoryName) => {
     switch (category) {
       case 'Termo do Glossário': return <BookOpen className="w-4 h-4 text-amber-400" />;
+      case 'Termo Dogmático': return <Sparkles className="w-4 h-4 text-amber-300" />;
       case 'A Reforma Protestante': return <Flame className="w-4 h-4 text-blue-400" />;
       case 'Tradição Católica': return <Church className="w-4 h-4 text-amber-500" />;
       case 'Tradição Ortodoxa': return <Sun className="w-4 h-4 text-emerald-400" />;

@@ -36,6 +36,10 @@ import { IntertestamentalSubPhase, TheologicalCategory, DocumentCategory, Histor
 import { THEOLOGICAL_DEBATES, THEOLOGICAL_CATEGORIES_META } from '../data/theologicalSystemsData';
 import { confessionalDocumentsData, DOCUMENT_CATEGORY_META } from '../data/confessionalDocumentsData';
 import { TheologicalDivergenceView } from '../components/TheologicalDivergenceView';
+import { ChurchHistoryCard } from '../components/ChurchHistoryCard';
+import { TheologicalTermModal } from '../components/TheologicalTermModal';
+import { TheologicalGlossaryTerm } from '../types';
+import { Layers, X } from 'lucide-react';
 
 export type HistorySubTab = 'church' | 'reformation' | 'catholic' | 'orthodox' | 'catholic-protestant' | 'theology' | 'confessional' | 'creeds' | 'biblical-timeline' | 'second-temple' | 'cultural-context';
 
@@ -85,6 +89,30 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   const [selectedEra, setSelectedEra] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedEventIds, setExpandedEventIds] = useState<Set<string>>(new Set());
+  const [selectedGlossaryTerm, setSelectedGlossaryTerm] = useState<TheologicalGlossaryTerm | null>(null);
+  const [isGlossaryModalOpen, setIsGlossaryModalOpen] = useState(false);
+
+  // Deep linking to church history event if targetFigureId matches
+  React.useEffect(() => {
+    if (targetFigureId) {
+      const match = CHURCH_HISTORY_EVENTS.find(e => 
+        e.id === targetFigureId || 
+        e.keyFigures.some(f => f.toLowerCase().includes(targetFigureId.toLowerCase()))
+      );
+      if (match) {
+        setSelectedEra('all');
+        setSelectedCategory('all');
+        setExpandedEventIds(prev => new Set([...prev, match.id]));
+        setTimeout(() => {
+          const el = document.getElementById(`church-event-${match.id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 150);
+      }
+    }
+  }, [targetFigureId]);
 
   // Creeds State
   const [selectedCreedId, setSelectedCreedId] = useState<string>(ECUMENICAL_CREEDS[0].id);
@@ -127,12 +155,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       const matchesCategory = 
         selectedCategory === 'all' || 
         event.category === selectedCategory ||
-        event.category.toLowerCase() === selectedCategory.toLowerCase();
+        (event.category && event.category.toLowerCase() === selectedCategory.toLowerCase());
       const matchesSearch = 
         searchQuery === '' ||
         event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (event.historicalSignificance && event.historicalSignificance.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (event.historicalContextDetailed && event.historicalContextDetailed.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (event.theologicalDebate?.coreControversy && event.theologicalDebate.coreControversy.toLowerCase().includes(searchQuery.toLowerCase())) ||
         event.keyFigures.some(f => f.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesEra && matchesCategory && matchesSearch;
     });
@@ -397,18 +427,44 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       {/* 1. HISTÓRIA DA IGREJA */}
       {activeTab === 'church' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Era Cards Carousel/Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          
+          {/* Era Cards Grid (com opção explícita de Todas as 5 Eras) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            {/* Card: Todas as 5 Eras */}
+            <button
+              type="button"
+              onClick={() => setSelectedEra('all')}
+              className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                selectedEra === 'all'
+                  ? 'border-amber-500 bg-amber-950/40 shadow-md ring-1 ring-amber-500/30'
+                  : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-850'
+              }`}
+            >
+              <div>
+                <span className="text-[10px] font-mono font-bold text-amber-400 block mb-1">
+                  c. 30 – Hoje
+                </span>
+                <h4 className="font-serif font-bold text-xs sm:text-sm text-stone-100 line-clamp-1">
+                  Todas as Eras
+                </h4>
+              </div>
+              <span className="text-[10px] text-zinc-400 mt-2 block line-clamp-1">
+                33 marcos históricos
+              </span>
+            </button>
+
+            {/* Cards de Cada Era */}
             {Object.values(CHURCH_HISTORY_ERAS_INFO).map(era => {
               const isSelected = selectedEra === era.id;
+              const eraEventsCount = CHURCH_HISTORY_EVENTS.filter(e => e.era === era.id).length;
               return (
                 <button
                   key={era.id}
                   type="button"
                   onClick={() => setSelectedEra(isSelected ? 'all' : era.id)}
-                  className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                  className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                     isSelected
-                      ? 'border-amber-500 bg-amber-950/30 shadow-md'
+                      ? 'border-amber-500 bg-amber-950/40 shadow-md ring-1 ring-amber-500/30'
                       : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-850'
                   }`}
                 >
@@ -416,143 +472,227 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                     <span className="text-[10px] font-mono font-bold text-amber-400 block mb-1">
                       {era.period}
                     </span>
-                    <h4 className="font-serif font-bold text-xs sm:text-sm text-stone-100 line-clamp-2">
+                    <h4 className="font-serif font-bold text-xs sm:text-sm text-stone-100 line-clamp-1">
                       {era.name}
                     </h4>
                   </div>
                   <span className="text-[10px] text-zinc-400 mt-2 block line-clamp-1">
-                    {era.description}
+                    {eraEventsCount} marcos
                   </span>
                 </button>
               );
             })}
           </div>
 
-          {/* Search & Category Filter */}
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3.5 flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Pesquisar evento, autor (ex: Agostinho, Lutero, Calvino)..."
-                className="w-full pl-9 pr-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm text-stone-100 placeholder-zinc-500 focus:outline-hidden focus:border-amber-500"
-              />
+          {/* Search & Category Filter Toolbar */}
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3.5 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Pesquisar evento, autor, doutrina (ex: Atanásio, Niceia, Calvino, Graça)..."
+                  className="w-full pl-9 pr-8 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm text-stone-100 placeholder-zinc-500 focus:outline-hidden focus:border-amber-500"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-stone-300 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Botões Expandir / Recolher Todos */}
+              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => setExpandedEventIds(new Set(filteredEvents.map(e => e.id)))}
+                  className="px-2.5 py-2 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-750 text-stone-300 border border-zinc-700/60 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Expandir Todos</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExpandedEventIds(new Set())}
+                  className="px-2.5 py-2 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-750 text-stone-300 border border-zinc-700/60 cursor-pointer transition-colors"
+                >
+                  Recolher Todos
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-thin">
+            {/* Category Filter Pills (Smart & Toggleable) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
               {[
                 { id: 'all', label: 'Todas as Categorias' },
-                { id: 'TEOLOGIA', label: 'Teologia' },
-                { id: 'CONCILIO', label: 'Concílios' },
+                { id: 'TEOLOGIA', label: 'Teologia & Doutrina' },
+                { id: 'CONCILIO', label: 'Concílios Ecumênicos' },
                 { id: 'AVIVAMENTO', label: 'Avivamento & Missões' },
-                { id: 'REFORMA', label: 'Reforma' },
-                { id: 'PERSEGUICAO', label: 'Perseguição' }
+                { id: 'REFORMA', label: 'Reforma Eclesiástica' },
+                { id: 'PERSEGUICAO', label: 'Perseguição & Mártires' }
               ].map(cat => {
-                const count = cat.id === 'all'
+                const totalGlobalCount = cat.id === 'all'
+                  ? CHURCH_HISTORY_EVENTS.length
+                  : CHURCH_HISTORY_EVENTS.filter(e => e.category === cat.id).length;
+
+                const countInSelectedEra = cat.id === 'all'
                   ? (selectedEra === 'all' ? CHURCH_HISTORY_EVENTS.length : CHURCH_HISTORY_EVENTS.filter(e => e.era === selectedEra).length)
                   : CHURCH_HISTORY_EVENTS.filter(e => (selectedEra === 'all' || e.era === selectedEra) && e.category === cat.id).length;
+
                 const isSelected = selectedCategory === cat.id;
 
                 return (
                   <button
                     key={cat.id}
                     type="button"
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    onClick={() => {
+                      if (selectedCategory === cat.id) {
+                        setSelectedCategory('all');
+                      } else {
+                        // Se a categoria tiver 0 marcos na era selecionada, auto-amplia para todas as eras para não mostrar tela vazia
+                        if (selectedEra !== 'all' && cat.id !== 'all') {
+                          const inCurrentEra = CHURCH_HISTORY_EVENTS.filter(e => e.era === selectedEra && e.category === cat.id).length;
+                          if (inCurrentEra === 0) {
+                            setSelectedEra('all');
+                          }
+                        }
+                        setSelectedCategory(cat.id);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer border ${
                       isSelected
-                        ? 'bg-amber-600 text-white shadow-xs'
-                        : 'bg-zinc-800 text-zinc-400 hover:text-stone-200'
+                        ? 'bg-amber-600 text-white border-amber-500 shadow-xs'
+                        : 'bg-zinc-800/80 text-zinc-300 hover:text-stone-100 hover:bg-zinc-750 border-zinc-700/60'
                     }`}
                   >
                     <span>{cat.label}</span>
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                      isSelected ? 'bg-amber-700/80 text-white' : 'bg-zinc-900 text-zinc-400'
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isSelected ? 'bg-amber-700/90 text-white' : 'bg-zinc-900 text-zinc-400'
                     }`}>
-                      {count}
+                      {selectedEra === 'all' ? totalGlobalCount : countInSelectedEra}
                     </span>
                   </button>
                 );
               })}
             </div>
+
+            {/* Active Filters Summary Bar */}
+            {(selectedEra !== 'all' || selectedCategory !== 'all' || searchQuery) && (
+              <div className="flex items-center gap-2 pt-2 border-t border-zinc-800/60 text-xs text-zinc-400 flex-wrap">
+                <span className="font-medium text-stone-300">Filtros ativos:</span>
+                {selectedEra !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[11px]">
+                    Era: {CHURCH_HISTORY_ERAS_INFO[selectedEra as keyof typeof CHURCH_HISTORY_ERAS_INFO]?.name || selectedEra}
+                    <button type="button" onClick={() => setSelectedEra('all')} className="hover:text-white cursor-pointer ml-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedCategory !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 text-[11px]">
+                    Categoria: {selectedCategory}
+                    <button type="button" onClick={() => setSelectedCategory('all')} className="hover:text-white cursor-pointer ml-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-zinc-800 text-stone-200 border border-zinc-700 text-[11px]">
+                    Busca: "{searchQuery}"
+                    <button type="button" onClick={() => setSearchQuery('')} className="hover:text-white cursor-pointer ml-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedEra('all');
+                    setSelectedCategory('all');
+                    setSearchQuery('');
+                  }}
+                  className="text-xs text-amber-400 hover:text-amber-300 font-semibold cursor-pointer underline ml-auto"
+                >
+                  Limpar todos os filtros
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Timeline Events List */}
-          <div className="space-y-3">
-            <span className="text-xs text-zinc-400 px-1 block">
-              Mostrando {filteredEvents.length} marcos históricos
-            </span>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
+              <span>
+                Mostrando <strong className="text-stone-200 font-mono">{filteredEvents.length}</strong> marcos históricos
+              </span>
+              {expandedEventIds.size > 0 && (
+                <span className="text-[11px] text-amber-400/90 font-mono">
+                  {expandedEventIds.size} estudos aprofundados abertos
+                </span>
+              )}
+            </div>
 
             {filteredEvents.length === 0 ? (
-              <div className="p-8 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-3">
-                <Landmark className="w-8 h-8 text-zinc-600 mx-auto" />
-                <p className="text-sm font-semibold text-stone-300">
+              <div className="p-8 sm:p-12 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-3">
+                <Landmark className="w-10 h-10 text-zinc-600 mx-auto" />
+                <p className="text-base font-serif font-bold text-stone-300">
                   Nenhum marco histórico encontrado para os filtros selecionados
                 </p>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedCategory('all'); setSelectedEra('all'); setSearchQuery(''); }}
-                  className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-500 transition-colors cursor-pointer"
-                >
-                  Limpar Filtros
-                </button>
+                <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                  Tente alterar o período da era ou limpar a categoria para visualizar mais marcos do compêndio.
+                </p>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEra('all')}
+                    className="px-3.5 py-1.5 rounded-xl bg-amber-600 text-white text-xs font-semibold hover:bg-amber-500 transition-colors cursor-pointer shadow-xs"
+                  >
+                    Ver em Todas as 5 Eras
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedCategory('all'); setSelectedEra('all'); setSearchQuery(''); }}
+                    className="px-3.5 py-1.5 rounded-xl bg-zinc-800 text-stone-300 text-xs font-semibold hover:bg-zinc-700 transition-colors cursor-pointer border border-zinc-700"
+                  >
+                    Limpar Filtros
+                  </button>
+                </div>
               </div>
             ) : (
-              filteredEvents.map(event => {
-                const categoryBadge = {
-                  TEOLOGIA: { label: 'Teologia', style: 'bg-amber-500/10 text-amber-300 border-amber-500/30' },
-                  CONCILIO: { label: 'Concílio Ecumênico', style: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30' },
-                  AVIVAMENTO: { label: 'Avivamento & Missões', style: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' },
-                  REFORMA: { label: 'Reforma', style: 'bg-blue-500/10 text-blue-300 border-blue-500/30' },
-                  PERSEGUICAO: { label: 'Perseguição & Mártires', style: 'bg-rose-500/10 text-rose-300 border-rose-500/30' }
-                }[event.category] || { label: event.category, style: 'bg-zinc-800 text-zinc-400 border-zinc-700' };
-
-                return (
-                  <div 
-                    key={event.id}
-                    className="p-4 sm:p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          {event.year}
-                        </span>
-                        <h4 className="font-serif font-bold text-sm sm:text-base text-stone-100">
-                          {event.title}
-                        </h4>
-                      </div>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border self-start sm:self-auto ${categoryBadge.style}`}>
-                        {categoryBadge.label}
-                      </span>
-                    </div>
-
-                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-3">
-                      {event.description}
-                    </p>
-
-                    {event.historicalSignificance && (
-                      <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-800/30 text-xs text-amber-200/90 mb-3">
-                        <strong>Significado Histórico:</strong> {event.historicalSignificance}
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-800/50">
-                      <span className="text-[11px] text-zinc-400 flex items-center gap-1 mr-1">
-                        <Users className="w-3.5 h-3.5 text-zinc-400" /> Figuras Chave:
-                      </span>
-                      {event.keyFigures.map((figure, idx) => (
-                        <span 
-                          key={idx}
-                          className="px-2 py-0.5 rounded-md text-[11px] bg-zinc-800 text-zinc-300"
-                        >
-                          {figure}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
+              filteredEvents.map(event => (
+                <ChurchHistoryCard
+                  key={event.id}
+                  event={event}
+                  isExpanded={expandedEventIds.has(event.id)}
+                  onToggleExpand={() => {
+                    setExpandedEventIds(prev => {
+                      const next = new Set(prev);
+                      if (next.has(event.id)) {
+                        next.delete(event.id);
+                      } else {
+                        next.add(event.id);
+                      }
+                      return next;
+                    });
+                  }}
+                  onNavigateToPassage={onNavigateToPassage}
+                  onNavigateToCreed={(creedId) => {
+                    setActiveTab('creeds');
+                    setSelectedCreedId(creedId);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onOpenGlossaryTerm={(term) => {
+                    setSelectedGlossaryTerm(term);
+                    setIsGlossaryModalOpen(true);
+                  }}
+                />
+              ))
             )}
           </div>
         </div>
@@ -871,6 +1011,17 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           }}
         />
       )}
+
+      {/* Modal de Vocabulário & Termos Teológicos */}
+      <TheologicalTermModal
+        term={selectedGlossaryTerm}
+        isOpen={isGlossaryModalOpen}
+        onClose={() => {
+          setIsGlossaryModalOpen(false);
+          setSelectedGlossaryTerm(null);
+        }}
+        onNavigateToPassage={onNavigateToPassage}
+      />
 
     </div>
   );

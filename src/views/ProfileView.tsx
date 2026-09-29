@@ -279,6 +279,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
             {[
               { id: 'all', label: 'Todos', count: favoritesList.length },
+              { id: 'church-history-event', label: 'Marcos Históricos', count: favoritesList.filter(f => f.entityType === 'church-history-event').length },
               { id: 'theologian-reformation', label: 'Reforma', count: favoritesList.filter(f => f.entityType === 'theologian-reformation').length },
               { id: 'theologian-catholic', label: 'Católica', count: favoritesList.filter(f => f.entityType === 'theologian-catholic').length },
               { id: 'theologian-orthodox', label: 'Ortodoxa', count: favoritesList.filter(f => f.entityType === 'theologian-orthodox').length },

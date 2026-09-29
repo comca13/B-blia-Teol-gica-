@@ -311,10 +311,27 @@ export interface ChurchHistoryEvent {
   era: ChurchHistoryEra;
   title: string; // Ex: "O Sínodo de Dort", "A Fixação das 95 Teses", "O Concílio de Niceia"
   year: string; // Ex: "325 d.C.", "1517 d.C."
+  location?: string; // Ex: "Niceia, Bitínia", "Wittenberg, Alemanha"
   keyFigures: string[]; // Ex: ["Atanásio", "Ário"] ou ["Martin Lutero"]
   description: string;
   historicalSignificance: string;
   category: 'CONCILIO' | 'REFORMA' | 'AVIVAMENTO' | 'PERSEGUICAO' | 'TEOLOGIA';
+  historicalContextDetailed?: string;
+  theologicalDebate?: {
+    coreControversy: string;
+    hereticalOrChallengingView: string;
+    orthodoxFormulation: string;
+    dogmaticTerms?: string[];
+  };
+  primarySourceQuote?: {
+    text: string;
+    author: string;
+    work?: string;
+  };
+  legacyPoints?: string[];
+  scriptureReferences?: string[];
+  relatedCreedId?: string;
+  relatedCouncilId?: string;
 }
 
 export interface TheologicalSystemComparison {

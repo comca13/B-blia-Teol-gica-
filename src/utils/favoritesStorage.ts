@@ -5,7 +5,8 @@ export type FavoriteEntityType =
   | 'council' 
   | 'glossary' 
   | 'manuscript' 
-  | 'comparison';
+  | 'comparison'
+  | 'church-history-event';
 
 export interface SavedFavoriteItem {
   id: string;
