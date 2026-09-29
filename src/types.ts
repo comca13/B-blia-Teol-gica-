@@ -1,6 +1,6 @@
 export type PlanType = 'chronological' | 'canonical';
 
-export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'REFORMA' | 'CATOLICISMO' | 'PERFIL';
+export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'PERFIL';
 
 export type ReadingTheme = 'light' | 'sepia' | 'dark';
 
@@ -618,3 +618,25 @@ export interface CatholicTheologianFigure {
   famousQuote?: string;
   keyWorks?: string[];
 }
+
+// ----------------------------------------------------
+// A TRADIÇÃO TEOLÓGICA ORTODOXA (FIGURAS E PERÍODOS)
+// ----------------------------------------------------
+
+export type OrthodoxEra = 'golden-age' | 'byzantine-synthesis' | 'hesychasm';
+
+export interface OrthodoxTheologianFigure {
+  id: string;
+  name: string;
+  period: string; // Ex: "c. 329 – 390 d.C."
+  title: string; // Ex: "O Teólogo e Grande Hierarca"
+  shortDescription: string;
+  biography: string;
+  coreThinking: string[];
+  theologicalEmphasis: string[];
+  keyContributions: string[];
+  legacy: string;
+  famousQuote?: string;
+  keyWorks?: string[];
+}
+

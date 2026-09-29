@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, CalendarDays, Landmark, Flame, Church, User } from 'lucide-react';
+import { BookOpen, CalendarDays, Landmark, Flame, Church, Sun, User } from 'lucide-react';
 import { MainRoute } from '../types';
 
 interface BottomNavProps {
@@ -36,16 +36,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       route: 'HISTORIA',
       label: 'História',
       icon: Landmark
-    },
-    {
-      route: 'REFORMA',
-      label: 'Reforma',
-      icon: Flame
-    },
-    {
-      route: 'CATOLICISMO',
-      label: 'Católico',
-      icon: Church
     },
     {
       route: 'PERFIL',

@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import { ReformationView } from './ReformationView';
 import { CatholicTraditionView } from './CatholicTraditionView';
-import { Church } from 'lucide-react';
+import { OrthodoxTraditionView } from './OrthodoxTraditionView';
+import { Church, Sun } from 'lucide-react';
 import { 
   CHURCH_HISTORY_ERAS_INFO, 
   CHURCH_HISTORY_EVENTS, 
@@ -36,7 +37,7 @@ import { THEOLOGICAL_DEBATES, THEOLOGICAL_CATEGORIES_META } from '../data/theolo
 import { confessionalDocumentsData, DOCUMENT_CATEGORY_META } from '../data/confessionalDocumentsData';
 import { TheologicalDivergenceView } from '../components/TheologicalDivergenceView';
 
-type HistorySubTab = 'confessional' | 'reformation' | 'catholic' | 'catholic-protestant' | 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline' | 'cultural-context';
+type HistorySubTab = 'confessional' | 'reformation' | 'catholic' | 'orthodox' | 'catholic-protestant' | 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline' | 'cultural-context';
 
 export interface HistoryViewProps {
   onNavigateToPassage?: (reference: string) => void;
@@ -45,7 +46,7 @@ export interface HistoryViewProps {
 
 export const HistoryView: React.FC<HistoryViewProps> = ({
   onNavigateToPassage,
-  initialTab = 'confessional'
+  initialTab = 'church'
 }) => {
   const [activeTab, setActiveTab] = useState<HistorySubTab>(initialTab);
   
@@ -140,16 +141,17 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       {/* Sub-navigation Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
         {[
-          { id: 'confessional', label: '📜 Biblioteca Confessional', icon: BookOpen },
+          { id: 'church', label: '🏛️ História da Igreja', icon: Landmark },
           { id: 'reformation', label: '🔥 A Reforma Protestante', icon: Flame },
           { id: 'catholic', label: '⛪ Tradição Católica', icon: Church },
+          { id: 'orthodox', label: '☦️ Tradição Ortodoxa', icon: Sun },
           { id: 'catholic-protestant', label: '⚖️ Catolicismo, Protestantismo & Ortodoxia', icon: Scale },
-          { id: 'church', label: 'História da Igreja', icon: Landmark },
-          { id: 'theology', label: 'Sistemas Teológicos', icon: Scale },
-          { id: 'creeds', label: 'Grandes Credos', icon: Scroll },
-          { id: 'second-temple', label: 'Segundo Templo', icon: BookOpen },
-          { id: 'cultural-context', label: 'Contexto Cultural & Medidas', icon: Coins },
-          { id: 'biblical-timeline', label: 'Eras Bíblicas', icon: Compass },
+          { id: 'theology', label: '💡 Sistemas Teológicos', icon: Scale },
+          { id: 'confessional', label: '📜 Biblioteca Confessional', icon: BookOpen },
+          { id: 'creeds', label: '📜 Grandes Credos', icon: Scroll },
+          { id: 'biblical-timeline', label: '🧭 Eras Bíblicas', icon: Compass },
+          { id: 'second-temple', label: '🏛️ Segundo Templo', icon: BookOpen },
+          { id: 'cultural-context', label: '🪙 Contexto Cultural & Medidas', icon: Coins },
         ].map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -325,6 +327,13 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       {activeTab === 'catholic' && (
         <div className="space-y-6 animate-in fade-in duration-200">
           <CatholicTraditionView />
+        </div>
+      )}
+
+      {/* A TRADIÇÃO TEOLÓGICA ORTODOXA: PADRES GREGOS, ÍCONES E HESICASMO */}
+      {activeTab === 'orthodox' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <OrthodoxTraditionView />
         </div>
       )}
 

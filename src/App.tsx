@@ -21,8 +21,6 @@ import { BibleView } from './views/BibleView';
 // Lazy loading views for instant initial paint and reduced bundle footprint
 const PlansView = lazy(() => import('./views/PlansView').then(m => ({ default: m.PlansView })));
 const HistoryView = lazy(() => import('./views/HistoryView').then(m => ({ default: m.HistoryView })));
-const ReformationView = lazy(() => import('./views/ReformationView').then(m => ({ default: m.ReformationView })));
-const CatholicTraditionView = lazy(() => import('./views/CatholicTraditionView').then(m => ({ default: m.CatholicTraditionView })));
 const ProfileView = lazy(() => import('./views/ProfileView').then(m => ({ default: m.ProfileView })));
 
 export default function App() {
@@ -250,16 +248,6 @@ export default function App() {
           navTitle: 'História da Igreja & Teologia',
           navSubtitle: 'Eras Patrística à Contemporânea, Credos e Sistemas'
         };
-      case 'REFORMA':
-        return {
-          navTitle: 'A Reforma Protestante',
-          navSubtitle: 'Pré-Reformadores, Martinho Lutero e Pós-Reformadores'
-        };
-      case 'CATOLICISMO':
-        return {
-          navTitle: 'A Tradição Católica',
-          navSubtitle: 'Patrística, Escolástica Medieval e Contra-Reforma'
-        };
       case 'PERFIL':
         return {
           navTitle: userName || 'Perfil & Caderno Teológico',
@@ -357,18 +345,6 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
-          </Suspense>
-        )}
-
-        {activeRoute === 'REFORMA' && (
-          <Suspense fallback={<ViewLoadingSkeleton label="Carregando A Reforma Protestante..." />}>
-            <ReformationView />
-          </Suspense>
-        )}
-
-        {activeRoute === 'CATOLICISMO' && (
-          <Suspense fallback={<ViewLoadingSkeleton label="Carregando A Tradição Católica..." />}>
-            <CatholicTraditionView />
           </Suspense>
         )}
 
