@@ -37,18 +37,43 @@ import { THEOLOGICAL_DEBATES, THEOLOGICAL_CATEGORIES_META } from '../data/theolo
 import { confessionalDocumentsData, DOCUMENT_CATEGORY_META } from '../data/confessionalDocumentsData';
 import { TheologicalDivergenceView } from '../components/TheologicalDivergenceView';
 
-type HistorySubTab = 'confessional' | 'reformation' | 'catholic' | 'orthodox' | 'catholic-protestant' | 'church' | 'theology' | 'creeds' | 'second-temple' | 'biblical-timeline' | 'cultural-context';
+export type HistorySubTab = 'church' | 'reformation' | 'catholic' | 'orthodox' | 'catholic-protestant' | 'theology' | 'confessional' | 'creeds' | 'biblical-timeline' | 'second-temple' | 'cultural-context';
 
 export interface HistoryViewProps {
   onNavigateToPassage?: (reference: string) => void;
   initialTab?: HistorySubTab;
+  targetFigureId?: string;
+  targetTopicId?: string;
 }
 
 export const HistoryView: React.FC<HistoryViewProps> = ({
   onNavigateToPassage,
-  initialTab = 'church'
+  initialTab = 'church',
+  targetFigureId,
+  targetTopicId
 }) => {
   const [activeTab, setActiveTab] = useState<HistorySubTab>(initialTab);
+  const [divergenceTopicId, setDivergenceTopicId] = useState<string | undefined>(targetTopicId);
+  const [figureId, setFigureId] = useState<string | undefined>(targetFigureId);
+
+  // Synchronize when external navigation props change
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  React.useEffect(() => {
+    if (targetTopicId) {
+      setDivergenceTopicId(targetTopicId);
+    }
+  }, [targetTopicId]);
+
+  React.useEffect(() => {
+    if (targetFigureId) {
+      setFigureId(targetFigureId);
+    }
+  }, [targetFigureId]);
   
   // Confessional Library State
   const [confessionalCategory, setConfessionalCategory] = useState<DocumentCategory | 'all'>('all');
@@ -99,11 +124,15 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   const filteredEvents = useMemo(() => {
     return CHURCH_HISTORY_EVENTS.filter(event => {
       const matchesEra = selectedEra === 'all' || event.era === selectedEra;
-      const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
+      const matchesCategory = 
+        selectedCategory === 'all' || 
+        event.category === selectedCategory ||
+        event.category.toLowerCase() === selectedCategory.toLowerCase();
       const matchesSearch = 
         searchQuery === '' ||
         event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (event.historicalSignificance && event.historicalSignificance.toLowerCase().includes(searchQuery.toLowerCase())) ||
         event.keyFigures.some(f => f.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesEra && matchesCategory && matchesSearch;
     });
@@ -319,28 +348,49 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       {/* A REFORMA PROTESTANTE: PRÉ-REFORMADORES, LUTERO E PÓS-REFORMADORES */}
       {activeTab === 'reformation' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <ReformationView />
+          <ReformationView 
+            initialFigureId={figureId} 
+            onNavigateToDivergenceTopic={(topicId) => { 
+              setActiveTab('catholic-protestant'); 
+              setDivergenceTopicId(topicId); 
+            }} 
+          />
         </div>
       )}
 
       {/* A TRADIÇÃO E DOUTORES CATÓLICOS: PATRÍSTICA, ESCOLÁSTICA E CONTRA-REFORMA */}
       {activeTab === 'catholic' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <CatholicTraditionView />
+          <CatholicTraditionView 
+            initialFigureId={figureId} 
+            onNavigateToDivergenceTopic={(topicId) => { 
+              setActiveTab('catholic-protestant'); 
+              setDivergenceTopicId(topicId); 
+            }} 
+          />
         </div>
       )}
 
       {/* A TRADIÇÃO TEOLÓGICA ORTODOXA: PADRES GREGOS, ÍCONES E HESICASMO */}
       {activeTab === 'orthodox' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <OrthodoxTraditionView />
+          <OrthodoxTraditionView 
+            initialFigureId={figureId} 
+            onNavigateToDivergenceTopic={(topicId) => { 
+              setActiveTab('catholic-protestant'); 
+              setDivergenceTopicId(topicId); 
+            }} 
+          />
         </div>
       )}
 
       {/* COMPARADOR: CATOLICISMO VS. PROTESTANTISMO */}
       {activeTab === 'catholic-protestant' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <TheologicalDivergenceView onNavigateToPassage={onNavigateToPassage} />
+          <TheologicalDivergenceView 
+            initialTopicId={divergenceTopicId} 
+            onNavigateToPassage={onNavigateToPassage} 
+          />
         </div>
       )}
 
@@ -391,28 +441,40 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               />
             </div>
 
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-thin">
               {[
                 { id: 'all', label: 'Todas as Categorias' },
-                { id: 'theology', label: 'Teologia' },
-                { id: 'council', label: 'Concílios' },
-                { id: 'monasticism', label: 'Monasticismo' },
-                { id: 'reformation', label: 'Reforma' },
-                { id: 'persecution', label: 'Perseguição' }
-              ].map(cat => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                    selectedCategory === cat.id
-                      ? 'bg-amber-600 text-white'
-                      : 'bg-zinc-800 text-zinc-400 hover:text-stone-200'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
+                { id: 'TEOLOGIA', label: 'Teologia' },
+                { id: 'CONCILIO', label: 'Concílios' },
+                { id: 'AVIVAMENTO', label: 'Avivamento & Missões' },
+                { id: 'REFORMA', label: 'Reforma' },
+                { id: 'PERSEGUICAO', label: 'Perseguição' }
+              ].map(cat => {
+                const count = cat.id === 'all'
+                  ? (selectedEra === 'all' ? CHURCH_HISTORY_EVENTS.length : CHURCH_HISTORY_EVENTS.filter(e => e.era === selectedEra).length)
+                  : CHURCH_HISTORY_EVENTS.filter(e => (selectedEra === 'all' || e.era === selectedEra) && e.category === cat.id).length;
+                const isSelected = selectedCategory === cat.id;
+
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'bg-zinc-800 text-zinc-400 hover:text-stone-200'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      isSelected ? 'bg-amber-700/80 text-white' : 'bg-zinc-900 text-zinc-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -422,50 +484,76 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               Mostrando {filteredEvents.length} marcos históricos
             </span>
 
-            {filteredEvents.map(event => (
-              <div 
-                key={event.id}
-                className="p-4 sm:p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      {event.year}
-                    </span>
-                    <h4 className="font-serif font-bold text-sm sm:text-base text-stone-100">
-                      {event.title}
-                    </h4>
-                  </div>
-                  <span className="text-[11px] font-medium text-zinc-400">
-                    {event.location}
-                  </span>
-                </div>
-
-                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-3">
-                  {event.description}
+            {filteredEvents.length === 0 ? (
+              <div className="p-8 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-3">
+                <Landmark className="w-8 h-8 text-zinc-600 mx-auto" />
+                <p className="text-sm font-semibold text-stone-300">
+                  Nenhum marco histórico encontrado para os filtros selecionados
                 </p>
-
-                {event.theologicalImpact && (
-                  <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-800/30 text-xs text-amber-200/90 mb-3">
-                    <strong>Impacto Teológico:</strong> {event.theologicalImpact}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-800/50">
-                  <span className="text-[11px] text-zinc-400 flex items-center gap-1 mr-1">
-                    <Users className="w-3.5 h-3.5 text-zinc-400" /> Figuras Chave:
-                  </span>
-                  {event.keyFigures.map((figure, idx) => (
-                    <span 
-                      key={idx}
-                      className="px-2 py-0.5 rounded-md text-[11px] bg-zinc-800 text-zinc-300"
-                    >
-                      {figure}
-                    </span>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedCategory('all'); setSelectedEra('all'); setSearchQuery(''); }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-500 transition-colors cursor-pointer"
+                >
+                  Limpar Filtros
+                </button>
               </div>
-            ))}
+            ) : (
+              filteredEvents.map(event => {
+                const categoryBadge = {
+                  TEOLOGIA: { label: 'Teologia', style: 'bg-amber-500/10 text-amber-300 border-amber-500/30' },
+                  CONCILIO: { label: 'Concílio Ecumênico', style: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30' },
+                  AVIVAMENTO: { label: 'Avivamento & Missões', style: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' },
+                  REFORMA: { label: 'Reforma', style: 'bg-blue-500/10 text-blue-300 border-blue-500/30' },
+                  PERSEGUICAO: { label: 'Perseguição & Mártires', style: 'bg-rose-500/10 text-rose-300 border-rose-500/30' }
+                }[event.category] || { label: event.category, style: 'bg-zinc-800 text-zinc-400 border-zinc-700' };
+
+                return (
+                  <div 
+                    key={event.id}
+                    className="p-4 sm:p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          {event.year}
+                        </span>
+                        <h4 className="font-serif font-bold text-sm sm:text-base text-stone-100">
+                          {event.title}
+                        </h4>
+                      </div>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border self-start sm:self-auto ${categoryBadge.style}`}>
+                        {categoryBadge.label}
+                      </span>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-3">
+                      {event.description}
+                    </p>
+
+                    {event.historicalSignificance && (
+                      <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-800/30 text-xs text-amber-200/90 mb-3">
+                        <strong>Significado Histórico:</strong> {event.historicalSignificance}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-800/50">
+                      <span className="text-[11px] text-zinc-400 flex items-center gap-1 mr-1">
+                        <Users className="w-3.5 h-3.5 text-zinc-400" /> Figuras Chave:
+                      </span>
+                      {event.keyFigures.map((figure, idx) => (
+                        <span 
+                          key={idx}
+                          className="px-2 py-0.5 rounded-md text-[11px] bg-zinc-800 text-zinc-300"
+                        >
+                          {figure}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TheologicalGlossaryTerm, ComparisonCategory, TheologicalTraditionId } from '../types';
 import { theologicalGlossaryData } from '../data/theologicalVocabularyData';
 import { 
@@ -11,8 +11,10 @@ import {
   Sparkles,
   Scroll,
   Users,
-  Quote
+  Quote,
+  Bookmark
 } from 'lucide-react';
+import { isFavorite, toggleFavorite, FAVORITES_UPDATED_EVENT } from '../utils/favoritesStorage';
 
 interface TheologicalGlossaryViewProps {
   onNavigateToPassage?: (reference: string) => void;
@@ -25,6 +27,30 @@ export const TheologicalGlossaryView: React.FC<TheologicalGlossaryViewProps> = (
   const [selectedCategory, setSelectedCategory] = useState<ComparisonCategory | 'all'>('all');
   const [activeTraditionTab, setActiveTraditionTab] = useState<'all' | TheologicalTraditionId>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [favoritesMap, setFavoritesMap] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const updateFavs = () => {
+      const map: Record<string, boolean> = {};
+      theologicalGlossaryData.forEach(t => {
+        map[t.id] = isFavorite(t.id);
+      });
+      setFavoritesMap(map);
+    };
+    updateFavs();
+    window.addEventListener(FAVORITES_UPDATED_EVENT, updateFavs);
+    return () => window.removeEventListener(FAVORITES_UPDATED_EVENT, updateFavs);
+  }, []);
+
+  const handleToggleBookmark = (term: TheologicalGlossaryTerm) => {
+    toggleFavorite({
+      id: term.id,
+      entityType: 'glossary',
+      title: term.term,
+      subtitle: term.originalLanguage ? `${term.originalLanguage.word} (${term.originalLanguage.transliteration})` : undefined,
+      categoryOrTradition: `Glossário: ${term.category}`
+    });
+  };
 
   const filteredTerms = useMemo(() => {
     return theologicalGlossaryData.filter(item => {
@@ -229,8 +255,21 @@ export const TheologicalGlossaryView: React.FC<TheologicalGlossaryViewProps> = (
                 )}
               </div>
 
-              {/* Action: Copy */}
+              {/* Action: Bookmark & Copy */}
               <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleToggleBookmark(term)}
+                  className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                    favoritesMap[term.id]
+                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                      : 'bg-zinc-800 hover:bg-zinc-700 border-zinc-700/60 text-zinc-400 hover:text-white'
+                  }`}
+                  title={favoritesMap[term.id] ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${favoritesMap[term.id] ? 'fill-amber-400 text-amber-400' : ''}`} />
+                </button>
+
                 <button
                   type="button"
                   onClick={() => handleCopy(term)}

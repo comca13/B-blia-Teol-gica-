@@ -17,6 +17,10 @@ import { BottomNav } from './components/BottomNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { ViewLoadingSkeleton } from './components/ViewLoadingSkeleton';
 import { BibleView } from './views/BibleView';
+import { GlobalSearchModal, GlobalSearchTarget } from './components/GlobalSearchModal';
+import { HistorySubTab } from './views/HistoryView';
+import { GlobalContextTab } from './views/GlobalContextView';
+import { SavedFavoriteItem } from './utils/favoritesStorage';
 
 // Lazy loading views for instant initial paint and reduced bundle footprint
 const PlansView = lazy(() => import('./views/PlansView').then(m => ({ default: m.PlansView })));
@@ -30,6 +34,94 @@ export default function App() {
   const [readerSettings, setReaderSettings] = useState<ReaderSettings>(loadReaderSettings());
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(loadReminderSettings());
   const [userName, setUserName] = useState<string>(loadUserName());
+
+  // Global Search & Deep Navigation State
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [historySubTab, setHistorySubTab] = useState<HistorySubTab | undefined>(undefined);
+  const [historyTargetFigureId, setHistoryTargetFigureId] = useState<string | undefined>(undefined);
+  const [historyTargetTopicId, setHistoryTargetTopicId] = useState<string | undefined>(undefined);
+  const [globalContextTab, setGlobalContextTab] = useState<GlobalContextTab | undefined>(undefined);
+  const [globalContextTargetId, setGlobalContextTargetId] = useState<string | undefined>(undefined);
+
+  // Keyboard shortcut listener for Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleNavigateSearchTarget = useCallback((target: GlobalSearchTarget) => {
+    setIsSearchOpen(false);
+    if (target.route === 'HISTORIA') {
+      if (target.historySubTab) {
+        setHistorySubTab(target.historySubTab as HistorySubTab);
+      }
+      if (target.historySubTab === 'catholic-protestant') {
+        setHistoryTargetTopicId(target.targetId);
+        setHistoryTargetFigureId(undefined);
+      } else {
+        setHistoryTargetFigureId(target.targetId);
+        setHistoryTargetTopicId(undefined);
+      }
+      setActiveRoute('HISTORIA');
+    } else if (target.route === 'GLOBAL_CONTEXT') {
+      if (target.globalContextTab) {
+        setGlobalContextTab(target.globalContextTab);
+      }
+      setGlobalContextTargetId(target.targetId);
+      setActiveRoute('GLOBAL_CONTEXT');
+    } else {
+      setActiveRoute(target.route);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleNavigateFavorite = useCallback((fav: SavedFavoriteItem) => {
+    switch (fav.entityType) {
+      case 'theologian-reformation':
+        setHistorySubTab('reformation');
+        setHistoryTargetFigureId(fav.id);
+        setActiveRoute('HISTORIA');
+        break;
+      case 'theologian-catholic':
+        setHistorySubTab('catholic');
+        setHistoryTargetFigureId(fav.id);
+        setActiveRoute('HISTORIA');
+        break;
+      case 'theologian-orthodox':
+        setHistorySubTab('orthodox');
+        setHistoryTargetFigureId(fav.id);
+        setActiveRoute('HISTORIA');
+        break;
+      case 'council':
+        setGlobalContextTab('councils');
+        setGlobalContextTargetId(fav.id);
+        setActiveRoute('GLOBAL_CONTEXT');
+        break;
+      case 'manuscript':
+        setGlobalContextTab('manuscripts');
+        setGlobalContextTargetId(fav.id);
+        setActiveRoute('GLOBAL_CONTEXT');
+        break;
+      case 'comparison':
+        setHistorySubTab('catholic-protestant');
+        setHistoryTargetTopicId(fav.id);
+        setActiveRoute('HISTORIA');
+        break;
+      case 'glossary':
+        setHistorySubTab('catholic-protestant');
+        setActiveRoute('HISTORIA');
+        break;
+      default:
+        setActiveRoute('HISTORIA');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const [selectedDayNumber, setSelectedDayNumber] = useState<number>(1);
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
@@ -288,6 +380,7 @@ export default function App() {
         }}
         isNavHidden={isNavHidden}
         onNavigateRoute={setActiveRoute}
+        onOpenSearch={() => setIsSearchOpen(true)}
       />
 
       {/* 2. Área Central de Visualização (pt-14 sm:pt-16 garante que a Navbar fixa não cubra as abas nem o conteúdo) */}
@@ -346,6 +439,9 @@ export default function App() {
         {activeRoute === 'HISTORIA' && (
           <Suspense fallback={<ViewLoadingSkeleton label="Carregando História da Igreja e Teologia..." />}>
             <HistoryView
+              initialTab={historySubTab}
+              targetFigureId={historyTargetFigureId}
+              targetTopicId={historyTargetTopicId}
               onNavigateToPassage={(passageRef) => {
                 setBibleReadingMode('browse-books');
                 setActiveRoute('BIBLIA');
@@ -357,7 +453,15 @@ export default function App() {
 
         {activeRoute === 'GLOBAL_CONTEXT' && (
           <Suspense fallback={<ViewLoadingSkeleton label="Carregando Contexto Global e Concílios..." />}>
-            <GlobalContextView />
+            <GlobalContextView 
+              initialTab={globalContextTab}
+              initialExpandedId={globalContextTargetId}
+              onNavigateToPassage={(passageRef) => {
+                setBibleReadingMode('browse-books');
+                setActiveRoute('BIBLIA');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
           </Suspense>
         )}
 
@@ -372,6 +476,7 @@ export default function App() {
               reminderSettings={reminderSettings}
               onUpdateReminderSettings={handleUpdateReminderSettings}
               currentDayReading={currentReading}
+              onNavigateToFavorite={handleNavigateFavorite}
             />
           </Suspense>
         )}
@@ -393,6 +498,13 @@ export default function App() {
 
       {/* Indicador de Conexão Offline */}
       <OfflineIndicator />
+
+      {/* Modal de Pesquisa Global Omnisearch (Cmd+K / Ctrl+K) */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onNavigateToTarget={handleNavigateSearchTarget}
+      />
 
     </div>
   );

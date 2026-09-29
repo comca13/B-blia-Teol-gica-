@@ -21,7 +21,8 @@ import {
   Sparkles,
   Calendar,
   Filter,
-  CheckCircle2
+  CheckCircle2,
+  Printer
 } from 'lucide-react';
 
 interface PersonalNotesProps {
@@ -192,16 +193,27 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
       await navigator.clipboard.writeText(md);
       setCopiedStatus(true);
       setTimeout(() => setCopiedStatus(false), 2500);
-    } catch (err) {
-      console.error('Falha ao copiar:', err);
+    } catch {
+      // Fallback or ignore
     }
+  };
+
+  const handlePrintPDF = () => {
+    window.print();
   };
 
   return (
     <div className="bg-stone-900/90 dark:bg-stone-950/80 border border-stone-800 dark:border-stone-800/80 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
       
+      {/* Printable Cover / Header visible strictly during printing */}
+      <div className="hidden print:block mb-8 pb-4 border-b-2 border-stone-800 text-stone-900">
+        <h1 className="text-2xl font-bold font-serif">Caderno de Estudos Teológicos</h1>
+        <p className="text-sm text-stone-600">Cronos & Cânon 365 • Bíblia Teológica</p>
+        <p className="text-xs text-stone-500 mt-1">Exportado em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
+      </div>
+
       {/* Header & Mode Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-800">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-stone-800 print:hidden">
         <div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
@@ -225,7 +237,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
             <button
               type="button"
               onClick={() => setActiveView('DAILY')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeView === 'DAILY'
                   ? 'bg-amber-600 text-white shadow-xs'
                   : 'text-stone-400 hover:text-stone-200'
@@ -238,7 +250,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
             <button
               type="button"
               onClick={() => setActiveView('SYSTEMATIC')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeView === 'SYSTEMATIC'
                   ? 'bg-amber-600 text-white shadow-xs'
                   : 'text-stone-400 hover:text-stone-200'
@@ -249,21 +261,36 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({
             </button>
           </div>
 
-          {/* Export Buttons */}
+          {/* Export Markdown Button */}
           <button
             type="button"
             onClick={handleExportMarkdown}
-            className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white border border-stone-700 transition-colors"
+            className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white border border-stone-700 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
             title="Exportar todas as anotações em formato Markdown (.md)"
             aria-label="Exportar Caderno em Markdown"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Exportar Markdown (.md)</span>
+            <span className="sm:hidden">.MD</span>
+          </button>
+
+          {/* Export PDF / Print Button */}
+          <button
+            type="button"
+            onClick={handlePrintPDF}
+            className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white border border-stone-700 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            title="Exportar ou Imprimir em PDF formatado"
+            aria-label="Exportar ou Imprimir em PDF"
+          >
+            <Printer className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Exportar / Imprimir (PDF)</span>
+            <span className="sm:hidden">PDF</span>
           </button>
 
           <button
             type="button"
             onClick={handleCopyClipboard}
-            className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white border border-stone-700 transition-colors"
+            className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white border border-stone-700 transition-colors cursor-pointer"
             title="Copiar todas as anotações para a Área de Transferência"
             aria-label="Copiar Anotações"
           >

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProgress, ReaderSettings as ReaderSettingsType, ReminderSettings, DayReading } from '../types';
 import { PersonalNotes } from '../components/PersonalNotes';
 import { ReaderSettings } from '../components/ReaderSettings';
@@ -15,8 +15,18 @@ import {
   Sparkles, 
   Clock, 
   CheckCircle2, 
-  Edit2
+  Edit2,
+  Trash2,
+  ExternalLink,
+  Copy,
+  Quote,
+  Church,
+  Sun,
+  Scale,
+  FileText,
+  Scroll
 } from 'lucide-react';
+import { loadFavorites, removeFavorite, SavedFavoriteItem, FAVORITES_UPDATED_EVENT } from '../utils/favoritesStorage';
 
 interface ProfileViewProps {
   userName: string;
@@ -27,6 +37,7 @@ interface ProfileViewProps {
   reminderSettings: ReminderSettings;
   onUpdateReminderSettings: (reminders: ReminderSettings) => void;
   currentDayReading: DayReading;
+  onNavigateToFavorite?: (item: SavedFavoriteItem) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -37,11 +48,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onUpdateSettings,
   reminderSettings,
   onUpdateReminderSettings,
-  currentDayReading
+  currentDayReading,
+  onNavigateToFavorite
 }) => {
-  const [activeTab, setActiveTab] = useState<'notebook' | 'settings' | 'reminders'>('notebook');
+  const [activeTab, setActiveTab] = useState<'notebook' | 'favorites' | 'settings' | 'reminders'>('notebook');
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(userName);
+  const [favoritesList, setFavoritesList] = useState<SavedFavoriteItem[]>(loadFavorites());
+  const [favoritesCategoryFilter, setFavoritesCategoryFilter] = useState<string>('all');
+  const [copiedFavoriteId, setCopiedFavoriteId] = useState<string | null>(null);
+
+  // Sync favorites
+  useEffect(() => {
+    const handleUpdate = () => {
+      setFavoritesList(loadFavorites());
+    };
+    window.addEventListener(FAVORITES_UPDATED_EVENT, handleUpdate);
+    return () => window.removeEventListener(FAVORITES_UPDATED_EVENT, handleUpdate);
+  }, []);
 
   // Reminders local state
   const [reminderEnabled, setReminderEnabled] = useState(reminderSettings.enabled);
@@ -139,13 +163,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">{progress.completedDays.length}/365 lidos</span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 text-center">
+            <button
+              type="button"
+              onClick={() => setActiveTab('favorites')}
+              className="p-3 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 text-center hover:border-amber-500/50 transition-colors cursor-pointer"
+              title="Ver Marcadores e Favoritos Teológicos"
+            >
               <div className="flex items-center justify-center gap-1 text-amber-300 mb-0.5">
-                <Bookmark className="w-4 h-4" />
-                <span className="font-serif text-base sm:text-lg font-bold">{progress.bookmarks.length}</span>
+                <Bookmark className="w-4 h-4 fill-amber-400" />
+                <span className="font-serif text-base sm:text-lg font-bold">{progress.bookmarks.length + favoritesList.length}</span>
               </div>
               <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Marcados</span>
-            </div>
+            </button>
           </div>
 
         </div>
@@ -163,11 +192,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* Sub-tabs for Profile */}
       <div className="flex items-center justify-center">
-        <div className="inline-flex p-1 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-sm">
+        <div className="inline-flex flex-wrap p-1 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-sm gap-1">
           <button
             type="button"
             onClick={() => setActiveTab('notebook')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'notebook'
                 ? 'bg-amber-600 text-white shadow-sm'
                 : 'text-zinc-400 hover:text-white'
@@ -179,21 +208,34 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveTab('favorites')}
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+              activeTab === 'favorites'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Bookmark className="w-4 h-4" />
+            <span>Marcadores ({favoritesList.length})</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'settings'
                 ? 'bg-amber-600 text-white shadow-sm'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Sliders className="w-4 h-4" />
-            <span>Tipografia & Leitura</span>
+            <span>Tipografia</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('reminders')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'reminders'
                 ? 'bg-amber-600 text-white shadow-sm'
                 : 'text-zinc-400 hover:text-white'
@@ -215,7 +257,161 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
-      {/* TAB 2: CONFIGURAÇÕES DE LEITURA & TIPOGRAFIA */}
+      {/* TAB 2: MARCADORES & FAVORITOS TEOLÓGICOS */}
+      {activeTab === 'favorites' && (
+        <div className="space-y-5 animate-in fade-in duration-200">
+          <div className="p-4 sm:p-5 rounded-3xl bg-zinc-900/80 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+            <div>
+              <h3 className="font-serif text-lg font-bold text-stone-100 flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-amber-400 fill-amber-400" />
+                <span>Marcadores & Favoritos Teológicos</span>
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Coleção pessoal de teólogos, credos, concílios, códices e termos dogmáticos salvos para consulta.
+              </p>
+            </div>
+            <div className="text-xs font-mono text-amber-300 bg-amber-950/60 px-3 py-1.5 rounded-xl border border-amber-800/60 shrink-0">
+              {favoritesList.length} itens salvos
+            </div>
+          </div>
+
+          {/* Categorias Filter */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+            {[
+              { id: 'all', label: 'Todos', count: favoritesList.length },
+              { id: 'theologian-reformation', label: 'Reforma', count: favoritesList.filter(f => f.entityType === 'theologian-reformation').length },
+              { id: 'theologian-catholic', label: 'Católica', count: favoritesList.filter(f => f.entityType === 'theologian-catholic').length },
+              { id: 'theologian-orthodox', label: 'Ortodoxa', count: favoritesList.filter(f => f.entityType === 'theologian-orthodox').length },
+              { id: 'council', label: 'Concílios', count: favoritesList.filter(f => f.entityType === 'council').length },
+              { id: 'manuscript', label: 'Manuscritos', count: favoritesList.filter(f => f.entityType === 'manuscript').length },
+              { id: 'glossary', label: 'Glossário', count: favoritesList.filter(f => f.entityType === 'glossary').length },
+            ].map(cat => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setFavoritesCategoryFilter(cat.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  favoritesCategoryFilter === cat.id
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800'
+                }`}
+              >
+                <span>{cat.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  favoritesCategoryFilter === cat.id ? 'bg-amber-700/80 text-white' : 'bg-zinc-800 text-zinc-400'
+                }`}>
+                  {cat.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Favorites List */}
+          {(() => {
+            const filtered = favoritesCategoryFilter === 'all'
+              ? favoritesList
+              : favoritesList.filter(f => f.entityType === favoritesCategoryFilter);
+
+            if (filtered.length === 0) {
+              return (
+                <div className="p-8 sm:p-12 text-center rounded-3xl bg-zinc-900/40 border border-zinc-800/80 space-y-3">
+                  <Bookmark className="w-10 h-10 text-zinc-600 mx-auto" />
+                  <p className="font-serif font-bold text-base text-stone-300">
+                    Nenhum marcador encontrado nesta categoria
+                  </p>
+                  <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                    Ao navegar pela História da Igreja, Concílios, Manuscritos e Tradições, clique no ícone de marcador para salvar e construir sua biblioteca teológica de referência.
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {filtered.map(fav => (
+                  <div 
+                    key={fav.id}
+                    className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800/90 hover:border-amber-500/40 shadow-sm transition-all flex flex-col justify-between space-y-3"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-amber-400 border border-zinc-700 font-bold uppercase tracking-wider">
+                          {fav.categoryOrTradition || fav.entityType}
+                        </span>
+                        <span className="text-[10px] text-zinc-500">
+                          {new Date(fav.savedAt).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+
+                      <h4 className="font-serif font-bold text-base text-stone-100">
+                        {fav.title}
+                      </h4>
+                      {fav.subtitle && (
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                          {fav.subtitle}
+                        </p>
+                      )}
+
+                      {fav.quote && (
+                        <div className="mt-3 p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/80 text-xs text-stone-300 italic font-serif leading-relaxed relative">
+                          <Quote className="w-3.5 h-3.5 text-amber-500/40 absolute -top-2 left-2" />
+                          "{fav.quote}"
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-800/70">
+                      {onNavigateToFavorite && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToFavorite(fav)}
+                          className="px-3 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 text-xs font-semibold border border-amber-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Abrir no Módulo</span>
+                        </button>
+                      )}
+
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        {fav.quote && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const text = `"${fav.quote}" — ${fav.title} | Bíblia Teológica`;
+                              navigator.clipboard.writeText(text);
+                              setCopiedFavoriteId(fav.id);
+                              setTimeout(() => setCopiedFavoriteId(null), 2000);
+                            }}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-750 text-zinc-300 hover:text-white border border-zinc-700/60 transition-colors cursor-pointer"
+                            title="Copiar citação"
+                          >
+                            {copiedFavoriteId === fav.id ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => removeFavorite(fav.id)}
+                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-700/60 hover:border-red-800/60 transition-colors cursor-pointer"
+                          title="Remover dos favoritos"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* TAB 3: CONFIGURAÇÕES DE LEITURA & TIPOGRAFIA */}
       {activeTab === 'settings' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-xs sm:text-sm text-zinc-300">

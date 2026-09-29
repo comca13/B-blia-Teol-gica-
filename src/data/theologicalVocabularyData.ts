@@ -300,6 +300,81 @@ export const theologicalGlossaryData: TheologicalGlossaryTerm[] = [
       primarySource: 'Encíclica dos Patriarcas Orientais de 1848; Aleksei Khomyakov, A Igreja é Uma'
     },
     relatedVerses: ['At 15:6-22', '1Pe 2:9', 'Mt 18:18-20', 'Ef 4:15-16']
+  },
+  {
+    id: 'homoousios',
+    term: 'Homoousios (Consubstancial)',
+    category: 'Autoridade',
+    originalLanguage: {
+      word: 'ὁμοούσιος',
+      language: 'Grego',
+      transliteration: 'homoousios',
+      literalMeaning: 'de uma mesma substância/essência (homos = igual/mesmo, ousia = essência)'
+    },
+    overview: 'O termo definidor do Concílio de Niceia I (325 d.C.) contra Ário, proclamando que o Filho é co-eterno e da mesmíssima essência divina do Pai.',
+    catholicPerspective: {
+      definition: 'Consubstancial ao Pai. O Filho não é feito nem de essência semelhante (homoiousios), mas ontologicamente uno em divindade com o Pai, mantendo a distinção das Pessoas.',
+      primarySource: 'Credo Niceno (325 d.C.); Santo Atanásio, Contra os Arianos'
+    },
+    protestantPerspective: {
+      definition: 'Confessado integralmente pela ortodoxia reformada e luterana nos credos ecumênicos clássicos como base inegociável da cristologia bíblica.',
+      primarySource: 'Confissão de Augsburgo Art. I; Confissão de Fé de Westminster Cap. II'
+    },
+    orthodoxPerspective: {
+      definition: 'A pedra angular da teologia trinitária e dos Três Santos Hierarcas: Deus é uma só Ousia em três Hipóstases reais, sem confusão nem divisão.',
+      primarySource: 'São Gregório de Nazianzo, Discursos Teológicos; São Basílio Magno'
+    },
+    relatedVerses: ['Jo 10:30', 'Jo 1:1-3', 'Cl 1:15-19', 'Hb 1:3']
+  },
+  {
+    id: 'theotokos',
+    term: 'Theotokos (Mãe de Deus / Geradora de Deus)',
+    category: 'Eclesiologia e Santos',
+    originalLanguage: {
+      word: 'Θεοτόκος',
+      language: 'Grego',
+      transliteration: 'theotokos',
+      literalMeaning: 'aquela que deu à luz a Deus, geradora de Deus (Theos + tiktein)'
+    },
+    overview: 'Definido no Concílio de Éfeso (431 d.C.) contra Nestório para resguardar a união hipostática: Aquele que nasceu de Maria na carne é a própria Pessoa eterna do Filho de Deus.',
+    catholicPerspective: {
+      definition: 'Maternidade Divina dogmática. Porque Jesus é verdadeiramente Deus em uma só Pessoa divina, Maria é com toda a verdade a Mãe de Deus (Theotokos), merecedora de hiperdulia.',
+      primarySource: 'Concílio de Éfeso (431 d.C.); Concílio Vaticano II, Lumen Gentium Cap. VIII'
+    },
+    protestantPerspective: {
+      definition: 'Aceito pelos reformadores clássicos (Lutero, Calvino, Zwinglio) estritamente como título cristológico: resguarda a divindade da Pessoa de Cristo gerada no ventre, sem atribuir poderes mediadores à criatura.',
+      primarySource: 'Martinho Lutero, Sobre os Concílios e a Igreja (1539); Segunda Confissão Helvética XI'
+    },
+    orthodoxPerspective: {
+      definition: 'O cume da redenção da humanidade e centro da iconografia oriental. Maria, a Toda-Santa (Panagia), é a porta pela qual o Verbo Incriado adentrou a história cósmica.',
+      primarySource: 'São Cirilo de Alexandria, Anátemas contra Nestório; São João Damasceno'
+    },
+    relatedVerses: ['Lc 1:43', 'Gl 4:4', 'Mt 1:23', 'Jo 1:14']
+  },
+  {
+    id: 'hypostasis',
+    term: 'Hipóstase e União Hipostática',
+    category: 'Autoridade',
+    originalLanguage: {
+      word: 'ὑπόστασις',
+      language: 'Grego',
+      transliteration: 'hypostasis',
+      literalMeaning: 'subsistência real, fundamento objetivo, indivíduo concreto'
+    },
+    overview: 'A distinção patrística entre Ousia (a natureza divina compartilhada) e Hipóstase (a pessoa singular: Pai, Filho ou Espírito Santo), e a união indissolúvel das naturezas humana e divina em Cristo.',
+    catholicPerspective: {
+      definition: 'União Hipostática: no Verbo Encarnado há uma só Pessoa divina subsistindo perfeitamente em duas naturezas (divina e humana), sem confusão, sem mudança, sem divisão e sem separação.',
+      primarySource: 'Concílio de Calcedônia (451 d.C.); Santo Tomás de Aquino, S.Th. III, q. 2'
+    },
+    protestantPerspective: {
+      definition: 'Fundamento de toda a soteriologia: somente Quem é plenamente Deus e plenamente homem numa só Pessoa poderia mediar e expiar os pecados de toda a humanidade.',
+      primarySource: 'Segunda Confissão Helvética Cap. XI; Confissão Belga Art. XIX'
+    },
+    orthodoxPerspective: {
+      definition: 'O dogma calcedoniano e ditelita defendido por São Máximo, o Confessor: Cristo possui duas vontades e operações naturais, unidas harmonicamente na Pessoa do Logos divino.',
+      primarySource: 'Concílio de Calcedônia (451 d.C.); Terceiro Concílio de Constantinopla (680 d.C.)'
+    },
+    relatedVerses: ['Fp 2:5-8', '1Tm 2:5', 'Hb 1:3', 'Cl 2:9']
   }
 ];
 

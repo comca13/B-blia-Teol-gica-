@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Flame, Eye, EyeOff, Layers, Settings2, Globe2 } from 'lucide-react';
+import { BookOpen, Flame, Eye, EyeOff, Layers, Settings2, Globe2, Search } from 'lucide-react';
 import { MainRoute } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -17,6 +17,7 @@ interface NavbarProps {
   onGoToHome: () => void;
   isNavHidden?: boolean;
   onNavigateRoute?: (route: MainRoute) => void;
+  onOpenSearch?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,7 +33,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   streak,
   onGoToHome,
   isNavHidden = false,
-  onNavigateRoute
+  onNavigateRoute,
+  onOpenSearch
 }) => {
   const isHidden = isFocusMode || isNavHidden;
 
@@ -132,6 +134,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Layers className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden md:inline">Painel de Estudo</span>
+            </button>
+          )}
+
+          {/* Botão de Pesquisa Global (Omnisearch / Cmd+K) */}
+          {onOpenSearch && !isFocusMode && (
+            <button
+              type="button"
+              onClick={onOpenSearch}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60 transition-all shadow-xs cursor-pointer"
+              title="Pesquisa Global Teológica (Cmd+K / Ctrl+K)"
+            >
+              <Search className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Buscar</span>
+              <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.2 bg-zinc-800 text-[10px] font-mono text-zinc-400 rounded border border-zinc-700">
+                ⌘K
+              </kbd>
             </button>
           )}
 
