@@ -1,6 +1,6 @@
 export type PlanType = 'chronological' | 'canonical';
 
-export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'PERFIL';
+export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'PERFIL' | 'GLOBAL_CONTEXT';
 
 export type ReadingTheme = 'light' | 'sepia' | 'dark';
 
@@ -639,4 +639,69 @@ export interface OrthodoxTheologianFigure {
   famousQuote?: string;
   keyWorks?: string[];
 }
+
+// ----------------------------------------------------
+// CONTEXTO HISTÓRICO GLOBAL E TRADIÇÃO
+// ----------------------------------------------------
+
+// 1. Sincronismo Histórico Mundial
+export interface WorldSyncEra {
+  id: string;
+  biblicalEpoch: string; // Ex: "O Êxodo e os Juízes (c. 1446 – 1050 a.C.)"
+  biblicalContext: string;
+  contemporaryCivilizations: {
+    region: 'Egito e Oriente Médio' | 'Ásia e Extremo Oriente' | 'Mundo Greco-Romano / Europa' | 'Américas / África';
+    civilization: string;
+    historicalMilestones: string;
+  }[];
+  philosophicalCulturalImpact: string;
+}
+
+// 2. Período Intertestamentário
+export interface SecondTempleSection {
+  id: string;
+  title: string;
+  period: string; // Ex: "332 – 167 a.C."
+  rulingPower: string;
+  summary: string;
+  keyEvents: string[];
+  religiousImpact: string;
+  biblicalConnections: string[]; // Conexões com Dn, Zc, Mt, etc.
+}
+
+// 3. Concílios Ecumênicos e Heresias
+export interface EcumenicalCouncil {
+  id: string;
+  number: number;
+  name: string;
+  year: number;
+  displayYear: string;
+  convenedBy: string;
+  location: string;
+  heresyAddressed: {
+    name: string;
+    proponent: string;
+    coreError: string;
+  };
+  orthodoxResponse: {
+    defenders: string[];
+    dogmaticFormulation: string;
+    greekLatinTerms: string[]; // Ex: ["Homoousios", "Theotokos"]
+  };
+  historicalImpact: string;
+}
+
+// 4. História dos Manuscritos e Traduções
+export interface ManuscriptTranslationMilestone {
+  id: string;
+  title: string;
+  category: 'Códice / Manuscrito' | 'Tradução Histórica' | 'Pioneiro / Mártir';
+  period: string;
+  figureOrOrigin: string;
+  description: string;
+  significance: string;
+  primaryLanguages: string[];
+  preservationLocation?: string;
+}
+
 

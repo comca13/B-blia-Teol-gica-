@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Flame, Eye, EyeOff, Layers, Settings2 } from 'lucide-react';
+import { BookOpen, Flame, Eye, EyeOff, Layers, Settings2, Globe2 } from 'lucide-react';
 import { MainRoute } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -16,6 +16,7 @@ interface NavbarProps {
   streak: number;
   onGoToHome: () => void;
   isNavHidden?: boolean;
+  onNavigateRoute?: (route: MainRoute) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,7 +31,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSettings,
   streak,
   onGoToHome,
-  isNavHidden = false
+  isNavHidden = false,
+  onNavigateRoute
 }) => {
   const isHidden = isFocusMode || isNavHidden;
 
@@ -130,6 +132,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Layers className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden md:inline">Painel de Estudo</span>
+            </button>
+          )}
+
+          {/* Botão de Mundo & Concílios (Contexto Histórico Global) */}
+          {onNavigateRoute && !isFocusMode && (
+            <button
+              type="button"
+              onClick={() => onNavigateRoute(activeRoute === 'GLOBAL_CONTEXT' ? 'BIBLIA' : 'GLOBAL_CONTEXT')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                activeRoute === 'GLOBAL_CONTEXT'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60'
+              }`}
+              title="Contexto Histórico Global, Segundo Templo e Concílios"
+            >
+              <Globe2 className={`w-3.5 h-3.5 ${activeRoute === 'GLOBAL_CONTEXT' ? 'text-white' : 'text-indigo-400'}`} />
+              <span className="hidden sm:inline">Mundo & Concílios</span>
             </button>
           )}
 

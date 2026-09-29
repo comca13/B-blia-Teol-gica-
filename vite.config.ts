@@ -115,7 +115,17 @@ export default defineConfig(() => {
             if (id.includes('src/data/theologicalComparisonData') || id.includes('src/data/theologicalSystemsData') || id.includes('src/data/confessionalDocumentsData')) {
               return 'data-theology';
             }
-            if (id.includes('src/data/churchHistoryData') || id.includes('src/data/catholicTraditionData') || id.includes('src/data/orthodoxTraditionData') || id.includes('src/data/reformationHistoryData') || id.includes('src/data/theologicalPeriods')) {
+            if (
+              id.includes('src/data/churchHistoryData') ||
+              id.includes('src/data/catholicTraditionData') ||
+              id.includes('src/data/orthodoxTraditionData') ||
+              id.includes('src/data/reformationHistoryData') ||
+              id.includes('src/data/theologicalPeriods') ||
+              id.includes('src/data/worldHistorySyncData') ||
+              id.includes('src/data/secondTempleHistoricalData') ||
+              id.includes('src/data/ecumenicalCouncilsData') ||
+              id.includes('src/data/manuscriptsTranslationsData')
+            ) {
               return 'data-history';
             }
             if (id.includes('src/data/biblicalTexts') || id.includes('src/data/bibleBooks') || id.includes('src/data/chronologicalPlan') || id.includes('src/data/canonicalPlan')) {

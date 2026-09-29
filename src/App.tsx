@@ -21,6 +21,7 @@ import { BibleView } from './views/BibleView';
 // Lazy loading views for instant initial paint and reduced bundle footprint
 const PlansView = lazy(() => import('./views/PlansView').then(m => ({ default: m.PlansView })));
 const HistoryView = lazy(() => import('./views/HistoryView').then(m => ({ default: m.HistoryView })));
+const GlobalContextView = lazy(() => import('./views/GlobalContextView').then(m => ({ default: m.GlobalContextView })));
 const ProfileView = lazy(() => import('./views/ProfileView').then(m => ({ default: m.ProfileView })));
 
 export default function App() {
@@ -248,6 +249,11 @@ export default function App() {
           navTitle: 'História da Igreja & Teologia',
           navSubtitle: 'Eras Patrística à Contemporânea, Credos e Sistemas'
         };
+      case 'GLOBAL_CONTEXT':
+        return {
+          navTitle: 'Mundo & Concílios',
+          navSubtitle: 'Sincronismos Mundiais, Segundo Templo e Manuscritos'
+        };
       case 'PERFIL':
         return {
           navTitle: userName || 'Perfil & Caderno Teológico',
@@ -281,6 +287,7 @@ export default function App() {
           setIsFocusMode(false);
         }}
         isNavHidden={isNavHidden}
+        onNavigateRoute={setActiveRoute}
       />
 
       {/* 2. Área Central de Visualização (pt-14 sm:pt-16 garante que a Navbar fixa não cubra as abas nem o conteúdo) */}
@@ -345,6 +352,12 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
+          </Suspense>
+        )}
+
+        {activeRoute === 'GLOBAL_CONTEXT' && (
+          <Suspense fallback={<ViewLoadingSkeleton label="Carregando Contexto Global e Concílios..." />}>
+            <GlobalContextView />
           </Suspense>
         )}
 
