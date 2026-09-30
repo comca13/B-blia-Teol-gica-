@@ -3,6 +3,7 @@ import { UserProgress, ReaderSettings as ReaderSettingsType, ReminderSettings, D
 import { PersonalNotes } from '../components/PersonalNotes';
 import { ReaderSettings } from '../components/ReaderSettings';
 import { PWAInstallButton } from '../components/PWAInstallButton';
+import { useAuth } from '../context/AuthContext';
 import { 
   User, 
   Flame, 
@@ -24,7 +25,11 @@ import {
   Sun,
   Scale,
   FileText,
-  Scroll
+  Scroll,
+  Cloud,
+  RefreshCw,
+  LogOut,
+  AlertCircle
 } from 'lucide-react';
 import { loadFavorites, removeFavorite, SavedFavoriteItem, FAVORITES_UPDATED_EVENT } from '../utils/favoritesStorage';
 
@@ -38,6 +43,7 @@ interface ProfileViewProps {
   onUpdateReminderSettings: (reminders: ReminderSettings) => void;
   currentDayReading: DayReading;
   onNavigateToFavorite?: (item: SavedFavoriteItem) => void;
+  onOpenPresentation?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -49,7 +55,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   reminderSettings,
   onUpdateReminderSettings,
   currentDayReading,
-  onNavigateToFavorite
+  onNavigateToFavorite,
+  onOpenPresentation
 }) => {
   const [activeTab, setActiveTab] = useState<'notebook' | 'favorites' | 'settings' | 'reminders'>('notebook');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -72,6 +79,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [reminderTime, setReminderTime] = useState(reminderSettings.time || '07:00');
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
 
+  const { user, signInWithGoogle, signOutUser, forceSync, syncState, lastSyncedAt, errorMessage } = useAuth();
   const percent = Math.round((progress.completedDays.length / 365) * 100);
 
   const handleSaveName = () => {
@@ -95,13 +103,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-6">
       
       {/* Profile & Metrics Header */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-zinc-900 to-zinc-950 border border-zinc-800 p-5 sm:p-7 shadow-xl">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-zinc-900 to-zinc-950 border border-zinc-800 p-5 sm:p-7 shadow-xl space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
           
           {/* User Info */}
           <div className="flex items-center gap-3.5">
-            <div className="w-14 h-14 rounded-2xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-xs shrink-0">
-              <User className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-2xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-xs shrink-0 overflow-hidden">
+              {user?.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt={user.displayName || userName} 
+                  className="w-full h-full object-cover" 
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <User className="w-7 h-7" />
+              )}
             </div>
 
             <div>
@@ -126,23 +143,36 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 ) : (
                   <div className="flex items-center gap-2">
                     <h2 className="font-serif text-xl sm:text-2xl font-bold text-stone-100">
-                      {userName || 'Leitor da Palavra'}
+                      {user?.displayName || userName || 'Leitor da Palavra'}
                     </h2>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingName(true)}
-                      className="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition-colors"
-                      title="Editar nome"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
+                    {!user && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingName(true)}
+                        className="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition-colors"
+                        title="Editar nome"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
 
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Plano {progress.planType === 'chronological' ? 'Histórico-Cronológico' : 'Canônico'} • 365 Dias
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-zinc-400">
+                  Plano {progress.planType === 'chronological' ? 'Histórico-Cronológico' : 'Canônico'} • 365 Dias
+                </p>
+                {user ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                    <Cloud className="w-2.5 h-2.5" /> Nuvem Ativa
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                    Local / Não Sincronizado
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -180,13 +210,116 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
 
         {/* Progress bar */}
-        <div className="mt-5">
+        <div>
           <div className="w-full bg-zinc-800/80 rounded-full h-2 overflow-hidden">
             <div 
               className="bg-gradient-to-r from-amber-600 to-yellow-400 h-full rounded-full transition-all duration-500"
               style={{ width: `${Math.max(percent, 1)}%` }}
             />
           </div>
+        </div>
+
+        {/* Google Cloud Account Status Bar */}
+        <div className="pt-2 border-t border-zinc-800/80">
+          {user ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                  <Cloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-stone-200">{user.email}</span>
+                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 font-medium">
+                      Conectado via Google
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400">
+                    {syncState === 'syncing' ? (
+                      <span className="text-amber-400 inline-flex items-center gap-1">
+                        <RefreshCw className="w-3 h-3 animate-spin" /> Sincronizando dados com a nuvem...
+                      </span>
+                    ) : (
+                      <span>Todas as suas marcações, anotações e favoritos estão salvos e sincronizados.</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => forceSync()}
+                  disabled={syncState === 'syncing'}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+                  title="Forçar sincronização com a nuvem agora"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncState === 'syncing' ? 'animate-spin text-amber-400' : ''}`} />
+                  <span>Sincronizar</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => signOutUser()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/50 text-red-300 hover:text-red-200 border border-red-800/40 text-xs font-semibold transition-all cursor-pointer"
+                  title="Desconectar conta Google deste dispositivo"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Desconectar</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-amber-950/30 via-zinc-950 to-zinc-950 border border-amber-500/30">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm font-bold text-stone-100 flex items-center gap-1.5">
+                    <Cloud className="w-4 h-4 text-amber-400" /> Conectar Conta do Google
+                  </span>
+                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
+                    Recomendado
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-300">
+                  Salve seu progresso de 365 dias, bloco de notas e marcadores para acessar em qualquer celular ou computador.
+                </p>
+                <p className="text-[11px] text-amber-400/90 font-medium">
+                  ✓ Suas anotações locais serão mescladas automaticamente com sua conta sem perdas.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => signInWithGoogle()}
+                disabled={syncState === 'syncing'}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs sm:text-sm shadow-md transition-all shrink-0 cursor-pointer disabled:opacity-50"
+              >
+                {syncState === 'syncing' ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Conectando...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#ffffff" d="M12 5c1.54 0 2.89.55 3.96 1.45l2.97-2.97C17.06 1.77 14.7 1 12 1 7.42 1 3.53 3.61 1.63 7.41l3.64 2.82C6.15 7.23 8.84 5 12 5z"/>
+                      <path fill="#ffffff" d="M23.49 12.28c0-.79-.07-1.54-.19-2.28H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58l3.65 2.84c2.14-1.97 3.37-4.88 3.37-8.65z"/>
+                      <path fill="#ffffff" d="M5.27 14.77c-.24-.71-.38-1.47-.38-2.27s.14-1.56.38-2.27L1.63 7.41C.59 9.48 0 11.67 0 14s.59 4.52 1.63 6.59l3.64-2.82z"/>
+                      <path fill="#ffffff" d="M12 23c3.24 0 5.95-1.08 7.93-2.91l-3.65-2.84c-1.07.72-2.45 1.15-4.28 1.15-3.16 0-5.85-2.23-6.73-5.23L1.63 16.59C3.53 20.39 7.42 23 12 23z"/>
+                    </svg>
+                    <span>Entrar com Google</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="mt-2 p-2.5 rounded-xl bg-red-950/60 border border-red-800/60 text-xs text-red-300 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
         </div>
       </section>
 
@@ -517,6 +650,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Opção Discreta de Rever Apresentação e Tour da Plataforma */}
+      {onOpenPresentation && (
+        <div className="pt-4 border-t border-zinc-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-zinc-400">
+          <div>
+            <span className="font-semibold text-stone-300">Conheça todos os recursos da plataforma:</span>
+            <p className="text-[11px] text-zinc-500">
+              Rever a visão geral da tese teológica, os 2 planos de leitura, o arsenal exegético e os concílios ecumênicos.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenPresentation}
+            className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-amber-400 hover:text-amber-300 border border-zinc-800 hover:border-amber-500/40 transition-all font-semibold shrink-0 cursor-pointer text-xs"
+          >
+            Rever Apresentação do Site
+          </button>
         </div>
       )}
 

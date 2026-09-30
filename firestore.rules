@@ -44,22 +44,11 @@ service cloud.firestore {
     // 2. COLEÇÕES PRIVADAS DE USUÁRIO (Apenas o próprio usuário autenticado)
     // ====================================================================
 
-    // Arquitetura Aninhada (/users/{userId}/...)
+    // Arquitetura de Usuário (/users/{userId}/...)
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      // Configurações do Leitor (tema, fontes, velocidades, etc.)
-      match /readerSettings/{settingId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Notas e Anotações Pessoais
-      match /personalNotes/{noteId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Progresso de Leitura Anual e Conclusões
-      match /readingProgress/{progressId} {
+      match /{allChildren=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }

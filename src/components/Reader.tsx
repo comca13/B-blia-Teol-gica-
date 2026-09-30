@@ -81,8 +81,6 @@ interface ReaderProps {
   isStudyDrawerOpen?: boolean;
   onToggleStudyDrawer?: () => void;
   onCloseStudyDrawer?: () => void;
-  isSettingsOpen?: boolean;
-  onToggleSettings?: () => void;
 }
 
 export const Reader: React.FC<ReaderProps> = React.memo(({
@@ -104,8 +102,6 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
   isStudyDrawerOpen: propIsStudyDrawerOpen,
   onToggleStudyDrawer: propOnToggleStudyDrawer,
   onCloseStudyDrawer,
-  isSettingsOpen: propIsSettingsOpen,
-  onToggleSettings: propOnToggleSettings
 }) => {
   const [chapters, setChapters] = useState<ScriptureChapter[]>([]);
   const [loadingScripture, setLoadingScripture] = useState<boolean>(true);
@@ -182,15 +178,7 @@ export const Reader: React.FC<ReaderProps> = React.memo(({
     }
   }, [onOpenBible, handleCloseStudyDrawer]);
 
-  const [internalShowSettingsDrawer, setInternalShowSettingsDrawer] = useState(false);
-  const showSettingsDrawer = propIsSettingsOpen !== undefined ? propIsSettingsOpen : internalShowSettingsDrawer;
-  const setShowSettingsDrawer = useCallback((val: boolean) => {
-    if (propOnToggleSettings) {
-      propOnToggleSettings();
-    } else {
-      setInternalShowSettingsDrawer(val);
-    }
-  }, [propOnToggleSettings]);
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
 
   const [noteText, setNoteText] = useState(personalNote);
   const [isNoteSaved, setIsNoteSaved] = useState(false);

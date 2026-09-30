@@ -38,8 +38,7 @@ interface BibleViewProps {
   readingMode: 'plan-day' | 'browse-books';
   onReadingModeChange: (mode: 'plan-day' | 'browse-books') => void;
   onSectionChange?: (title: string, subtitle?: string) => void;
-  isSettingsOpen?: boolean;
-  onToggleSettings?: () => void;
+
   targetBookNumber?: number;
   targetChapterNumber?: number;
   targetNonce?: number;
@@ -66,8 +65,6 @@ export const BibleView: React.FC<BibleViewProps> = React.memo(({
   readingMode,
   onReadingModeChange,
   onSectionChange,
-  isSettingsOpen,
-  onToggleSettings,
   targetBookNumber,
   targetChapterNumber,
   targetNonce
@@ -556,8 +553,6 @@ export const BibleView: React.FC<BibleViewProps> = React.memo(({
               isStudyDrawerOpen={isStudyDrawerOpen}
               onToggleStudyDrawer={onToggleStudyDrawer}
               onCloseStudyDrawer={onCloseStudyDrawer}
-              isSettingsOpen={isSettingsOpen}
-              onToggleSettings={onToggleSettings}
             />
           </motion.div>
         ) : (

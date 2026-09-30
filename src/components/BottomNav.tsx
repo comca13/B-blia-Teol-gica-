@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, CalendarDays, Landmark, Flame, Church, Sun, User } from 'lucide-react';
+import { BookOpen, CalendarDays, Landmark, User } from 'lucide-react';
 import { MainRoute } from '../types';
 
 interface BottomNavProps {

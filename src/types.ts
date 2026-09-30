@@ -1,6 +1,6 @@
 export type PlanType = 'chronological' | 'canonical';
 
-export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'PERFIL' | 'GLOBAL_CONTEXT';
+export type MainRoute = 'BIBLIA' | 'PLANOS' | 'HISTORIA' | 'PERFIL' | 'GLOBAL_CONTEXT' | 'APRESENTACAO';
 
 export type ReadingTheme = 'light' | 'sepia' | 'dark';
 

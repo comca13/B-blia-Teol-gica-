@@ -23,15 +23,22 @@ import { GlobalContextTab } from './views/GlobalContextView';
 import { SavedFavoriteItem } from './utils/favoritesStorage';
 import { parseScriptureReference } from './data/bibleBooks';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { CLOUD_SYNC_UPDATED_EVENT, pushCurrentStateToFirestore } from './services/userDataSync';
 
 // Lazy loading views for instant initial paint and reduced bundle footprint
 const PlansView = lazy(() => import('./views/PlansView').then(m => ({ default: m.PlansView })));
 const HistoryView = lazy(() => import('./views/HistoryView').then(m => ({ default: m.HistoryView })));
 const GlobalContextView = lazy(() => import('./views/GlobalContextView').then(m => ({ default: m.GlobalContextView })));
 const ProfileView = lazy(() => import('./views/ProfileView').then(m => ({ default: m.ProfileView })));
+const PresentationView = lazy(() => import('./views/PresentationView').then(m => ({ default: m.PresentationView })));
 
-export default function App() {
-  const [activeRoute, setActiveRoute] = useState<MainRoute>('BIBLIA');
+function AppContent() {
+  const { user } = useAuth();
+  const [activeRoute, setActiveRoute] = useState<MainRoute>(() => {
+    const visited = localStorage.getItem('cronos_first_visit_done');
+    return visited ? 'BIBLIA' : 'APRESENTACAO';
+  });
   const [progress, setProgress] = useState<UserProgress>(loadUserProgress());
   const [readerSettings, setReaderSettings] = useState<ReaderSettings>(loadReaderSettings());
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(loadReminderSettings());
@@ -144,7 +151,6 @@ export default function App() {
   const [selectedDayNumber, setSelectedDayNumber] = useState<number>(1);
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState<boolean>(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [bibleReadingMode, setBibleReadingMode] = useState<'plan-day' | 'browse-books'>('browse-books');
   const [bibleSectionInfo, setBibleSectionInfo] = useState<{ title: string; subtitle?: string }>({
     title: 'Gênesis 1',
@@ -156,7 +162,6 @@ export default function App() {
       const next = !prev;
       if (next) {
         setIsStudyDrawerOpen(false);
-        setIsSettingsOpen(false);
       }
       return next;
     });
@@ -170,9 +175,7 @@ export default function App() {
     setIsStudyDrawerOpen(false);
   }, []);
 
-  const handleToggleSettings = useCallback(() => {
-    setIsSettingsOpen(prev => !prev);
-  }, []);
+
 
   const handleSectionChange = useCallback((title: string, subtitle?: string) => {
     setBibleSectionInfo(prev => {
@@ -187,18 +190,40 @@ export default function App() {
   const currentPlanDays = progress.planType === 'chronological' ? CHRONOLOGICAL_PLAN : CANONICAL_PLAN;
   const currentReading = currentPlanDays[selectedDayNumber - 1] || currentPlanDays[0];
 
-  // Save progress on change
+  // Listen to remote changes when data is synchronized from Firestore
+  useEffect(() => {
+    const handleCloudSync = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const data = customEvent.detail;
+      if (data) {
+        if (data.progress) setProgress(data.progress);
+        if (data.settings) setReaderSettings(data.settings);
+        if (data.reminders) setReminderSettings(data.reminders);
+        if (data.userName) setUserName(data.userName);
+      }
+    };
+    window.addEventListener(CLOUD_SYNC_UPDATED_EVENT, handleCloudSync);
+    return () => window.removeEventListener(CLOUD_SYNC_UPDATED_EVENT, handleCloudSync);
+  }, []);
+
+  // Save progress on change & background sync to cloud if user is logged in
   useEffect(() => {
     saveUserProgress(progress);
-  }, [progress]);
+    if (user) {
+      pushCurrentStateToFirestore(user).catch(err => console.warn('Background sync progress failed:', err));
+    }
+  }, [progress, user]);
 
-  // Save settings on change
+  // Save settings on change & background sync to cloud
   useEffect(() => {
     saveReaderSettings(readerSettings);
+    if (user) {
+      pushCurrentStateToFirestore(user).catch(err => console.warn('Background sync settings failed:', err));
+    }
     // Dark theme support
     const root = document.documentElement;
     root.classList.add('dark');
-  }, [readerSettings]);
+  }, [readerSettings, user]);
 
   // Handle plan selection
   const handleSelectPlan = (newPlan: PlanType) => {
@@ -332,12 +357,17 @@ export default function App() {
   }, [activeRoute, selectedDayNumber, bibleReadingMode]);
 
   // Keep navigation visible if study drawer or settings are open
-  const isNavHidden = isScrolledDown && !isStudyDrawerOpen && !isSettingsOpen;
+  const isNavHidden = isScrolledDown && !isStudyDrawerOpen;
 
   // Dynamic Navbar Title & Subtitle based on Route
   const { navTitle, navSubtitle } = useMemo(() => {
     const percent = Math.round((progress.completedDays.length / 365) * 100);
     switch (activeRoute) {
+      case 'APRESENTACAO':
+        return {
+          navTitle: 'Cronos & Cânon 365',
+          navSubtitle: 'Apresentação & Guia Teológico da Plataforma'
+        };
       case 'BIBLIA':
         if (bibleReadingMode === 'browse-books' && bibleSectionInfo) {
           return {
@@ -402,7 +432,7 @@ export default function App() {
         onToggleFocusMode={handleToggleFocusMode}
         isStudyDrawerOpen={isStudyDrawerOpen}
         onToggleStudyDrawer={handleToggleStudyDrawer}
-        onToggleSettings={handleToggleSettings}
+
         streak={progress.streak}
         onGoToHome={() => {
           setActiveRoute('BIBLIA');
@@ -444,8 +474,7 @@ export default function App() {
                 isStudyDrawerOpen={isStudyDrawerOpen}
                 onToggleStudyDrawer={handleToggleStudyDrawer}
                 onCloseStudyDrawer={handleCloseStudyDrawer}
-                isSettingsOpen={isSettingsOpen}
-                onToggleSettings={handleToggleSettings}
+
                 readingMode={bibleReadingMode}
                 onReadingModeChange={setBibleReadingMode}
                 onSectionChange={handleSectionChange}
@@ -496,6 +525,22 @@ export default function App() {
               </Suspense>
             )}
 
+            {activeRoute === 'APRESENTACAO' && (
+              <Suspense fallback={<ViewLoadingSkeleton label="Carregando Apresentação..." />}>
+                <PresentationView
+                  onStartReading={() => {
+                    setActiveRoute('BIBLIA');
+                    setBibleReadingMode('browse-books');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onNavigateRoute={(route) => {
+                    setActiveRoute(route);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
+              </Suspense>
+            )}
+
             {activeRoute === 'PERFIL' && (
               <Suspense fallback={<ViewLoadingSkeleton label="Carregando Perfil e Caderno..." />}>
                 <ProfileView
@@ -508,6 +553,10 @@ export default function App() {
                   onUpdateReminderSettings={handleUpdateReminderSettings}
                   currentDayReading={currentReading}
                   onNavigateToFavorite={handleNavigateFavorite}
+                  onOpenPresentation={() => {
+                    setActiveRoute('APRESENTACAO');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                 />
               </Suspense>
             )}
@@ -515,19 +564,21 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* 3. Barra de Navegação Inferior Flutuante (animada suavemente via CSS translate em Focus Mode e auto-hide no scroll) */}
-      <BottomNav
-        isFocusMode={isFocusMode}
-        isNavHidden={isNavHidden}
-        activeRoute={activeRoute}
-        onRouteChange={(route) => {
-          if (route === 'BIBLIA') {
-            setBibleReadingMode('browse-books');
-          }
-          setActiveRoute(route);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
+      {/* 3. Barra de Navegação Inferior Flutuante (oculta durante a Apresentação pré-acesso e animada suavemente) */}
+      {activeRoute !== 'APRESENTACAO' && (
+        <BottomNav
+          isFocusMode={isFocusMode}
+          isNavHidden={isNavHidden}
+          activeRoute={activeRoute}
+          onRouteChange={(route) => {
+            if (route === 'BIBLIA') {
+              setBibleReadingMode('browse-books');
+            }
+            setActiveRoute(route);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
 
       {/* Indicador de Conexão Offline */}
       <OfflineIndicator />
@@ -540,5 +591,13 @@ export default function App() {
       />
 
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
