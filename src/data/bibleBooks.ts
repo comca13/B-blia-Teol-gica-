@@ -107,3 +107,175 @@ export const getBookByNumber = (num: number): BibleBookInfo => {
 
 export const OLD_TESTAMENT_BOOKS = ALL_BIBLE_BOOKS.filter(b => b.testament === 'AT');
 export const NEW_TESTAMENT_BOOKS = ALL_BIBLE_BOOKS.filter(b => b.testament === 'NT');
+
+export const normalizeBibleStr = (str: string): string => {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+};
+
+export interface ParsedScripture {
+  bookNumber: number;
+  chapter: number;
+  bookName: string;
+}
+
+/**
+ * Analisa uma referência bíblica em texto (ex: "Malaquias 3-4", "João 10:22", "Lucas 2:1-7", "1 Samuel 16:7")
+ * e localiza o número canônico do livro (1 a 66) e o capítulo inicial.
+ */
+export function parseScriptureReference(reference: string): ParsedScripture | null {
+  if (!reference) return null;
+  const clean = reference.trim();
+
+  // Expressão regular para capturar: [Prefixo numérico opcional 1-3] + [Nome do Livro] + [Espaço] + [Capítulo]
+  const match = clean.match(/^([1-3]?\s*[\p{L}\s]+?)\s+(\d+)(?:[:\-\s]|$)/iu);
+  if (!match) {
+    // Tenta encontrar apenas pelo nome do livro se não tiver capítulo explícito (ex: "Esdras e Neemias")
+    const words = clean.split(/[\s,;]+/);
+    for (const word of words) {
+      const normWord = normalizeBibleStr(word);
+      const found = ALL_BIBLE_BOOKS.find(b => 
+        normalizeBibleStr(b.namePt) === normWord || 
+        normalizeBibleStr(b.abbrevPt) === normWord || 
+        normalizeBibleStr(b.queryPt) === normWord
+      );
+      if (found) {
+        return { bookNumber: found.number, chapter: 1, bookName: found.namePt };
+      }
+    }
+    return null;
+  }
+
+  const rawBook = normalizeBibleStr(match[1]);
+  const chapter = parseInt(match[2], 10) || 1;
+
+  // Busca o livro exato
+  const found = ALL_BIBLE_BOOKS.find(b => {
+    const pt = normalizeBibleStr(b.namePt);
+    const abbrevPt = normalizeBibleStr(b.abbrevPt);
+    const qPt = normalizeBibleStr(b.queryPt);
+    const en = normalizeBibleStr(b.nameEn);
+    const abbrevEn = normalizeBibleStr(b.abbrevEn);
+
+    return pt === rawBook || 
+           abbrevPt === rawBook || 
+           qPt === rawBook ||
+           en === rawBook ||
+           abbrevEn === rawBook;
+  }) || ALL_BIBLE_BOOKS.find(b => {
+    const pt = normalizeBibleStr(b.namePt);
+    return pt.startsWith(rawBook) || rawBook.startsWith(pt);
+  });
+
+  if (found) {
+    return {
+      bookNumber: found.number,
+      chapter: Math.min(Math.max(1, chapter), found.totalChapters),
+      bookName: found.namePt
+    };
+  }
+
+  return null;
+}
+
+export interface BibleSearchResult {
+  queryText: string;
+  isJustChapter: boolean;
+  book: BibleBookInfo | null;
+  chapter: number | null;
+  allMatches: BibleBookInfo[];
+}
+
+/**
+ * Busca flexível de livros e capítulos, insensível a acentos/maiúsculas,
+ * suportando termos como 'genesis', 'joao 3', 'joão 3:16', 'sl 23', 'salmo 23', '1 co 13', 'cap 5' ou '23'.
+ */
+export function parseBibleSearch(query: string, currentBookNumber: number = 1): BibleSearchResult {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return {
+      queryText: '',
+      isJustChapter: false,
+      book: null,
+      chapter: null,
+      allMatches: ALL_BIBLE_BOOKS
+    };
+  }
+
+  const norm = normalizeBibleStr(trimmed);
+
+  // 1. Verifica se digitou apenas número do capítulo ou 'cap X' ou 'capítulo X'
+  const justChapterMatch = norm.match(/^(?:cap(?:itulo)?\.?\s*)?(\d+)$/i);
+  if (justChapterMatch) {
+    const chapNum = parseInt(justChapterMatch[1], 10);
+    const currBook = ALL_BIBLE_BOOKS.find(b => b.number === currentBookNumber) || ALL_BIBLE_BOOKS[0];
+    return {
+      queryText: norm,
+      isJustChapter: true,
+      chapter: Math.min(Math.max(1, chapNum), currBook.totalChapters),
+      book: currBook,
+      allMatches: [currBook]
+    };
+  }
+
+  // 2. Verifica se digitou '[Livro] [Capítulo](:[Versículo])?'
+  const bookChapMatch = norm.match(/^([1-3]?\s*[\p{L}\s]+?)\s+(\d+)(?:[:\-\s]|$)/iu);
+  let bookQuery = norm;
+  let targetChapter: number | null = null;
+
+  if (bookChapMatch) {
+    bookQuery = bookChapMatch[1].trim();
+    targetChapter = parseInt(bookChapMatch[2], 10);
+  }
+
+  // Filtra livros canônicos
+  const matches = ALL_BIBLE_BOOKS.filter(b => {
+    const pt = normalizeBibleStr(b.namePt);
+    const ab = normalizeBibleStr(b.abbrevPt);
+    const en = normalizeBibleStr(b.nameEn);
+    const qPt = normalizeBibleStr(b.queryPt);
+    const grp = normalizeBibleStr(b.group);
+
+    // Aliases frequentes: "salmo" -> Salmos (19), "cantares" -> Cânticos (22)
+    const isSalmo = (bookQuery === 'salmo' || bookQuery.startsWith('salm')) && b.number === 19;
+    const isCantares = (bookQuery === 'cantar' || bookQuery.startsWith('cantar')) && b.number === 22;
+
+    return pt.includes(bookQuery) ||
+           ab === bookQuery ||
+           qPt.includes(bookQuery) ||
+           en.includes(bookQuery) ||
+           grp.includes(bookQuery) ||
+           isSalmo ||
+           isCantares;
+  });
+
+  // Ordena para que os mais exatos fiquem no topo
+  matches.sort((a, b) => {
+    const aPt = normalizeBibleStr(a.namePt);
+    const bPt = normalizeBibleStr(b.namePt);
+    const aAb = normalizeBibleStr(a.abbrevPt);
+    const bAb = normalizeBibleStr(b.abbrevPt);
+
+    if (aPt === bookQuery || aAb === bookQuery) return -1;
+    if (bPt === bookQuery || bAb === bookQuery) return 1;
+    if (aPt.startsWith(bookQuery) && !bPt.startsWith(bookQuery)) return -1;
+    if (bPt.startsWith(bookQuery) && !aPt.startsWith(bookQuery)) return 1;
+    return 0;
+  });
+
+  const topBook = matches[0] || null;
+  const finalChapter = (targetChapter && topBook) 
+    ? Math.min(Math.max(1, targetChapter), topBook.totalChapters)
+    : targetChapter;
+
+  return {
+    queryText: bookQuery,
+    isJustChapter: false,
+    book: topBook,
+    chapter: finalChapter,
+    allMatches: matches
+  };
+}

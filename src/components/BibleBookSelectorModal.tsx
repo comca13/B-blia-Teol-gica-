@@ -3,7 +3,8 @@ import {
   ALL_BIBLE_BOOKS, 
   BibleBookInfo, 
   OLD_TESTAMENT_BOOKS, 
-  NEW_TESTAMENT_BOOKS 
+  NEW_TESTAMENT_BOOKS,
+  parseBibleSearch
 } from '../data/bibleBooks';
 import { 
   Search, 
@@ -24,6 +25,7 @@ interface BibleBookSelectorModalProps {
   onSelectBook: (bookNumber: number, chapter: number) => void;
   currentBookNumber?: number;
   currentChapter?: number;
+  initialBookForChapterSelect?: number | null;
 }
 
 type TestamentTab = 'ALL' | 'AT' | 'NT';
@@ -33,7 +35,8 @@ export const BibleBookSelectorModal: React.FC<BibleBookSelectorModalProps> = ({
   onClose,
   onSelectBook,
   currentBookNumber = 1,
-  currentChapter = 1
+  currentChapter = 1,
+  initialBookForChapterSelect = null
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState<TestamentTab>('ALL');
@@ -42,17 +45,23 @@ export const BibleBookSelectorModal: React.FC<BibleBookSelectorModalProps> = ({
   
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus search input when modal opens
+  // Focus search input or set selected book when modal opens
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 100);
+      if (initialBookForChapterSelect) {
+        const found = ALL_BIBLE_BOOKS.find(b => b.number === initialBookForChapterSelect) || null;
+        setBookForChapterSelect(found);
+      } else {
+        setBookForChapterSelect(null);
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 100);
+      }
     } else {
       setSearchTerm('');
       setBookForChapterSelect(null);
     }
-  }, [isOpen]);
+  }, [isOpen, initialBookForChapterSelect]);
 
   // Handle ESC key to close or go back to books list
   useEffect(() => {
@@ -79,15 +88,14 @@ export const BibleBookSelectorModal: React.FC<BibleBookSelectorModalProps> = ({
     return ['ALL', ...groups];
   }, [selectedTab]);
 
+  // Parsed search result using robust normalized parser
+  const searchResult = useMemo(() => {
+    return parseBibleSearch(searchTerm, currentBookNumber);
+  }, [searchTerm, currentBookNumber]);
+
   // Filter books according to search and filters
   const filteredBooks = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim();
-    
-    // Check if user typed something like "João 3" or "Sl 23"
-    const matchWithChapter = term.match(/^([1-3]?\s?[a-záàâãéèêíïóôõöúçñ\s]+?)\s*(\d+)$/i);
-    const bookSearchTerm = matchWithChapter ? matchWithChapter[1].trim() : term;
-
-    return ALL_BIBLE_BOOKS.filter(book => {
+    return searchResult.allMatches.filter(book => {
       // Filter by testament
       if (selectedTab === 'AT' && book.testament !== 'AT') return false;
       if (selectedTab === 'NT' && book.testament !== 'NT') return false;
@@ -95,26 +103,9 @@ export const BibleBookSelectorModal: React.FC<BibleBookSelectorModalProps> = ({
       // Filter by group
       if (selectedGroup !== 'ALL' && book.group !== selectedGroup) return false;
 
-      // Filter by search query
-      if (!term) return true;
-
-      const pt = book.namePt.toLowerCase();
-      const en = book.nameEn.toLowerCase();
-      const abbrevPt = book.abbrevPt.toLowerCase();
-      const abbrevEn = book.abbrevEn.toLowerCase();
-      const numStr = book.number.toString();
-      const groupStr = book.group.toLowerCase();
-
-      return (
-        pt.includes(bookSearchTerm) ||
-        en.includes(bookSearchTerm) ||
-        abbrevPt === bookSearchTerm ||
-        abbrevEn === bookSearchTerm ||
-        numStr === bookSearchTerm ||
-        groupStr.includes(bookSearchTerm)
-      );
+      return true;
     });
-  }, [searchTerm, selectedTab, selectedGroup]);
+  }, [searchResult, selectedTab, selectedGroup]);
 
   // Split into Old and New Testament for categorized presentation
   const oldTestamentFiltered = useMemo(() => {
@@ -126,13 +117,7 @@ export const BibleBookSelectorModal: React.FC<BibleBookSelectorModalProps> = ({
   }, [filteredBooks]);
 
   // Detected chapter from search term (e.g. "Lucas 15" -> targetChapter = 15)
-  const targetChapterFromSearch = useMemo(() => {
-    const match = searchTerm.trim().match(/\s+(\d+)$/);
-    if (match) {
-      return parseInt(match[1], 10);
-    }
-    return null;
-  }, [searchTerm]);
+  const targetChapterFromSearch = searchResult.chapter;
 
   const handleSelectBookItem = (book: BibleBookInfo) => {
     if (targetChapterFromSearch) {

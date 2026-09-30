@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   X, 
@@ -25,8 +26,11 @@ import { ecumenicalCouncilsData } from '../data/ecumenicalCouncilsData';
 import { manuscriptsTranslationsData } from '../data/manuscriptsTranslationsData';
 import { THEOLOGICAL_COMPARISONS } from '../data/theologicalComparisonData';
 import { getAllDogmaticTerms } from '../data/dogmaticTermsDictionary';
+import { ALL_BIBLE_BOOKS, parseBibleSearch } from '../data/bibleBooks';
 
 export type SearchCategoryName = 
+  | 'Passagem Bíblica'
+  | 'Livro Bíblico'
   | 'Termo do Glossário' 
   | 'Termo Dogmático'
   | 'A Reforma Protestante' 
@@ -41,6 +45,8 @@ export interface GlobalSearchTarget {
   historySubTab?: string;
   globalContextTab?: 'world-sync' | 'second-temple' | 'councils' | 'manuscripts';
   targetId?: string;
+  targetBookNumber?: number;
+  targetChapterNumber?: number;
 }
 
 export interface SearchItem {
@@ -93,6 +99,24 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   // Global index compiled from all datasets
   const allSearchableItems: SearchItem[] = useMemo(() => {
     const items: SearchItem[] = [];
+
+    // 0. Livros da Bíblia Sagrada (66 Livros Canônicos)
+    ALL_BIBLE_BOOKS.forEach(b => {
+      items.push({
+        id: `bible-book-${b.number}`,
+        category: 'Livro Bíblico',
+        title: b.namePt,
+        subtitle: `${b.testament === 'AT' ? 'Antigo Testamento' : 'Novo Testamento'} • ${b.totalChapters} capítulos • ${b.group}`,
+        badge: `${b.abbrevPt} • Livro ${b.number}`,
+        snippet: `Livro canônico das Sagradas Escrituras: ${b.namePt} (${b.nameEn}). Contém ${b.totalChapters} capítulos no gênero ${b.group}.`,
+        searchText: `${b.namePt} ${b.nameEn} ${b.abbrevPt} ${b.abbrevEn} ${b.queryPt} ${b.queryEn} ${b.group} biblia livro sagrado escrituras ${b.testament === 'AT' ? 'antigo testamento at' : 'novo testamento nt'}`,
+        target: {
+          route: 'BIBLIA',
+          targetBookNumber: b.number,
+          targetChapterNumber: 1
+        }
+      });
+    });
 
     // 1. Glossário Teológico
     theologicalGlossaryData.forEach(item => {
@@ -260,20 +284,52 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
   // Filter items matching query
   const filteredResults = useMemo(() => {
-    if (!query.trim()) {
+    const rawTrimmed = query.trim();
+    if (!rawTrimmed) {
       // Suggest high-value initial items
-      return allSearchableItems.slice(0, 12);
+      return allSearchableItems.slice(0, 14);
     }
 
-    const q = normalize(query.trim());
-    return allSearchableItems.filter(item => {
+    const q = normalize(rawTrimmed);
+
+    // Detecção dinâmica de passagem bíblica com livro e capítulo (ex: "João 3", "Sl 23", "Romanos 8", "1 Co 13")
+    const parsedBible = parseBibleSearch(rawTrimmed);
+    let directScriptureItem: SearchItem | null = null;
+
+    if (parsedBible.book && parsedBible.chapter) {
+      directScriptureItem = {
+        id: `direct-scripture-${parsedBible.book.number}-${parsedBible.chapter}`,
+        category: 'Passagem Bíblica',
+        title: `${parsedBible.book.namePt} ${parsedBible.chapter}`,
+        subtitle: `Passagem das Escrituras • ${parsedBible.book.testament === 'AT' ? 'Antigo Testamento' : 'Novo Testamento'}`,
+        badge: `${parsedBible.book.abbrevPt} ${parsedBible.chapter}`,
+        snippet: `Abrir imediatamente o leitor bíblico no capítulo ${parsedBible.chapter} do livro de ${parsedBible.book.namePt} (${parsedBible.book.group}).`,
+        searchText: `${rawTrimmed} ${parsedBible.book.namePt} ${parsedBible.chapter}`,
+        target: {
+          route: 'BIBLIA',
+          targetBookNumber: parsedBible.book.number,
+          targetChapterNumber: parsedBible.chapter
+        }
+      };
+    }
+
+    const matched = allSearchableItems.filter(item => {
       return normalize(item.title).includes(q) || normalize(item.searchText).includes(q);
-    }).slice(0, 30);
+    });
+
+    if (directScriptureItem) {
+      // Evita duplicatas se já houver item com mesmo ID
+      return [directScriptureItem, ...matched.filter(m => m.id !== directScriptureItem!.id)].slice(0, 30);
+    }
+
+    return matched.slice(0, 30);
   }, [allSearchableItems, query]);
 
   // Group filtered results by category
   const groupedResults = useMemo(() => {
     const groups: Record<SearchCategoryName, SearchItem[]> = {
+      'Passagem Bíblica': [],
+      'Livro Bíblico': [],
       'Termo do Glossário': [],
       'Termo Dogmático': [],
       'A Reforma Protestante': [],
@@ -328,10 +384,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     onNavigateToTarget(item.target);
   };
 
-  if (!isOpen) return null;
-
   const getCategoryIcon = (category: SearchCategoryName) => {
     switch (category) {
+      case 'Passagem Bíblica': return <BookOpen className="w-4 h-4 text-amber-400" />;
+      case 'Livro Bíblico': return <BookOpen className="w-4 h-4 text-amber-300" />;
       case 'Termo do Glossário': return <BookOpen className="w-4 h-4 text-amber-400" />;
       case 'Termo Dogmático': return <Sparkles className="w-4 h-4 text-amber-300" />;
       case 'A Reforma Protestante': return <Flame className="w-4 h-4 text-blue-400" />;
@@ -345,25 +401,35 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-10 sm:pt-20 px-3 sm:px-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div 
-        className="relative w-full max-w-3xl bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-zinc-100 ring-1 ring-white/10"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Search Bar Input */}
-        <div className="p-3.5 sm:p-4 border-b border-zinc-800 bg-zinc-950 flex items-center gap-3 shrink-0">
-          <Search className="w-5 h-5 text-amber-400 shrink-0" />
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-50 flex items-start justify-center pt-10 sm:pt-20 px-3 sm:px-4 bg-black/80 backdrop-blur-md"
+          onClick={onClose}
+          role="dialog"
+          aria-modal="true"
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.96, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: -6 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full max-w-3xl bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-zinc-100 ring-1 ring-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Search Bar Input */}
+            <div className="p-3.5 sm:p-4 border-b border-zinc-800 bg-zinc-950 flex items-center gap-3 shrink-0">
+              <Search className="w-5 h-5 text-amber-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Pesquisar em toda a Bíblia Teológica (Lutero, Calcedônia, Theosis, Graça, Qumran, Trento...)"
+            placeholder="Pesquisar passagens bíblicas, doutrinas, concílios ou manuscritos (ex: João 3, Romanos 8, Lutero, Calcedônia)..."
             className="w-full bg-transparent text-sm sm:text-base text-stone-100 placeholder-zinc-500 focus:outline-none"
           />
           {query && (
@@ -475,7 +541,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             </kbd>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

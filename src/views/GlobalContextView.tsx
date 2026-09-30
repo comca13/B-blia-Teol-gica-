@@ -23,6 +23,7 @@ import { manuscriptsTranslationsData } from '../data/manuscriptsTranslationsData
 import { theologicalGlossaryData } from '../data/theologicalVocabularyData';
 import { TheologicalGlossaryTerm } from '../types';
 import { TheologicalTermModal } from '../components/TheologicalTermModal';
+import { BiblicalConnectionCard } from '../components/BiblicalConnectionCard';
 import { isFavorite, toggleFavorite, FAVORITES_UPDATED_EVENT } from '../utils/favoritesStorage';
 
 export type GlobalContextTab = 'world-sync' | 'second-temple' | 'councils' | 'manuscripts';
@@ -334,19 +335,42 @@ export const GlobalContextView: React.FC<GlobalContextViewProps> = ({
                         {item.religiousImpact}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      <span className="text-stone-500 font-semibold mr-1">Conexões Bíblicas:</span>
-                      {item.biblicalConnections.map((conn, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => onNavigateToPassage?.(conn)}
-                          className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/60 hover:bg-indigo-200 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-300 font-mono transition-colors cursor-pointer"
-                        >
-                          {conn}
-                        </button>
-                      ))}
-                    </div>
+                    {item.detailedConnections && item.detailedConnections.length > 0 ? (
+                      <div className="space-y-2.5 pt-2 border-t border-stone-200/60 dark:border-stone-800">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            Conexões Bíblicas Explicadas ({item.detailedConnections.length})
+                          </span>
+                          <span className="text-[11px] text-stone-400 hidden sm:inline">
+                            Clique para expandir a explicação teológica ou ler o capítulo
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {item.detailedConnections.map((conn) => (
+                            <BiblicalConnectionCard
+                              key={conn.id}
+                              connection={conn}
+                              onNavigateToPassage={onNavigateToPassage}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        <span className="text-stone-500 font-semibold mr-1">Conexões Bíblicas:</span>
+                        {item.biblicalConnections.map((conn, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => onNavigateToPassage?.(conn)}
+                            className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/60 hover:bg-indigo-200 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-300 font-mono transition-colors cursor-pointer"
+                          >
+                            {conn}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

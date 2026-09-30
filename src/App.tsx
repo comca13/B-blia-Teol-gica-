@@ -21,6 +21,8 @@ import { GlobalSearchModal, GlobalSearchTarget } from './components/GlobalSearch
 import { HistorySubTab } from './views/HistoryView';
 import { GlobalContextTab } from './views/GlobalContextView';
 import { SavedFavoriteItem } from './utils/favoritesStorage';
+import { parseScriptureReference } from './data/bibleBooks';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Lazy loading views for instant initial paint and reduced bundle footprint
 const PlansView = lazy(() => import('./views/PlansView').then(m => ({ default: m.PlansView })));
@@ -42,6 +44,9 @@ export default function App() {
   const [historyTargetTopicId, setHistoryTargetTopicId] = useState<string | undefined>(undefined);
   const [globalContextTab, setGlobalContextTab] = useState<GlobalContextTab | undefined>(undefined);
   const [globalContextTargetId, setGlobalContextTargetId] = useState<string | undefined>(undefined);
+  const [targetBibleBook, setTargetBibleBook] = useState<number | undefined>(undefined);
+  const [targetBibleChapter, setTargetBibleChapter] = useState<number | undefined>(undefined);
+  const [targetBibleNonce, setTargetBibleNonce] = useState<number>(0);
 
   // Keyboard shortcut listener for Cmd+K / Ctrl+K
   useEffect(() => {
@@ -75,6 +80,14 @@ export default function App() {
       }
       setGlobalContextTargetId(target.targetId);
       setActiveRoute('GLOBAL_CONTEXT');
+    } else if (target.route === 'BIBLIA') {
+      const bookNumber = target.targetBookNumber !== undefined ? target.targetBookNumber : 1;
+      const chapterNumber = target.targetChapterNumber !== undefined ? target.targetChapterNumber : 1;
+      setTargetBibleBook(bookNumber);
+      setTargetBibleChapter(chapterNumber);
+      setBibleReadingMode('browse-books');
+      setTargetBibleNonce(prev => prev + 1);
+      setActiveRoute('BIBLIA');
     } else {
       setActiveRoute(target.route);
     }
@@ -364,6 +377,19 @@ export default function App() {
     }
   }, [activeRoute, bibleReadingMode, bibleSectionInfo, currentReading, selectedDayNumber, progress, userName]);
 
+  // Navegação direta com abertura de livro e capítulo no leitor bíblico
+  const handleNavigateToPassage = useCallback((passageRef: string) => {
+    const parsed = parseScriptureReference(passageRef);
+    if (parsed) {
+      setTargetBibleBook(parsed.bookNumber);
+      setTargetBibleChapter(parsed.chapter);
+      setTargetBibleNonce(prev => prev + 1);
+    }
+    setBibleReadingMode('browse-books');
+    setActiveRoute('BIBLIA');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-stone-100 flex flex-col font-sans selection:bg-amber-900 selection:text-amber-100">
       
@@ -388,103 +414,105 @@ export default function App() {
         onOpenSearch={() => setIsSearchOpen(true)}
       />
 
-      {/* 2. Área Central de Visualização (pt-14 sm:pt-16 garante que a Navbar fixa não cubra as abas nem o conteúdo) */}
-      <main className={`flex-1 ${isFocusMode ? 'pt-2' : 'pt-14 sm:pt-16'} transition-[padding] duration-200`}>
-        {activeRoute === 'BIBLIA' && (
-          <BibleView
-            currentDayReading={currentReading}
-            isCompleted={progress.completedDays.includes(selectedDayNumber)}
-            isBookmarked={progress.bookmarks.includes(selectedDayNumber)}
-            onToggleComplete={handleToggleComplete}
-            onToggleBookmark={handleToggleBookmark}
-            onPrevDay={handlePrevDay}
-            onNextDay={handleNextDay}
-            onBackToDashboard={() => setActiveRoute('PLANOS')}
-            settings={readerSettings}
-            onUpdateSettings={setReaderSettings}
-            personalNote={progress.notes[selectedDayNumber] || ''}
-            onSaveNote={handleSaveNote}
-            isFocusMode={isFocusMode}
-            onToggleFocusMode={handleToggleFocusMode}
-            isStudyDrawerOpen={isStudyDrawerOpen}
-            onToggleStudyDrawer={handleToggleStudyDrawer}
-            onCloseStudyDrawer={handleCloseStudyDrawer}
-            isSettingsOpen={isSettingsOpen}
-            onToggleSettings={handleToggleSettings}
-            readingMode={bibleReadingMode}
-            onReadingModeChange={setBibleReadingMode}
-            onSectionChange={handleSectionChange}
-          />
-        )}
+      {/* 2. Área Central de Visualização com Transições Suaves (framer-motion) */}
+      <main className={`flex-1 ${isFocusMode ? 'pt-2' : 'pt-14 sm:pt-16'} transition-[padding] duration-200 overflow-x-hidden`}>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeRoute}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full flex-1"
+          >
+            {activeRoute === 'BIBLIA' && (
+              <BibleView
+                currentDayReading={currentReading}
+                isCompleted={progress.completedDays.includes(selectedDayNumber)}
+                isBookmarked={progress.bookmarks.includes(selectedDayNumber)}
+                onToggleComplete={handleToggleComplete}
+                onToggleBookmark={handleToggleBookmark}
+                onPrevDay={handlePrevDay}
+                onNextDay={handleNextDay}
+                onBackToDashboard={() => setActiveRoute('PLANOS')}
+                settings={readerSettings}
+                onUpdateSettings={setReaderSettings}
+                personalNote={progress.notes[selectedDayNumber] || ''}
+                onSaveNote={handleSaveNote}
+                isFocusMode={isFocusMode}
+                onToggleFocusMode={handleToggleFocusMode}
+                isStudyDrawerOpen={isStudyDrawerOpen}
+                onToggleStudyDrawer={handleToggleStudyDrawer}
+                onCloseStudyDrawer={handleCloseStudyDrawer}
+                isSettingsOpen={isSettingsOpen}
+                onToggleSettings={handleToggleSettings}
+                readingMode={bibleReadingMode}
+                onReadingModeChange={setBibleReadingMode}
+                onSectionChange={handleSectionChange}
+                targetBookNumber={targetBibleBook}
+                targetChapterNumber={targetBibleChapter}
+                targetNonce={targetBibleNonce}
+              />
+            )}
 
-        {activeRoute === 'PLANOS' && (
-          <Suspense fallback={<ViewLoadingSkeleton label="Carregando Planos de Leitura..." />}>
-            <PlansView
-              activePlan={progress.planType}
-              onSelectPlan={handleSelectPlan}
-              progress={progress}
-              days={currentPlanDays}
-              onToggleComplete={handleToggleComplete}
-              onSelectDay={(day) => {
-                setSelectedDayNumber(day);
-                setBibleReadingMode('plan-day');
-                setActiveRoute('BIBLIA');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              currentDayNumber={selectedDayNumber}
-              onSelectThematicPassage={(passageRef) => {
-                setBibleReadingMode('browse-books');
-                setActiveRoute('BIBLIA');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-          </Suspense>
-        )}
+            {activeRoute === 'PLANOS' && (
+              <Suspense fallback={<ViewLoadingSkeleton label="Carregando Planos de Leitura..." />}>
+                <PlansView
+                  activePlan={progress.planType}
+                  onSelectPlan={handleSelectPlan}
+                  progress={progress}
+                  days={currentPlanDays}
+                  onToggleComplete={handleToggleComplete}
+                  onSelectDay={(day) => {
+                    setSelectedDayNumber(day);
+                    setBibleReadingMode('plan-day');
+                    setActiveRoute('BIBLIA');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  currentDayNumber={selectedDayNumber}
+                  onSelectThematicPassage={handleNavigateToPassage}
+                />
+              </Suspense>
+            )}
 
-        {activeRoute === 'HISTORIA' && (
-          <Suspense fallback={<ViewLoadingSkeleton label="Carregando História da Igreja e Teologia..." />}>
-            <HistoryView
-              initialTab={historySubTab}
-              targetFigureId={historyTargetFigureId}
-              targetTopicId={historyTargetTopicId}
-              onNavigateToPassage={(passageRef) => {
-                setBibleReadingMode('browse-books');
-                setActiveRoute('BIBLIA');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-          </Suspense>
-        )}
+            {activeRoute === 'HISTORIA' && (
+              <Suspense fallback={<ViewLoadingSkeleton label="Carregando História da Igreja e Teologia..." />}>
+                <HistoryView
+                  initialTab={historySubTab}
+                  targetFigureId={historyTargetFigureId}
+                  targetTopicId={historyTargetTopicId}
+                  onNavigateToPassage={handleNavigateToPassage}
+                />
+              </Suspense>
+            )}
 
-        {activeRoute === 'GLOBAL_CONTEXT' && (
-          <Suspense fallback={<ViewLoadingSkeleton label="Carregando Contexto Global e Concílios..." />}>
-            <GlobalContextView 
-              initialTab={globalContextTab}
-              initialExpandedId={globalContextTargetId}
-              onNavigateToPassage={(passageRef) => {
-                setBibleReadingMode('browse-books');
-                setActiveRoute('BIBLIA');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-          </Suspense>
-        )}
+            {activeRoute === 'GLOBAL_CONTEXT' && (
+              <Suspense fallback={<ViewLoadingSkeleton label="Carregando Contexto Global e Concílios..." />}>
+                <GlobalContextView 
+                  initialTab={globalContextTab}
+                  initialExpandedId={globalContextTargetId}
+                  onNavigateToPassage={handleNavigateToPassage}
+                />
+              </Suspense>
+            )}
 
-        {activeRoute === 'PERFIL' && (
-          <Suspense fallback={<ViewLoadingSkeleton label="Carregando Perfil e Caderno..." />}>
-            <ProfileView
-              userName={userName}
-              onUpdateUserName={handleUpdateUserName}
-              progress={progress}
-              settings={readerSettings}
-              onUpdateSettings={setReaderSettings}
-              reminderSettings={reminderSettings}
-              onUpdateReminderSettings={handleUpdateReminderSettings}
-              currentDayReading={currentReading}
-              onNavigateToFavorite={handleNavigateFavorite}
-            />
-          </Suspense>
-        )}
+            {activeRoute === 'PERFIL' && (
+              <Suspense fallback={<ViewLoadingSkeleton label="Carregando Perfil e Caderno..." />}>
+                <ProfileView
+                  userName={userName}
+                  onUpdateUserName={handleUpdateUserName}
+                  progress={progress}
+                  settings={readerSettings}
+                  onUpdateSettings={setReaderSettings}
+                  reminderSettings={reminderSettings}
+                  onUpdateReminderSettings={handleUpdateReminderSettings}
+                  currentDayReading={currentReading}
+                  onNavigateToFavorite={handleNavigateFavorite}
+                />
+              </Suspense>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* 3. Barra de Navegação Inferior Flutuante (animada suavemente via CSS translate em Focus Mode e auto-hide no scroll) */}

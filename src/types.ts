@@ -297,6 +297,16 @@ export interface HistoricalPeriod {
   biblicalTrackSummary?: string;
   empiresTrackSummary?: string;
   literatureTrackSummary?: string;
+  detailedConnections?: DetailedBiblicalConnection[];
+}
+
+export interface DetailedBiblicalConnection {
+  id: string;
+  referenceDisplay: string;    // Ex: "Últimos oráculos de Malaquias"
+  scriptureReference: string;  // Ex: "Malaquias 3-4" (para abrir na Bíblia)
+  title: string;               // Ex: "O Fechamento da Profecia no AT"
+  explanation: string;         // Explicação histórica detalhada
+  theologicalContext?: string; // Contexto teológico e cumprimento messiânico
 }
 
 export type ChurchHistoryEra = 
@@ -683,7 +693,8 @@ export interface SecondTempleSection {
   summary: string;
   keyEvents: string[];
   religiousImpact: string;
-  biblicalConnections: string[]; // Conexões com Dn, Zc, Mt, etc.
+  biblicalConnections: string[]; // Conexões com Dn, Zc, Mt, etc. (retrocompatibilidade)
+  detailedConnections?: DetailedBiblicalConnection[];
 }
 
 // 3. Concílios Ecumênicos e Heresias

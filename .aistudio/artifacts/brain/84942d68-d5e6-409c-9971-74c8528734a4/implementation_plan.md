@@ -1,96 +1,81 @@
-# Plano de Implementação: Popover e Dicionário de Termos Dogmáticos e Teológicos
+# Plano de Implementação: Explicações Detalhadas para Conexões Bíblicas no Contexto Histórico e Global
 
 ## User Review & Confirmação de Diretrizes
 > [!IMPORTANT]
 > **Decisões Alinhadas com o Usuário:**
-> - **Interface & Interação**: Cada termo dogmático formulado nos marcos históricos abrirá um **popover / cartão rápido flutuante** posicionado junto ao clique, permitindo leitura instantânea sem sair do contexto do estudo.
-> - **Conteúdo & Estrutura**: Cada verbete conterá:
->   1. *Termo original* (em Grego, Latim, Alemão ou Português com transliteração/etimologia);
->   2. *Tradução literal*;
->   3. *Definição concisa & Sentido teológico no contexto histórico*;
->   4. *Aplicação bíblica ou marco gerador*.
-> - **Integração Global**: Todos os termos farão parte do índice de busca global (`GlobalSearchModal` - Cmd+K) e estarão acessíveis tanto nos cards da História da Igreja quanto no vocabulário geral.
+> 1. **Visualização Interativa**: Cada conexão bíblica será exibida como um **cartão expansível interativo** com explicação histórica e teológica direta, sem necessidade de navegar para outra tela para entender o porquê daquela referência.
+> 2. **Leitura Integrada nas Escrituras**: Ao clicar na conexão ou no botão dedicado do cartão, o aplicativo abrirá imediatamente o capítulo/versículo correspondente no **Leitor Bíblico**.
+> 3. **Seções Contempladas**:
+>    - **Segundo Templo** (`GlobalContextView` e aba secundária de História): as 4 grandes fases (Persa Tardia, Helenística, Hasmoneia e Romana).
+>    - **Linha do Tempo das Eras Bíblicas** (`HistoryView`): todos os 10 períodos bíblicos históricos (Criação/Patriarcas, Êxodo, Conquista/Juízes, Monarquia Unida, Reino Dividido, Exílio Babilônico, Restauração Pós-Exílica, Segundo Templo, Vida de Cristo e Igreja Primitiva).
 
 ---
 
-## 1. Mapeamento & Base de Dados Canônica (`src/data/dogmaticTermsDictionary.ts`)
-Criaremos um compêndio tipado cobrindo integralmente os **132 termos dogmáticos** catalogados nos marcos históricos das 5 Eras (Patrística, Medieval, Reforma, Pós-Reforma e Contemporânea):
+## 1. Modelo de Dados e Enriquecimento das Conexões (`src/types.ts` & `src/data/`)
 
-### Estrutura do Modelo de Dados
+### Tipagem Estruturada (`src/types.ts`)
 ```typescript
-export interface DogmaticTermExplanation {
-  term: string;               // Ex: "Homoousios (Consubstancial)"
-  normalizedKey: string;      // Ex: "homoousios"
-  originalLanguage?: string;  // Ex: "Grego: ὁμοούσιος"
-  literalMeaning: string;     // Ex: "Da mesma substância / essência"
-  theologicalSense: string;   // Ex: "Doutrina nicena de que o Filho é coeterno e coigual com o Pai..."
-  historicalOrigin: string;   // Ex: "I Concílio de Niceia (325 d.C.)"
-  keyScripture?: string;      // Ex: "Jo 10:30; Hb 1:3"
+export interface DetailedBiblicalConnection {
+  id: string;
+  referenceDisplay: string;    // Ex: "Últimos oráculos de Malaquias"
+  scriptureReference: string;  // Ex: "Malaquias 3-4" (usado para navegação direta na Bíblia)
+  title: string;               // Ex: "O Encerramento da Voz Profética no AT"
+  explanation: string;         // Explicação histórica do porquê e como o texto se conecta ao período
+  historicalRelevance: string; // O papel deste texto para a teologia do povo judaico da época
 }
 ```
 
-### Exemplos do Compêndio (Cobrindo as 5 Eras):
-1. **Patrística**:
-   - `Homoousios`: Grego ὁμοούσιος — "Da mesma substância". O Filho possui a mesma essência divina do Pai.
-   - `Anakephalaiosis`: Grego ἀνακεφαλαίωσις — "Recapitulação". Cristo restaura e reconduz a criação caída como novo Adão.
-   - `União Hipostática`: Duas naturezas perfeitas (divina e humana) unidas em uma só Pessoa divina (prosōpon/hypostasis).
-   - `Theotokos`: Grego Θεοτόκος — "Genitora de Deus / Mãe de Deus". Título cristológico dado a Maria para proteger a divindade de Cristo encarnado.
-   - `Perichoresis`: Grego περιχώρησις — "Interpenetração mútua das três Pessoas da Santíssima Trindade sem confusão".
-2. **Medieval**:
-   - `Filioque`: Latim — "E do Filho". A procedência eterna do Espírito Santo do Pai e do Filho no Credo Ocidental.
-   - `Satisfactio Vicaria`: Latim — Reparação infinita à honra e justiça violadas de Deus paga pelo sacrifício vicário de Cristo.
-   - `Gratia non tollit naturam, sed perficit`: "A graça não anula a natureza humana, mas a cura e aperfeiçoa".
-   - `Fides quaerens intellectum`: "A fé em busca de compreensão racional submissa à revelação divina".
-3. **Reforma**:
-   - `Sola Scriptura`: A Escritura Sagrada como única regra infalível de fé e prática (*Norma normans non normata*).
-   - `Iustitia Imputata`: A justiça alienígena e perfeita de Cristo creditada na conta forense do pecador pela fé.
-   - `Anfechtung`: Agonia espiritual existencial de desespero diante da santidade divina que conduz à cruz.
-   - `Memorialismo`: A Ceia do Senhor como memorial visível e espiritual da morte vicária de Cristo.
-4. **Pós-Reforma & Despertares**:
-   - `TULIP`: Os cinco pontos da soteriologia reformada de Dort (Depravação Total, Eleição Incondicional, Expiação Particular, Graça Irresistível, Perseverança dos Santos).
-   - `Foedus Gratiae`: O Pacto da Graça estabelecido por Deus em Cristo com os eleitos.
-   - `Praxis Pietatis`: O exercício prático da santidade, oração e piedade ativa na vida diária.
-   - `Graça Preveniente`: A ação universal do Espírito Santo que liberta a vontade para crer ou resistir ao Evangelho.
-5. **Contemporânea**:
-   - `Batismo no Espírito Santo`: Revestimento de poder pentecostal com evidência inicial de línguas e capacitação evangelística.
-   - `Confessando a Cristo (Barmen)`: O senhorio exclusivo de Jesus Cristo contra as pretensões totalitárias do Estado.
-   - `Evangelização Integral`: Proclamação da Palavra de Deus indissoluvelmente unida à responsabilidade social cristã (Pacto de Lausanne).
+### Enriquecimento das Fases do Segundo Templo (`src/data/secondTempleHistoricalData.ts`)
+Substituir a lista simples de strings por dados aprofundados para cada conexão:
+1. **Época Persa Tardia (c. 430 – 332 a.C.)**:
+   - `Malaquias 3-4`: O fechamento do cânon profético, a denúncia contra o sacerdócio corrupto e a promessa do envio de Elias (cumprida em João Batista).
+   - `Esdras e Neemias`: A reconstrução dos muros, a leitura pública da Torá sob Esdras e o isolamento dos samaritanos no Monte Gerizim.
+   - `Daniel 8:1-4`: A profecia da transição dos impérios — o carneiro de dois chifres representando o Império Medo-Persa antes de ser derrubado pelo bode grego.
+2. **Conquista de Alexandre e Helenização (332 – 167 a.C.)**:
+   - `Daniel 8 e 11`: O cumprimento impressionante da profecia do "chifre notável" (Alexandre, o Grande) e a divisão do império em quatro dinastias (diádocos).
+   - `1 e 2 Macabeus`: Contexto histórico da profanação do altar por Antíoco IV Epifânio e a resistência armada dos piedosos (Hasidim).
+   - `Mateus 24:15`: Jesus citando a "abominação da desolação" de Daniel como protótipo e alerta para a invasão e destruição de Jerusalém em 70 d.C.
+3. **Revolta dos Macabeus e Dinastia Hasmoneia (167 – 63 a.C.)**:
+   - `João 10:22`: A presença de Jesus no Templo durante a Festa da Dedicação (Hanukkah), memorial da purificação do santuário pelos macabeus em 164 a.C.
+   - `Mateus 3:7`: O surgimento e consolidação das seitas religiosas (Fariseus separatistas e Saduceus sacerdotal-aristocráticos) originadas durante a dinastia hasmoneia.
+4. **Dominação Romana e Herodes (63 a.C. – 4 a.C.)**:
+   - `Lucas 2:1-2`: O censo imperial decretado por César Augusto sob o governador Quirino, cumprindo providencialmente Miqueias 5:2 em Belém.
+   - `Mateus 2:1-18`: A loucura paranoica de Herodes, o Grande, ao ordenar o massacre das crianças em Belém para eliminar o recém-nascido "Rei dos Judeus".
+
+### Enriquecimento da Linha do Tempo das Eras Bíblicas (`src/data/theologicalPeriods.ts`)
+Adicionar conexões bíblicas detalhadas e explicadas em cada uma das 10 grandes eras bíblicas (Gênesis ao Apocalipse), explicando as passagens-chave em seu contexto geopolítico mundial.
 
 ---
 
-## 2. Componente de UI: Popover Flutuante Interativo (`src/components/DogmaticTermPopover.tsx`)
+## 2. Componente de UI: Cartão Expansível de Conexão Bíblica (`BiblicalConnectionCard.tsx`)
 
-Criaremos um popover elegante, ancorado ao botão do termo clicado com fechamento inteligente (ao clicar fora, no 'X', ou pressionar `Esc`):
-- **Cores & Estilo**: Fundo em `bg-zinc-950/95`, borda refinada em `border-amber-500/40`, sombra profunda `shadow-2xl shadow-black/80`.
-- **Cabeçalho**: Nome do termo, badge do idioma original (*Grego*, *Latim*, *Hebraico*, etc.) e botão de fechar.
-- **Corpo**:
-  - *Tradução Literal*: Em destaque tipográfico dourado/âmbar.
-  - *Sentido Teológico & Dogmático*: Texto conciso e rigoroso explicando a formulação e o porquê de ter sido defendida.
-  - *Origem Histórica & Passagem Bíblica*: Link clicável que permite abrir o texto sagrado diretamente no leitor bíblico.
-
----
-
-## 3. Integração nos Cards da História da Igreja (`ChurchHistoryCard.tsx`)
-
-No `ChurchHistoryCard`:
-- Transformar os badges de termos dogmáticos em botões interativos que acionam o popover posicionado sobre o termo ou em cartão modal leve.
-- Ícone indicador discreto (`Sparkles` ou `HelpCircle`) para o usuário saber que o termo é consultável.
-- Ao clicar no termo, o popover abre suavemente com animação `animate-in fade-in zoom-in-95 duration-150`.
+Criar o componente reutilizável `src/components/BiblicalConnectionCard.tsx`:
+- **Estado Recolhido**:
+  - Badge em destaque com ícone do Livro Sagrado (`BookOpen`), referência da passagem bíblica e chevron indicador de expansão.
+  - Botão de leitura direta ("Ler na Bíblia ➔").
+- **Estado Expandido**:
+  - Título do evento bíblico-histórico correlato.
+  - Explicação contextual clara e rigorosa de 1-2 parágrafos.
+  - Destaque para a *Relevância Histórico-Teológica*.
+  - Botão interativo proeminente: `Abrir [Referência] no Leitor Bíblico`.
 
 ---
 
-## 4. Integração na Pesquisa Global (`GlobalSearchModal.tsx`)
+## 3. Integração nos Módulos do Aplicativo
 
-- Indexar todos os verbetes de `DOGMATIC_TERMS_DICTIONARY` na busca Omnisearch (`Cmd+K`).
-- Ao buscar por "Homoousios", "Filioque", "TULIP", etc., o resultado aparecerá na categoria `Termo Dogmático`, levando o leitor diretamente ao marco correspondente ou abrindo o popover com a explicação.
+1. **`GlobalContextView.tsx` (Segundo Templo)**:
+   - Substituir a lista estática de botões simples pelo novo grid de `BiblicalConnectionCard`.
+2. **`HistoryView.tsx` (Sub-aba Segundo Templo & Linha do Tempo Bíblica)**:
+   - Atualizar a exibição das fases do Segundo Templo e das Eras Bíblicas para renderizar as conexões enriquecidas com seus cartões expansíveis e navegação integrada.
 
 ---
 
-## 5. Plano de Verificação
+## 4. Plano de Verificação
 
-1. **Validação de Cobertura de Dados**:
-   - Script automatizado testando se 100% dos 132 termos encontrados nos 33 eventos possuem verbetes definidos no dicionário.
-2. **Teste de UI e Posicionamento**:
-   - Clicar em termos de diferentes eras (ex: *Homoousios* em Niceia 325, *Filioque* em 1054, *Anfechtung* em 1517, *TULIP* em 1618, *Pacto de Lausanne* em 1974) e validar a abertura do popover sem falha visual.
-3. **Teste de Verificação de Tipagem e Build**:
-   - Executar `lint_applet` e `compile_applet` para assegurar build sem erros.
+1. **Teste de UI e Expansão**:
+   - Abrir o módulo Contexto Global -> Segundo Templo e verificar se cada cartão de conexão expande suavemente.
+   - Conferir se a explicação teológica e histórica está legível, sem cortes e com contraste perfeito no tema escuro.
+2. **Teste de Navegação Bíblica**:
+   - Clicar no botão "Ler na Bíblia" de uma conexão (ex.: *João 10:22*, *Daniel 8*, *Malaquias 3-4*) e certificar que o Leitor Bíblico abre o livro e capítulo exato.
+3. **Validação de Build**:
+   - Executar `lint_applet` e `compile_applet` garantindo integridade de tipos e ausência de erros.

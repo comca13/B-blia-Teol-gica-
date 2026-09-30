@@ -60,6 +60,7 @@ interface BibleReaderProps {
   isStudyDrawerOpen?: boolean;
   onToggleStudyDrawer?: () => void;
   onCloseStudyDrawer?: () => void;
+  targetNonce?: number;
 }
 
 export const BibleReader: React.FC<BibleReaderProps> = ({
@@ -75,7 +76,8 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   onBookChapterChange,
   isStudyDrawerOpen: propIsStudyDrawerOpen,
   onToggleStudyDrawer: propOnToggleStudyDrawer,
-  onCloseStudyDrawer: propOnCloseStudyDrawer
+  onCloseStudyDrawer: propOnCloseStudyDrawer,
+  targetNonce
 }) => {
   const [language, setLanguage] = useState<'pt' | 'en'>('pt');
   const [bookNumber, setBookNumber] = useState<number>(initialBookNumber || 1); // 1 = Gênesis
@@ -84,7 +86,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync when initialBookNumber or initialChapter change
+  // Sync when initialBookNumber, initialChapter or external navigation targetNonce change
   useEffect(() => {
     if (initialBookNumber && initialBookNumber >= 1 && initialBookNumber <= 66) {
       setBookNumber(initialBookNumber);
@@ -92,11 +94,22 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     if (initialChapter && initialChapter >= 1) {
       setChapter(initialChapter);
     }
-  }, [initialBookNumber, initialChapter]);
+  }, [initialBookNumber, initialChapter, targetNonce]);
 
-  // Notify parent of book and chapter changes
+  // Notify parent of book and chapter changes only when they actually change
+  const lastNotifiedRef = useRef<{ book: number; chapter: number }>({
+    book: initialBookNumber || 1,
+    chapter: initialChapter || 1
+  });
+
   useEffect(() => {
-    onBookChapterChange?.(bookNumber, chapter);
+    if (
+      lastNotifiedRef.current.book !== bookNumber ||
+      lastNotifiedRef.current.chapter !== chapter
+    ) {
+      lastNotifiedRef.current = { book: bookNumber, chapter };
+      onBookChapterChange?.(bookNumber, chapter);
+    }
   }, [bookNumber, chapter, onBookChapterChange]);
 
   // Reading preferences

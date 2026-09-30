@@ -38,6 +38,8 @@ import { confessionalDocumentsData, DOCUMENT_CATEGORY_META } from '../data/confe
 import { TheologicalDivergenceView } from '../components/TheologicalDivergenceView';
 import { ChurchHistoryCard } from '../components/ChurchHistoryCard';
 import { TheologicalTermModal } from '../components/TheologicalTermModal';
+import { BiblicalConnectionCard } from '../components/BiblicalConnectionCard';
+import { secondTempleHistoricalData } from '../data/secondTempleHistoricalData';
 import { TheologicalGlossaryTerm } from '../types';
 import { Layers, X } from 'lucide-react';
 
@@ -129,6 +131,21 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   const subPhases: IntertestamentalSubPhase[] = intertestamentalPeriod?.subPhases || [];
   const [activePhaseIndex, setActivePhaseIndex] = useState<number>(0);
   const currentPhase = subPhases[activePhaseIndex] || subPhases[0];
+
+  // Conexões bíblicas detalhadas da fase do Segundo Templo
+  const phaseDetailedConnections = useMemo(() => {
+    if (!currentPhase) return [];
+    const map: Record<string, string> = {
+      'persian-late': 'persian-era',
+      'hellenistic-seleucid': 'hellenistic-era',
+      'maccabean-hasmonean': 'hasmonean-revolt',
+      'roman-conquest-herod': 'roman-domination',
+      'jewish-sects-development': 'hasmonean-revolt'
+    };
+    const sectionId = map[currentPhase.id] || 'persian-era';
+    const section = secondTempleHistoricalData.find(s => s.id === sectionId);
+    return section?.detailedConnections || [];
+  }, [currentPhase]);
 
   // Selected Creed
   const selectedCreed = useMemo(() => {
@@ -947,6 +964,30 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                   </ul>
                 </div>
               )}
+
+              {/* Conexões Bíblicas Explicadas da Fase */}
+              {phaseDetailedConnections && phaseDetailedConnections.length > 0 && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950 border border-zinc-800/90 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      Conexões Bíblicas Explicadas nesta Fase ({phaseDetailedConnections.length})
+                    </h4>
+                    <span className="text-[11px] text-zinc-400 hidden sm:inline">
+                      Clique para expandir a explicação ou abrir o capítulo na Bíblia
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {phaseDetailedConnections.map(conn => (
+                      <BiblicalConnectionCard
+                        key={conn.id}
+                        connection={conn}
+                        onNavigateToPassage={onNavigateToPassage}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -954,7 +995,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 
       {/* 5. LINHA DO TEMPO BÍBLICA */}
       {activeTab === 'biblical-timeline' && (
-        <div className="space-y-3 animate-in fade-in duration-200">
+        <div className="space-y-4 animate-in fade-in duration-200">
           {HISTORICAL_PERIODS.map(period => (
             <div 
               key={period.id}
@@ -981,9 +1022,33 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               </p>
 
               {period.worldContextSummary && (
-                <p className="text-xs text-amber-400/90 font-medium">
+                <p className="text-xs text-amber-400/90 font-medium mb-3">
                   <strong>Panorama Mundial:</strong> {period.worldContextSummary}
                 </p>
+              )}
+
+              {/* Conexões Bíblicas Explicadas da Era */}
+              {period.detailedConnections && period.detailedConnections.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-zinc-800/80 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      Conexões Bíblicas Explicadas ({period.detailedConnections.length})
+                    </span>
+                    <span className="text-[11px] text-zinc-400 hidden sm:inline">
+                      Clique para expandir a explicação ou abrir o capítulo na Bíblia
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {period.detailedConnections.map((conn) => (
+                      <BiblicalConnectionCard
+                        key={conn.id}
+                        connection={conn}
+                        onNavigateToPassage={onNavigateToPassage}
+                      />
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           ))}

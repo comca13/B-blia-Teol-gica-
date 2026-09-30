@@ -43,6 +43,32 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         event: 'Código de Leis de Hamurabi estabelece parâmetros jurídicos idênticos às práticas descritas nas narrativas de Jacó e Labão em Padã-Arã.',
         archaeologyRef: 'Estela de Diorito do Código de Hamurabi (Museu do Louvre)'
       }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-creation-fall',
+        referenceDisplay: 'Gênesis 1-3 (Protoevangelho)',
+        scriptureReference: 'Gênesis 3:15',
+        title: 'A Criação, a Queda e a Promessa do Redentor',
+        explanation: 'Deus cria o cosmos pelo poder da Sua Palavra e coloca o homem no Éden. Após a desobediência original, Deus proclama em Gênesis 3:15 a promessa-mãe de toda a Bíblia (o Protoevangelho): da descendência da mulher nasceria o Salvador que esmagaria a cabeça da serpente.',
+        theologicalContext: 'O ponto de partida de toda a teologia da redenção e da aliança messiânica.'
+      },
+      {
+        id: 'conn-abrahamic-covenant',
+        referenceDisplay: 'Gênesis 12:1-3; 15 (Aliança Abraâmica)',
+        scriptureReference: 'Gênesis 15:1-6',
+        title: 'O Chamado de Abraão e a Aliança Eterna',
+        explanation: 'Durante o renascimento urbano da 3ª Dinastia de Ur, Deus chama Abrão para peregrinar rumo a Canaã. Deus firma com ele um pacto incondicional: sua semente seria tão numerosa quanto as estrelas e nele todas as famílias da Terra seriam benditas.',
+        theologicalContext: 'O fundamento bíblico da justificação pela fé: "Abrão creu no Senhor, e isso lhe foi imputado para justiça".'
+      },
+      {
+        id: 'conn-job-redeemer',
+        referenceDisplay: 'Jó 1-2; 19:25 (A Fé nas Planícies Antigas)',
+        scriptureReference: 'Jó 19:25-27',
+        title: 'O Sofrimento do Justo e a Certeza do Redentor Vivo',
+        explanation: 'Ambientado no estilo de vida patriarcal das planícies de Uz, o livro de Jó desvenda o embate cósmico e o sofrimento humano sem resposta aparente, culminando na confissão triunfal da imortalidade e do Advogado eterno perante Deus.',
+        theologicalContext: 'Testemunho arcaico primordial da esperança na ressurreição corpórea e na intervenção do Redentor (Goel).'
+      }
     ]
   },
   {
@@ -79,6 +105,32 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         empire: 'XIX Dinastia Egípcia (Faraó Merneptá)',
         event: 'Inscrição triunfal militar de campanha militar em Canaã contendo a primeira menção extrabíblica direta e explícita ao povo de "Israel".',
         archaeologyRef: 'Estela de Israel / Estela de Merneptá (Museu Egípcio do Cairo)'
+      }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-passover-exodus',
+        referenceDisplay: 'Êxodo 12:1-14 (A Páscoa de Libertação)',
+        scriptureReference: 'Êxodo 12:1-14',
+        title: 'O Cordeiro da Páscoa e o Juízo sobre os Deuses do Egito',
+        explanation: 'Deus liberta Israel da escravidão egípcia mediante o sangue do cordeiro aspergido nos umbrais das portas. A praga da morte dos primogênitos atinge a casa do Faraó e demonstra a futilidade dos falsos deuses egípcios perante o Deus vivo.',
+        theologicalContext: 'O protótipo máximo da redenção cristã: "Cristo, nosso Cordeiro pascal, já foi sacrificado por nós" (1Co 5:7).'
+      },
+      {
+        id: 'conn-sinai-covenant',
+        referenceDisplay: 'Êxodo 20:1-17 (O Decálogo no Sinai)',
+        scriptureReference: 'Êxodo 20:1-17',
+        title: 'A Lei Moral e a Aliança do Sinai',
+        explanation: 'No Sinai coberto de fumaça e trovões, Deus entrega a Moisés as duas tábuas dos Dez Mandamentos. O pacto delineia a santidade moral de Israel como um povo sacerdotal exclusivo consagrado ao Senhor.',
+        theologicalContext: 'Revelação do padrão imutável da justiça de Deus e pedagogia que conduz a Cristo (Gl 3:24).'
+      },
+      {
+        id: 'conn-kadesh-wandering',
+        referenceDisplay: 'Números 14:1-25 (A Crise em Cades-Barneia)',
+        scriptureReference: 'Números 14:1-25',
+        title: 'A Incredulidade e os 40 Anos de Provação no Deserto',
+        explanation: 'Diante do relatório atemorizante de dez dos doze espias, Israel se revolta contra Moisés e rejeita a entrada em Canaã. Deus sentencia a geração rebelde a peregrinar 40 anos no deserto árido até a sua consumação.',
+        theologicalContext: 'Advertência solene retomada no Salmo 95 e em Hebreus 3-4 sobre o perigo do coração incrédulo.'
       }
     ]
   },
@@ -117,6 +169,32 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         event: 'Batalha do Delta: Ramsés III repele os Povos do Mar; sobreviventes filisteus instalam-se na costa sudoeste de Canaã (Gaza, Asdode, Ascalom, Gate e Ecrom).',
         archaeologyRef: 'Relevos monumentais do Templo de Medinet Habu'
       }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-jericho-conquest',
+        referenceDisplay: 'Josué 6:1-21 (A Tomada de Jericó)',
+        scriptureReference: 'Josué 6:1-21',
+        title: 'A Queda de Jericó e a Posse da Terra Prometida',
+        explanation: 'Sob a liderança de Josué e as ordens do Capitão do Exército de Javé, as muralhas colossais de Jericó caem ao sonido do shofar e ao clamor do povo, evidenciando que a posse de Canaã foi um ato milagroso da soberania de Deus.',
+        theologicalContext: 'Demonstração do descanso prometido e da fidelidade absoluta de Deus ao pacto abraâmico.'
+      },
+      {
+        id: 'conn-judges-cycle',
+        referenceDisplay: 'Juízes 2:11-19 (O Ciclo Espiral dos Juízes)',
+        scriptureReference: 'Juízes 2:11-19',
+        title: 'O Padrão Trágico: Pecado, Opressão, Clamor e Libertação',
+        explanation: 'O texto bíblico resume a dinâmica de mais de três séculos: cada geração pós-Josué abandonava o Senhor para servir aos baalins cananeus, sofria invasões de povos vizinhos, clamava em agonia e Deus suscitava juízes libertadores (Débora, Gideão, Sansão).',
+        theologicalContext: 'Alerta sobre a fragilidade humana e apelo à necessidade de um Rei santo e definitivo.'
+      },
+      {
+        id: 'conn-ruth-lineage',
+        referenceDisplay: 'Rute 4:13-22 (A Redenção Messiânica)',
+        scriptureReference: 'Rute 4:13-22',
+        title: 'O Resgatador Boaz e a Linhagem Real de Davi',
+        explanation: 'No período conturbado dos juízes, a fé humilde da moabita Rute e a fidelidade redentora de Boaz em Belém preservam a genealogia de onde brotaria o rei Davi e o Salvador Jesus.',
+        theologicalContext: 'A inclusão graciosa dos gentios no plano eterno da redenção messiânica.'
+      }
     ]
   },
   {
@@ -153,6 +231,32 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         empire: 'Reino de Israel e Fenícia de Tiro',
         event: 'Salomão e o Rei Hirão de Tiro estabelecem aliança comercial: madeira de cedro do Líbano e artífices fenícios erguem o Primeiro Templo no Monte Moriá.',
         archaeologyRef: 'Minas de cobre de Salomão no Vale de Timna e portões de seis câmaras em Gezer, Hazor e Megido'
+      }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-davidic-covenant',
+        referenceDisplay: '2 Samuel 7:8-17 (Aliança Davídica)',
+        scriptureReference: '2 Samuel 7:8-17',
+        title: 'A Promessa Incondicional do Trono Eterno',
+        explanation: 'Deus estabelece com Davi uma aliança que define toda a escatologia bíblica: o Senhor edificaria para Davi uma dinastia perpétua, e do seu fruto nasceria o Filho cujo cetro e reino nunca teriam fim.',
+        theologicalContext: 'O fundamento de todo o título e esperança do Messias, o "Filho de Davi".'
+      },
+      {
+        id: 'conn-temple-dedication',
+        referenceDisplay: '1 Reis 8:22-53 (Dedicação do Templo)',
+        scriptureReference: '1 Reis 8:22-53',
+        title: 'A Shekinah de Glória e a Morada de Deus entre os Homens',
+        explanation: 'Salomão conclui o Templo suntuoso no Monte Moriá e a nuvem da presença de Deus (a Shekinah) enche o Santo dos Santos, demonstrando a condescendência graciosa do Altíssimo.',
+        theologicalContext: 'Prefiguração de Cristo, o verdadeiro Templo habitando entre nós (Jo 1:14; 2:19-21).'
+      },
+      {
+        id: 'conn-messianic-psalms',
+        referenceDisplay: 'Salmos 2 & 110 (Salmos Messiânicos Régios)',
+        scriptureReference: 'Salmos 110:1-4',
+        title: 'O Rei Messiânico e Sacerdote Segundo a Ordem de Melquisedeque',
+        explanation: 'Davi profetiza sobre seu Senhor soberano ("Disse o Senhor ao meu Senhor: Assenta-te à minha direita"), unindo no Messias as funções régia e sacerdotal eterna.',
+        theologicalContext: 'O texto do Antigo Testamento mais citado pelos autores do Novo Testamento.'
       }
     ]
   },
@@ -204,6 +308,32 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         event: 'Batalha de Carquêmis: a Babilônia esmaga a coalizão egípcio-assíria; primeira deportação de cativos judeus a Babilônia (Daniel e seus amigos).',
         archaeologyRef: 'Crônica Babilônica (BM 21946) registrando a vitória no rio Eufrates'
       }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-divided-schism',
+        referenceDisplay: '1 Reis 12:1-24 (O Cisma das Tribos)',
+        scriptureReference: '1 Reis 12:1-24',
+        title: 'A Divisão do Reino e os Bezerros de Jeroboão',
+        explanation: 'A soberba opressora de Roboão causa a secessão das dez tribos do norte sob Jeroboão. Temendo que o povo voltasse a adorar em Jerusalém, Jeroboão estabelece o culto idolátrico a bezerros de ouro em Dã e Betel, selando a ruína espiritual do norte.',
+        theologicalContext: 'O perigo da religião de conveniência política e a violação do segundo mandamento.'
+      },
+      {
+        id: 'conn-fall-of-samaria',
+        referenceDisplay: '2 Reis 17:1-23 (A Queda de Samaria)',
+        scriptureReference: '2 Reis 17:1-23',
+        title: 'A Destruição do Reino do Norte pela Máquina Assíria',
+        explanation: 'Em 722 a.C., após os alertas proféticos ignorados de Amós e Oséias, os exércitos neoassírios conquistam Samaria e dispersam as dez tribos pela Mesopotâmia, repovoando a região com estrangeiros pagãos.',
+        theologicalContext: 'A santa justiça de Deus executando a aliança contra a apostasia persistente.'
+      },
+      {
+        id: 'conn-suffering-servant',
+        referenceDisplay: 'Isaías 53 (O Servo Sofredor)',
+        scriptureReference: 'Isaías 53:1-12',
+        title: 'A Profecia da Expiação Substitutiva Vicária',
+        explanation: 'Em meio ao declínio de Judá, Isaías profetiza o Evangelho no Antigo Testamento: o Messias não reinaria pelo poder secular, mas levaria sobre Si as nossas enfermidades e o castigo que nos traz a paz.',
+        theologicalContext: 'O coração da soteriologia bíblica pré-exílica apontando diretamente para a cruz de Cristo.'
+      }
     ]
   },
   {
@@ -240,6 +370,32 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         empire: 'Império Aquemênida Persa (Ciro II, o Grande)',
         event: 'Tropas persas desviam as águas do rio Eufrates e entram na Babilônia na noite do banquete sacrílego de Belsazar (Daniel 5).',
         archaeologyRef: 'Crônica de Nabonido e Cilindro de Ciro no Museu Britânico'
+      }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-fall-of-jerusalem',
+        referenceDisplay: '2 Reis 25:1-12 (A Queda de Jerusalém)',
+        scriptureReference: '2 Reis 25:1-12',
+        title: 'A Destruição do Primeiro Templo por Nabucodonosor',
+        explanation: 'Em 586 a.C., as forças caldeias rompem as muralhas sitiadas de Jerusalém, incendeiam o Templo dourado de Salomão e deportam a liderança de Judá, iniciando os dolorosos 70 anos de cativeiro.',
+        theologicalContext: 'Cumprimento das admoestações da aliança em Deuteronômio 28 e purificação de Israel da idolatria.'
+      },
+      {
+        id: 'conn-letter-to-exiles',
+        referenceDisplay: 'Jeremias 29:10-14 (A Carta aos Exilados)',
+        scriptureReference: 'Jeremias 29:10-14',
+        title: 'Os 70 Anos de Cativeiro e a Esperança do Retorno',
+        explanation: 'Jeremias envia aos deportados a mensagem de que Deus planejava para eles um futuro e uma esperança: após 70 anos cumpridos em Babilônia, o Senhor os traria de volta à sua terra.',
+        theologicalContext: 'A graça soberana que preserva um remanescente fiel mesmo em solo estrangeiro.'
+      },
+      {
+        id: 'conn-daniel-fiery-furnace',
+        referenceDisplay: 'Daniel 3 & 6 (A Fidelidade no Império)',
+        scriptureReference: 'Daniel 6:10-23',
+        title: 'A Supremacia do Deus Vivo sobre os Decretos Pagãos',
+        explanation: 'Nas cortes pagãs de Babilônia e Medo-Pérsia, Daniel e seus companheiros recusam a idolatria estatal, sendo preservados milagrosamente na fornalha ardente e na cova dos leões.',
+        theologicalContext: 'O Reino dos Céus como poder supremo governando a história sobre todos os reis terrenos.'
       }
     ]
   },
@@ -290,6 +446,32 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         empire: 'Império Aquemênida (Artaxerxes I)',
         event: 'Neemias, copeiro do rei em Susã, recebe cartas imperiais oficiais com salvo-conduto e madeira das florestas reais para reconstruir as muralhas de Jerusalém em 52 dias.',
         archaeologyRef: 'Papiros Elefantinos no Egito e Textos de Pasárgada'
+      }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-cyrus-decree',
+        referenceDisplay: 'Esdras 1:1-4; 3:10-13 (O Retorno e o Altar)',
+        scriptureReference: 'Esdras 3:10-13',
+        title: 'O Decreto de Ciro e os Alicerces do Segundo Templo',
+        explanation: 'Ciro cumpre a profecia de Isaías (Is 44:28) autorizando o retorno dos exilados judeus sob Zorobabel. Ao assentarem as fundações do Segundo Templo, o choro dos sacerdotes idosos misturou-se ao clamor alegre dos mais jovens.',
+        theologicalContext: 'A restauração miraculosa da aliança e da adoração cúltica após o juízo.'
+      },
+      {
+        id: 'conn-haggai-glory',
+        referenceDisplay: 'Ageu 2:1-9 (A Glória Maior da Segunda Casa)',
+        scriptureReference: 'Ageu 2:6-9',
+        title: 'A Promessa da Maior Glória no Segundo Templo',
+        explanation: 'Ageu consola os construtores da casa humilde profetizando que a sua glória futura superaria a do suntuoso templo salomônico, pois nela pisaria o próprio Desejado de Todas as Nações — Jesus Cristo.',
+        theologicalContext: 'A encarnação do Filho de Deus transformando o humilde templo físico no santuário da graça.'
+      },
+      {
+        id: 'conn-nehemiah-revival',
+        referenceDisplay: 'Neemias 8:1-12 (O Avivamento da Torá)',
+        scriptureReference: 'Neemias 8:1-12',
+        title: 'A Leitura Pública das Escrituras na Porta das Águas',
+        explanation: 'Com os muros reerguidos contra todas as ameaças de Sambalate e Tobias, Esdras lê a Lei ao ar livre para a multidão reunida, que chora em quebrantamento e descobre que a alegria do Senhor é a sua força.',
+        theologicalContext: 'O retorno à centralidade da Palavra escrita como alicerce eterno da fé do povo de Deus.'
       }
     ]
   },
@@ -389,6 +571,40 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         event: 'Pompeu cerca o Monte do Templo, quebra a soberania judaica e transforma a Judeia em território tributário sob autoridade de Roma.',
         archaeologyRef: 'Flávio Josefo (Guerra dos Judeus I.7) e moedas romanas da vitória sobre a Judeia'
       }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-intertestamental-malachi',
+        referenceDisplay: 'Malaquias 3:1; 4:5-6 (O Fechamento do Cânon)',
+        scriptureReference: 'Malaquias 4:1-6',
+        title: 'O Encerramento da Revelação do AT e o Elias Precursor',
+        explanation: 'Malaquias conclui o Antigo Testamento sob o domínio persa com a profecia de que o Sol da Justiça nasceria trazendo cura em Suas asas, e que Deus enviaria o profeta Elias antes que viesse o grande e terrível Dia do Senhor. Esse oráculo alimentou 400 anos de anseio pela intervenção messiânica até a voz clamar no deserto com João Batista.',
+        theologicalContext: 'Transição soberana da revelação profética clássica para o silêncio canônico até o cumprimento no Evangelho.'
+      },
+      {
+        id: 'conn-intertestamental-daniel',
+        referenceDisplay: 'Daniel 8:1-8; 11:2-35 (O Choque das Potências)',
+        scriptureReference: 'Daniel 11:2-21',
+        title: 'A Ascensão de Alexandre e os Reinos do Norte e do Sul',
+        explanation: 'Daniel revela com assombrosa precisão profética a queda do carneiro medo-persa perante o bode grego de Alexandre, seguido pela fragmentação do império em quatro dinastias. O texto narra os conflitos prolongados entre os Ptolomeus (Egito) e Selêucidas (Síria), culminando no tirano Antíoco IV Epifânio.',
+        theologicalContext: 'A soberania do Deus de Israel regendo os destinos e fronteiras dos impérios do mundo para preservar Seu povo.'
+      },
+      {
+        id: 'conn-intertestamental-hebrews',
+        referenceDisplay: 'Hebreus 11:35-38 (A Resistência dos Mártires Hasidim)',
+        scriptureReference: 'Hebreus 11:35-38',
+        title: 'A Perseguição Selêucida e a Esperança na Ressurreição',
+        explanation: 'Durante a crise helenística (167 a.C.), muitos judeus piedosos (Hasidim) recusaram violar os mandamentos da Lei e sofreram tortura e morte nas mãos dos soldados sírios. O autor de Hebreus recorda diretamente essa resistência intertestamentária ao celebrar aqueles que não aceitaram livramento para alcançar uma melhor ressurreição.',
+        theologicalContext: 'A fé heroica incondicional que manteve viva a chama da aliança monoteísta no período de silêncio profético.'
+      },
+      {
+        id: 'conn-intertestamental-hanukkah',
+        referenceDisplay: 'João 10:22-30 (Festa da Dedicação / Hanukkah)',
+        scriptureReference: 'João 10:22-30',
+        title: 'Jesus no Templo Durante a Festa de Hanukkah',
+        explanation: 'No inverno, Jesus caminhava no Pórtico de Salomão durante a comemoração da rededicação do altar por Judas Macabeu em 164 a.C. após a expulsão dos sírios. Diante dos líderes judaicos que cobravam uma resposta sobre Sua identidade messiânica, Jesus afirma solenemente: "Eu e o Pai somos um".',
+        theologicalContext: 'Cristo Se manifesta como o templo definitivo e a verdadeira luz eterna de Israel.'
+      }
     ]
   },
   {
@@ -438,6 +654,32 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         empire: 'Império Romano (Tibério César)',
         event: 'Julgamento perante Pilatos e execução pelo método romano de crucificação no monte Gólgota, fora dos muros da cidade.',
         archaeologyRef: 'Ossuário de Yehohanan (única evidência física direta de prego através de calcâneo humano de crucificação romana)'
+      }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-gospels-census',
+        referenceDisplay: 'Lucas 2:1-7 (O Censo de César Augusto)',
+        scriptureReference: 'Lucas 2:1-7',
+        title: 'O Decreto Imperial de Augusto e a Profecia de Belém',
+        explanation: 'O primeiro imperador romano, César Augusto, publica o édito de recenseamento de todo o Império sob o governo sírio de Quirino. Deus utiliza a máquina fiscal e logística de Roma para mover José e Maria da Galileia para Belém de Judá, cumprindo ao pé da letra a profecia milenar de Miqueias 5:2 sobre o local do nascimento do Messias.',
+        theologicalContext: 'O controle soberano da Providência divina sobre os governantes mais poderosos da Terra para inaugurar a salvação.'
+      },
+      {
+        id: 'conn-gospels-pilate',
+        referenceDisplay: 'João 18:28-38 (O Julgamento perante Pilatos)',
+        scriptureReference: 'João 18:28-38',
+        title: 'O Rei Eterno e a Autoridade da Prefeitura Romana',
+        explanation: 'No Pretório de Jerusalém, Pôncio Pilatos — o prefeito romano cuja existência histórica foi confirmada pela Pedra de Cesareia — interroga Jesus sobre a alegação de realeza política. Jesus proclama que Seu reino não é deste mundo e que veio para dar testemunho da verdade, desarmando as pretensões do imperialismo secular.',
+        theologicalContext: 'O choque decisivo entre os reinos deste mundo e o Reino de Deus encarnado em Cristo crucificado.'
+      },
+      {
+        id: 'conn-gospels-resurrection',
+        referenceDisplay: 'Mateus 27:50-54; 28:1-10 (A Cruz e o Véu Rasgado)',
+        scriptureReference: 'Mateus 27:50-54',
+        title: 'A Morte Vicária, o Rasgar do Véu e o Centurião Pagão',
+        explanation: 'Ao expirar no calvário sob a custódia de soldados romanos, a terra treme, o véu do Templo é rasgado de alto a baixo e um centurião pagão exclama: "Verdadeiramente este era o Filho de Deus!". A morte e gloriosa ressurreição de Jesus quebram o domínio do pecado e da morte em pleno coração do Império Romano.',
+        theologicalContext: 'O fim da barreira entre Deus e a humanidade e a vitória final do Cordeiro pascal.'
       }
     ]
   },
@@ -494,6 +736,40 @@ export const HISTORICAL_PERIODS: HistoricalPeriod[] = [
         empire: 'Império Romano (Imperador Domiciano)',
         event: 'Exigência rigorosa de adoração ao imperador sob o título "Dominus et Deus" (Senhor e Deus). O apóstolo João é banido para a ilha penal de Patmos, onde recebe o Apocalipse.',
         archaeologyRef: 'Inscrições no Templo dos Sebastoi em Éfeso e moedas com a efígie de Domiciano'
+      }
+    ],
+    detailedConnections: [
+      {
+        id: 'conn-early-pentecost',
+        referenceDisplay: 'Atos 2:1-12 (O Pentecostes e as Nações da Diáspora)',
+        scriptureReference: 'Atos 2:1-12',
+        title: 'O Derramamento do Espírito Santo sobre os Povos do Império',
+        explanation: 'Judeus e prosélitos vindos de todas as províncias do Império Romano (partos, medos, elamitas, moradores da Mesopotâmia, Capadócia, Ásia, Egito e Roma) ouvem em suas próprias línguas as grandezas de Deus. A dispersão das nações ocorrida em Babel é revertida pela unidade no Espírito Santo.',
+        theologicalContext: 'A universalidade da mensagem do Evangelho rompendo os limites geográficos e étnicos do judaísmo rabínico.'
+      },
+      {
+        id: 'conn-early-claudius-edict',
+        referenceDisplay: 'Atos 18:1-4 (O Édito do Imperador Cláudio)',
+        scriptureReference: 'Atos 18:1-4',
+        title: 'A Expulsão dos Judeus de Roma e as Redes Missionárias',
+        explanation: 'O imperador romano Cláudio decreta em 49 d.C. a expulsão de todos os judeus da capital romana (fato registrado pelo historiador Suetônio). Esse evento geopolítico imperial conduz Áquila e Priscila a Corinto, onde acolhem o apóstolo Paulo e formam uma das mais influentes parcerias apostólicas do Novo Testamento.',
+        theologicalContext: 'A Providência usando até as perseguições políticas imperiais para impulsionar a expansão do Evangelho.'
+      },
+      {
+        id: 'conn-early-caesar-appeal',
+        referenceDisplay: 'Atos 25:10-12; 28:16-31 (O Apelo a César e a Prisão em Roma)',
+        scriptureReference: 'Atos 28:16-31',
+        title: 'O Evangelho Anunciado na Capital do Império Mundial',
+        explanation: 'Valendo-se de sua prerrogativa legal de cidadão romano (lex de provocatione), Paulo apela ao tribunal supremo de César. Ele chega a Roma sob escolta militar e passa dois anos inteiros alugando sua própria casa, recebendo a todos e pregando o Reino de Deus e o Senhor Jesus Cristo com toda a liberdade, sem impedimento algum.',
+        theologicalContext: 'O cumprimento do plano de Deus de levar o testemunho apostólico até aos confins da Terra e ao centro do poder imperial.'
+      },
+      {
+        id: 'conn-early-revelation-domitian',
+        referenceDisplay: 'Apocalipse 1:9-19; 2-3 (A Visão em Patmos sob Domiciano)',
+        scriptureReference: 'Apocalipse 1:9-19',
+        title: 'O Cristo Glorificado e o Consolo contra o Culto Imperial',
+        explanation: 'Enquanto o imperador Domiciano exigia ser saudado como "Senhor e Deus" sob pena de exílio e morte, o apóstolo João, banido na ilha penal de Patmos, tem a visão de Jesus Cristo ressurreto e entronizado com olhos como chama de fogo e as chaves da morte e do inferno. O livro conforta as sete igrejas da Ásia Menor contra as feras imperiais.',
+        theologicalContext: 'A vitória escatológica final do Cordeiro que vence a besta imperial e estabelece o Novo Céu e Nova Terra.'
       }
     ]
   }

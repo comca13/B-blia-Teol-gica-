@@ -1,6 +1,6 @@
 {
-  "summary": "Plano de implementação para o dicionário e popover interativo de todos os 132 termos dogmáticos e teológicos formulados na História da Igreja, com definição concisa, tradução original, sentido teológico e integração com a busca global (Cmd+K).",
-  "updatedAt": "2026-09-29T22:08:33.525707889Z",
+  "summary": "Plano de implementação para adicionar cartões expansíveis com explicações teológicas e históricas detalhadas para cada conexão bíblica no Contexto Global (Segundo Templo) e na Linha do Tempo das Eras Bíblicas, incluindo navegação direta para o leitor bíblico.",
+  "updatedAt": "2026-09-29T23:54:26.790322691Z",
   "requestFeedback": true,
   "userFacing": true
 }

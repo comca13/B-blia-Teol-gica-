@@ -4,8 +4,10 @@ import {registerSW} from 'virtual:pwa-register';
 import App from './App.tsx';
 import './index.css';
 
-// Register PWA service worker with automatic cache update
-registerSW({ immediate: true });
+// Register PWA service worker with automatic cache update in production
+if ('serviceWorker' in navigator && typeof window !== 'undefined' && import.meta.env.PROD) {
+  registerSW({ immediate: true });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
